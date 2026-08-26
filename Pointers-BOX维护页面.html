@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pointers-BOX - 系统维护中</title>
+    <style>
+        /* 全局基础样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #000000; /* 全黑背景 */
+            color: #ffffff; /* 白色文字 */
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif; /* 现代字体栈 */
+            min-height: 100vh; /* 至少占满整个视口高度 */
+            display: flex; /* 使用Flexbox进行居中布局 */
+            flex-direction: column;
+            justify-content: center; /* 垂直居中 */
+            align-items: center; /* 水平居中 */
+            line-height: 1.6;
+            padding: 20px; /* 在小屏幕上添加内边距 */
+            text-align: center; /* 文本居中 */
+        }
+
+        .container {
+            max-width: 800px; /* 限制最大宽度，在大屏幕上更美观 */
+            width: 100%;
+            padding: 40px 20px;
+            /* 可选：添加一个微妙的边框或阴影来增加层次感 */
+            /* border: 1px solid #333; */
+            /* border-radius: 8px; */
+        }
+
+        h1 {
+            font-size: 3.5rem; /* 大标题 */
+            font-weight: 700;
+            margin-bottom: 2.5rem; /* 标题与正文间的间距 */
+            letter-spacing: 1px; /* 轻微的字母间距增加可读性 */
+            color: #f0f0f0; /* 比纯白稍暗，减少刺眼感 */
+        }
+
+        p {
+            font-size: 1.8rem; /* 正文大小 */
+            margin-bottom: 2rem; /* 段落间距 */
+            color: #d0d0d0; /* 比标题稍暗的灰色 */
+        }
+
+        .contact-info {
+            font-size: 1.5rem;
+            color: #b0b0b0; /* 联系信息使用更柔和的灰色 */
+            margin-top: 3rem; /* 联系信息与上方内容有更多间距 */
+            padding-top: 2rem;
+            border-top: 1px solid #333; /* 用一条细线分隔 */
+        }
+
+        .contact-info p {
+            font-size: inherit; /* 继承父级字体大小 */
+            margin-bottom: 0.8rem;
+        }
+
+        /* 响应式设计：在小屏幕上调整字体大小 */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.8rem;
+            }
+            p {
+                font-size: 1.5rem;
+            }
+            .contact-info {
+                font-size: 1.3rem;
+            }
+        }
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 2.2rem;
+            }
+            p {
+                font-size: 1.3rem;
+            }
+            .contact-info {
+                font-size: 1.1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 主标题 -->
+        <h1>Pointers-BOX</h1>
+
+        <!-- 维护提示 -->
+        <p>系统正在升级维护，请耐心等候。</p>
+
+        <!-- 开发者信息 -->
+        <p>本站开发者——@极星（Pointers）&个人QQ：466620751</p>
+
+        <!-- 更新信息预告 -->
+        <p>下一版本：Pointers-BOX vMLGC20260827 《万鬼同行》</p>
+
+        <!-- 联系信息区块 -->
+        <div class="contact-info">
+            <p>感谢您的理解与支持。</p>
+        </div>
+    </div>
+</body>
+</html>
