@@ -11,8 +11,9 @@ on:
   workflow_dispatch:
 
 jobs:
-  # Windows 两个版本由维护者本机自行打包上传（pnpm build:win + 自制 NSIS），
-  # CI 仅负责本机无法构建的平台：macOS dmg / Linux deb+AppImage。
+  # Windows 两个版本由维护者本机自行打包上传（pnpm build:win + 自制 NSIS）。
+  # CI 构建本机无法构建的平台后，用 softprops 把包附加到"触发 tag 所在的 Release"
+  # （不用 electron-builder 的 --publish，它的发布目标标签固定为 v+版本号，无法自定义）。
   desktop:
     if: startsWith(github.ref, 'refs/tags/')
     strategy:
@@ -35,8 +36,18 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
-      - name: Build & publish
-        # -c.publish.tag：产物挂到"你推的那个 tag"所在的 Release，而不是按版本号新建
-        run: npx electron-builder --config electron-builder.yml --publish always -c.publish.tag=$GITHUB_REF_NAME ${{ matrix.arch_flags }}
+      - name: Build packages
+        run: npx electron-builder --config electron-builder.yml --publish never ${{ matrix.arch_flags }}
+      - name: Attach packages to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release/*.dmg
+            release/*.zip
+            release/*.deb
+            release/*.AppImage
+            release/*.blockmap
+            release/latest-mac.yml
+            release/latest-linux.yml
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
