@@ -4,6 +4,11 @@ name: Release
 permissions:
   contents: write
 
+env:
+  # CI 机器走 GitHub 官方源（.npmrc 的国内镜像仅用于本机，跨洋访问不稳定）
+  ELECTRON_MIRROR: https://github.com/electron-userland/electron/releases/download/
+  NPM_CONFIG_REGISTRY: https://registry.npmjs.org
+
 on:
   push:
     tags:
