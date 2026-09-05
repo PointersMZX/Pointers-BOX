@@ -1,0 +1,41 @@
+appId: cc.pointers.box
+productName: Pointers-BOX
+copyright: Copyright © 2026 Pointers-BOX All Rights Reserved
+
+directories:
+  output: release
+  buildResources: resources
+
+asar: true
+files:
+  - out/**
+  - package.json
+
+extraResources:
+  - from: resources/icons
+    to: icons
+  - from: resources/splash
+    to: splash
+
+win:
+  # 用户提供的官方图标（256x256 ICO）
+  icon: resources/icons/app.ico
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+
+mac:
+  icon: resources/icons/icon.icns
+  category: public.app-category.utilities
+  identity: null
+
+linux:
+  icon: resources/icons/linux/
+  category: Utility
+
+publish:
+  provider: github
+  owner: PointersMZX
+  repo: Pointers-BOX
