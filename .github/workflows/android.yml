@@ -32,14 +32,23 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - run: npx cap sync android
-      # 有密钥则签名，否则出未签名 Release APK（可自行签名后分发）
-      - name: Decode keystore
-        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
-        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/app/pbox.keystore
-      - run: cd android && chmod +x gradlew && ./gradlew assembleRelease
+      # 密钥已提交（android/app/pbox-release.keystore），产出可直接安装的已签名 APK
+      - name: Build signed APK
+        working-directory: android
+        run: |
+          set -o pipefail
+          chmod +x gradlew
+          ./gradlew assembleRelease --stacktrace 2>&1 | tee gradle.log
+      - name: 失败时输出日志到摘要页
+        if: failure()
+        working-directory: android
+        run: |
+          echo "## ❌ Android 构建失败（gradle.log 末尾 60 行）" >> "$GITHUB_STEP_SUMMARY"
+          tail -60 gradle.log >> "$GITHUB_STEP_SUMMARY" || echo "（无日志文件）" >> "$GITHUB_STEP_SUMMARY"
       - name: Attach APK to release
         uses: softprops/action-gh-release@v2
         with:
+          name: v2.0.0 Beta
           files: android/app/build/outputs/apk/release/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
