@@ -34,6 +34,9 @@ mac:
 linux:
   icon: resources/icons/linux/
   category: Utility
+  target:
+    - deb
+    - AppImage
 
 publish:
   provider: github

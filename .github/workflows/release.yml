@@ -18,7 +18,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, ubuntu-latest]
+        include:
+          - os: macos-latest
+            arch_flags: --x64 --arm64 # Intel + 苹果芯片双架构
+          - os: ubuntu-latest
+            arch_flags: --x64
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -32,6 +36,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - name: Build & publish
-        run: npx electron-builder --config electron-builder.yml --publish always
+        # -c.publish.tag：产物挂到"你推的那个 tag"所在的 Release，而不是按版本号新建
+        run: npx electron-builder --config electron-builder.yml --publish always -c.publish.tag=$GITHUB_REF_NAME ${{ matrix.arch_flags }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
