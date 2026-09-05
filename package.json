@@ -7,6 +7,10 @@
   "author": "Pointers",
   "license": "MIT",
   "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PointersMZX/Pointers-BOX.git"
+  },
   "scripts": {
     "dev": "electron-vite dev",
     "start": "electron-vite preview",

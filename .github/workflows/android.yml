@@ -1,5 +1,9 @@
 name: Android APK
 
+# 上传 Release 需要 contents: write 权限（GitHub 默认令牌只读）
+permissions:
+  contents: write
+
 on:
   push:
     tags:
@@ -8,6 +12,8 @@ on:
 
 jobs:
   apk:
+    # 仅 tag 触发时执行（防止普通 push 到 main 也跑构建）
+    if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -32,7 +38,6 @@ jobs:
         run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/app/pbox.keystore
       - run: cd android && chmod +x gradlew && ./gradlew assembleRelease
       - name: Attach APK to release
-        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           files: android/app/build/outputs/apk/release/*.apk
