@@ -3,14 +3,17 @@ name: Release
 on:
   push:
     tags:
-      - 'v*'
+      - '**'
+  workflow_dispatch:
 
 jobs:
-  release:
+  # Windows 两个版本由维护者本机自行打包上传（pnpm build:win + 自制 NSIS），
+  # CI 仅负责本机无法构建的平台：macOS dmg / Linux deb+AppImage。
+  desktop:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, macos-latest, ubuntu-latest]
+        os: [macos-latest, ubuntu-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -23,7 +26,8 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
-      # Windows → NSIS 安装包；macOS → DMG；Linux → deb + AppImage
-      - run: npx electron-builder --config electron-builder.yml --publish always
+      - name: Build & publish (tag only)
+        if: startsWith(github.ref, 'refs/tags/')
+        run: npx electron-builder --config electron-builder.yml --publish always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
