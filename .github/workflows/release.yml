@@ -12,7 +12,8 @@ env:
 on:
   push:
     tags:
-      - '**'
+      - 'v*' # v2.0.0-beta 这类
+      - '2*' # 2.0.0Beta 这类（无 v 前缀）
   workflow_dispatch:
 
 jobs:
