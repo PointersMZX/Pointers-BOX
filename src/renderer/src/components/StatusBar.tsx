@@ -1,6 +1,7 @@
 import { Badge, Box, Flex, Text } from '@chakra-ui/react'
 import { useEffect, useState } from 'react'
 import { useDataStore } from '../store/dataStore'
+import { backend } from '../platform'
 import { useThemeStore } from '../store/themeStore'
 import { useUiStore } from '../store/uiStore'
 
@@ -8,7 +9,12 @@ import { useUiStore } from '../store/uiStore'
 export default function StatusBar() {
   const platform = useUiStore((s) => s.platform)
   const offline = useDataStore((s) => s.offline)
-  const boxVersion = useDataStore((s) => s.box?.app_version)
+  const [appVersion, setAppVersion] = useState('')
+
+  // v2.0.0：显示本地应用版本（package.json），远程 box.json 的 app_version 不再上状态栏
+  useEffect(() => {
+    backend.getAppVersion().then(setAppVersion).catch(() => {})
+  }, [])
   const isGlass = useThemeStore((s) => s.themeKey) === 'glass'
   const [online, setOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine)
 
@@ -51,7 +57,7 @@ export default function StatusBar() {
         )}
       </Flex>
       <Text>
-        Pointers-BOX {boxVersion ?? 'v2.0.0'}
+        Pointers-BOX {appVersion ? `v${appVersion}` : 'v2.0.0'}
         {platform === 'android' ? ' · Android' : ''}
       </Text>
     </Flex>

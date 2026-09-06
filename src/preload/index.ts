@@ -10,6 +10,7 @@ function subscribe<T>(channel: string, cb: (payload: T) => void): () => void {
 }
 
 const api: PBoxApi = {
+  getAppVersion: () => ipcRenderer.invoke('app:version'),
   getData: () => ipcRenderer.invoke('data:snapshot'),
   refreshData: (force?: boolean) => ipcRenderer.invoke('data:refresh', force),
   restoreData: (type) => ipcRenderer.invoke('data:restore', type),

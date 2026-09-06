@@ -1,4 +1,4 @@
-import { dialog, ipcMain, shell } from 'electron'
+import { app, dialog, ipcMain, shell } from 'electron'
 import { existsSync, mkdirSync } from 'fs'
 import type { AppConfig, RestoreTarget } from '../shared/types'
 import { getConfig, setConfig } from './configStore'
@@ -8,6 +8,9 @@ import { resetBrowserSession } from './sessions'
 import { checkUpdate, downloadUpdate, installUpdate } from './updater'
 
 export function registerIpcHandlers(): void {
+  // 本地应用版本（v2.0.0：状态栏/设置页显示本地版本，而非远程 box.json 的 app_version）
+  ipcMain.handle('app:version', () => app.getVersion())
+
   // 数据（M1）
   ipcMain.handle('data:snapshot', () => getSnapshot())
   ipcMain.handle('data:refresh', (_e, force?: unknown) => refreshRemote(Boolean(force)))

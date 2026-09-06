@@ -332,6 +332,12 @@ export default function SettingsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // v2.0.0：应用版本显示本地版本（package.json），与远程 box.json 无关
+  const [localVersion, setLocalVersion] = useState('')
+  useEffect(() => {
+    backend.getAppVersion().then(setLocalVersion).catch(() => {})
+  }, [])
+
   const onCheck = async (): Promise<void> => {
     setChecking(true)
     try {
@@ -378,7 +384,7 @@ export default function SettingsPage() {
       {/* 关于应用（合并区块，PRD 4.4） */}
       <Section title="关于应用">
         <Row label="应用名称" value={box?.app_name ?? 'Pointers-BOX'} />
-        <Row label="应用版本" value={box?.app_version ?? 'v2.0.0'} />
+        <Row label="应用版本" value={localVersion ? `v${localVersion}` : 'v2.0.0'} />
         <Row label="开发者" value={box?.developer} />
         <Row label="社区 QQ 群" value={box?.community_qq} />
         <Row label="联合出品" value={box?.general_key} />

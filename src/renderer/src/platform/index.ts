@@ -45,6 +45,7 @@ function createDesktopBackend(api: PBoxApi): AppBackend {
 
 function createAndroidBackend(): AppBackend {
   return {
+    getAppVersion: () => Promise.resolve('2.0.0'),
     getData: () => androidGetData(false),
     refreshData: (force?: boolean) => androidGetData(Boolean(force)),
     restoreData: (target) => androidRestoreData(target),

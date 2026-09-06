@@ -127,6 +127,8 @@ export const REMOTE_URLS = {
 export type RestoreTarget = 'resources' | 'box'
 
 export interface PBoxApi {
+  /** 本地应用版本（package.json version，如 2.0.0）；与远程 box.json 的 app_version 无关 */
+  getAppVersion(): Promise<string>
   getData(): Promise<DataSnapshot>
   refreshData(force?: boolean): Promise<DataSnapshot>
   restoreData(type: RestoreTarget): Promise<boolean>
