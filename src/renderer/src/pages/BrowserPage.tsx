@@ -35,11 +35,18 @@ import type {
   WebviewNavigateEvent
 } from '../types/webview'
 import { useBrowserStore } from '../store/browserStore'
+import { useUiStore } from '../store/uiStore'
 import { backend } from '../platform'
 import EmptyState from '../components/EmptyState'
+import AndroidBrowserPage from './AndroidBrowserPage'
 
-// 内置浏览器（PRD 4.2）：WebView + 导航控制栏 + 地址栏 + 会话重置
+// 内置浏览器（PRD 4.2）：按平台分发——桌面用 webview，安卓用原生浏览器窗口
 export default function BrowserPage() {
+  const platform = useUiStore((s) => s.platform)
+  return platform === 'android' ? <AndroidBrowserPage /> : <ElectronBrowserPage />
+}
+
+function ElectronBrowserPage() {
   const storeUrl = useBrowserStore((s) => s.url)
   const setStoreUrl = useBrowserStore((s) => s.navigateTo)
   const webviewRef = useRef<PBoxWebview | null>(null)

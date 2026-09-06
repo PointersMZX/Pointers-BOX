@@ -11,8 +11,14 @@ export const DESKTOP_PAGES: readonly Page[] = [
   'settings'
 ]
 
-// Android：领取走内置/系统浏览器拉起，无独立浏览器页；下载管理为 Electron 专属
-export const ANDROID_PAGES: readonly Page[] = ['home', 'library', 'settings']
+// Android 与桌面同功能集：内置浏览器走原生 InAppBrowserActivity，下载由系统 DownloadManager 接管
+export const ANDROID_PAGES: readonly Page[] = [
+  'home',
+  'library',
+  'browser',
+  'downloads',
+  'settings'
+]
 
 export function visiblePages(platform: AppPlatform): Page[] {
   return [...(platform === 'android' ? ANDROID_PAGES : DESKTOP_PAGES)]

@@ -1,4 +1,4 @@
-// 平台后端统一入口（计划 D6 / IPC 契约 §5）：桌面转发 window.api，Android 走 Capacitor
+// 平台适配层（开发计划 D6）：renderer 只依赖本模块；桌面实现转发 window.api，Android 实现走 Capacitor
 import { Capacitor } from '@capacitor/core'
 import type { PBoxApi } from '../../../shared/types'
 import { isPage, type Page } from '../../../shared/routes'
@@ -13,6 +13,7 @@ import {
   androidOnNavigate,
   androidOnUpdateEvent,
   androidOpenClaim,
+  androidOpenSystemDownloads,
   androidResetSession,
   androidRestoreData,
   androidSetConfig
@@ -79,3 +80,11 @@ export const backend: AppBackend = detectBackend()
 export async function openClaim(url: string): Promise<void> {
   await backend.openClaim(url)
 }
+
+// 安卓：打开系统下载记录（下载由系统 DownloadManager 接管）
+export async function openSystemDownloads(): Promise<void> {
+  await androidOpenSystemDownloads()
+}
+
+// 安卓：重置内置浏览器会话
+export { androidResetSession }

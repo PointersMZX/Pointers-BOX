@@ -1,6 +1,5 @@
-// Android 平台实现（计划 D6）：Capacitor 插件承载原生能力
-import { Capacitor, CapacitorHttp } from '@capacitor/core'
-import { Browser } from '@capacitor/browser'
+// 安卓平台实现（开发计划 D6）：Capacitor 插件承载原生能力
+import { Capacitor, CapacitorHttp, registerPlugin } from '@capacitor/core'
 import { Preferences } from '@capacitor/preferences'
 import { REMOTE_URLS } from '../../../shared/types'
 import type {
@@ -65,8 +64,9 @@ function buildSnapshot(raw: {
 }
 
 export async function androidGetData(force = false): Promise<DataSnapshot> {
+  void force
   const results = await Promise.allSettled([
-    force ? fetchLooseJson(REMOTE_URLS.resources) : fetchLooseJson(REMOTE_URLS.resources),
+    fetchLooseJson(REMOTE_URLS.resources),
     fetchLooseJson(REMOTE_URLS.box),
     fetchLooseJson(REMOTE_URLS.boxzzyhs)
   ])
@@ -131,23 +131,43 @@ export async function androidSetConfig(patch: Partial<AppConfig>): Promise<AppCo
 
 export { resolveOpenMode }
 
+// 内置浏览器：打开安卓原生 InAppBrowserActivity（带地址栏/导航/下载/会话重置）
 export async function androidOpenClaim(url: string, choice?: 'builtin' | 'system'): Promise<void> {
   const mode = resolveOpenMode(choice, 'android')
   if (mode === 'system-browser') {
-    // Capacitor WebView 将 target=_blank 路由到系统浏览器（@capacitor/app v6 已移除 openUrl）
-    window.open(url, '_blank')
+    await androidOpenExternal(url)
     return
   }
-  await Browser.open({ url })
+  await InAppBrowserNative.open({ url })
 }
 
+// 会话重置：清空安卓 WebView 的 Cookie 与缓存
 export async function androidResetSession(): Promise<void> {
-  // Capacitor 内置浏览器每次打开均为全新会话，关闭即重置
-  await Browser.close()
+  await InAppBrowserNative.resetSession()
 }
+
+// 打开系统下载记录（下载由系统 DownloadManager 接管）
+export async function androidOpenSystemDownloads(): Promise<void> {
+  await InAppBrowserNative.openSystemDownloads()
+}
+
+// 系统浏览器打开
+export async function androidOpenExternal(url: string): Promise<void> {
+  await InAppBrowserNative.openExternal({ url })
+}
+
+// 安卓原生插件桥（android/app/src/main/java/cc/pointers/box/InAppBrowserPlugin.java）
+interface InAppBrowserNativeInterface {
+  open(options: { url: string }): Promise<void>
+  resetSession(): Promise<void>
+  openSystemDownloads(): Promise<void>
+  openExternal(options: { url: string }): Promise<void>
+}
+
+const InAppBrowserNative = registerPlugin<InAppBrowserNativeInterface>('InAppBrowser')
 
 export function androidOnDownloadEvent(cb: (e: DownloadEvent) => void): () => void {
-  // 下载管理为桌面专属；Android 端无下载事件流
+  // 下载管理为桌面专属；安卓端下载由系统 DownloadManager 接管
   void cb
   return () => {}
 }
