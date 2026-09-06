@@ -10,7 +10,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.view.ViewGroup;
 import android.webkit.CookieManager;
-import android.webkit.WebResourceRequest;
+import android.webkit.DownloadListener;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -76,9 +76,10 @@ public class InAppBrowserActivity extends Activity {
         settings.setLoadWithOverviewMode(true);
         settings.setUseWideViewPort(true);
         webView.setWebViewClient(new WebViewClient() {
+            // 使用 String 重载（全 API 兼容，避免 lint NewApi 拦停 release 构建）
+            @SuppressWarnings("deprecation")
             @Override
-            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-                String url = request.getUrl().toString();
+            public boolean shouldOverrideUrlLoading(WebView view, String url) {
                 if (url.startsWith("http://") || url.startsWith("https://")) {
                     return false; // 站内导航
                 }

@@ -35,9 +35,19 @@ jobs:
         with:
           node-version: 20
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm build
-      - run: npx cap sync android
+      - name: Install dependencies
+        run: |
+          set -o pipefail
+          pnpm install --frozen-lockfile 2>&1 | tee install.log
+      - name: Build web bundle
+        run: |
+          set -o pipefail
+          pnpm build 2>&1 | tee webbuild.log
+      - name: Sync Capacitor
+        working-directory: android
+        run: |
+          set -o pipefail
+          npx cap sync android 2>&1 | tee capsync.log
       # 密钥已提交（android/app/pbox-release.keystore），产出可直接安装的已签名 APK
       - name: Build signed APK
         working-directory: android
@@ -45,12 +55,6 @@ jobs:
           set -o pipefail
           chmod +x gradlew
           ./gradlew assembleRelease --stacktrace 2>&1 | tee gradle.log
-      - name: 失败时输出日志到摘要页
-        if: failure()
-        working-directory: android
-        run: |
-          echo "## ❌ Android 构建失败（gradle.log 末尾 60 行）" >> "$GITHUB_STEP_SUMMARY"
-          tail -60 gradle.log >> "$GITHUB_STEP_SUMMARY" || echo "（无日志文件）" >> "$GITHUB_STEP_SUMMARY"
       - name: Dump failure logs to ci-logs branch
         if: failure()
         shell: bash
@@ -60,7 +64,7 @@ jobs:
           git fetch origin main --depth 1
           git checkout -B ci-logs origin/main
           mkdir -p logs
-          cp -f android/gradle.log logs/gradle.log 2>/dev/null || true
+          cp -f install.log webbuild.log capsync.log gradle.log logs/ 2>/dev/null || true
           git add -A logs
           git commit -m "ci log dump: android run ${{ github.run_id }}" || true
           git push origin ci-logs
