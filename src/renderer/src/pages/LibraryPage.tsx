@@ -25,8 +25,10 @@ import ResourceCard from '../components/ResourceCard'
 import ResourceDetailModal from '../components/ResourceDetailModal'
 import GlassPullRefresh from '../components/GlassPullRefresh'
 import { useDataStore } from '../store/dataStore'
+import { useFavoritesStore } from '../store/favoritesStore'
 import {
   ALL_CATEGORY,
+  FAV_CATEGORY,
   SORT_MODES,
   buildCategoryTree,
   filterResources,
@@ -67,11 +69,22 @@ export default function LibraryPage() {
     }
   }, [sort])
 
-  const tree = useMemo(() => buildCategoryTree(resources), [resources])
-  const filtered = useMemo(
-    () => sortResources(filterResources(resources, category, keyword), sort),
-    [resources, category, keyword, sort]
-  )
+  const favIds = useFavoritesStore((s) => s.ids)
+  const tree = useMemo(() => {
+    const base = buildCategoryTree(resources)
+    // 收藏虚拟分类（有收藏时显示在「全部」之后）
+    if (favIds.size > 0) {
+      base.splice(1, 0, { name: FAV_CATEGORY, count: favIds.size })
+    }
+    return base
+  }, [resources, favIds])
+  const filtered = useMemo(() => {
+    const base =
+      category === FAV_CATEGORY
+        ? resources.filter((r) => favIds.has(String(r.id)))
+        : filterResources(resources, category, keyword)
+    return sortResources(base, sort)
+  }, [resources, category, keyword, sort, favIds])
   const sortLabel = SORT_MODES.find((m) => m.value === sort)?.label ?? '排序'
 
   const openDetail = (r: Resource): void => {

@@ -10,6 +10,11 @@ import { resetBrowserSession } from './sessions'
 
 attachWebviewPolicies()
 
+// Windows 系统通知必需（v2.0.0 下载完成通知）
+if (process.platform === 'win32') {
+  app.setAppUserModelId('cc.pointers.box')
+}
+
 const gotLock = app.requestSingleInstanceLock()
 if (!gotLock) {
   app.quit()

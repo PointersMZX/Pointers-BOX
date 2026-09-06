@@ -46,6 +46,11 @@ function createDesktopBackend(api: PBoxApi): AppBackend {
 function createAndroidBackend(): AppBackend {
   return {
     getAppVersion: () => Promise.resolve('2.0.0'),
+    // 导出/导入与下载历史为桌面端功能；Android 端返回空实现
+    exportConfig: () => Promise.resolve(null),
+    importConfig: () => Promise.resolve(null),
+    listDownloadHistory: () => Promise.resolve([]),
+    clearDownloadHistory: () => Promise.resolve(),
     getData: () => androidGetData(false),
     refreshData: (force?: boolean) => androidGetData(Boolean(force)),
     restoreData: (target) => androidRestoreData(target),

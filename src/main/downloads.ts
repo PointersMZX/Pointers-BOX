@@ -5,6 +5,8 @@ import { getConfig } from './configStore'
 import { pickAvailablePath } from './downloads/unique'
 import { getBrowserSession } from './sessions'
 import { getMainWindow } from './window'
+import { notifyDownloadDone } from './notifier'
+import { addHistoryEntry } from './history'
 import { existsSync, mkdirSync, unlinkSync } from 'fs'
 import { app, type DownloadItem, type Session } from 'electron'
 
@@ -103,13 +105,18 @@ export function attachDownloadHandling(target: Session = getBrowserSession()): v
     item.once('done', (_e, state) => {
       active.delete(id)
       activeItems.delete(id)
-      // PRD 4.3：任务完成后从列表消失（不记录历史）
-      broadcast({
-        type: 'done',
-        id,
-        state:
-          state === 'completed' ? 'completed' : state === 'cancelled' ? 'cancelled' : 'interrupted'
-      })
+      const finalState =
+        state === 'completed' ? 'completed' : state === 'cancelled' ? 'cancelled' : 'interrupted'
+      // PRD 4.3：任务完成后从列表消失；v2.0.0 可选保留历史（默认关闭）
+      broadcast({ type: 'done', id, state: finalState })
+      if (finalState === 'completed') {
+        if (getConfig().keepDownloadHistory) {
+          addHistoryEntry({ id, filename: rec.filename, path: rec.path, total: rec.total })
+        }
+        notifyDownloadDone(rec.filename, true)
+      } else if (finalState === 'interrupted') {
+        notifyDownloadDone(rec.filename, false)
+      }
       // 用户主动取消：清理半成品文件，避免残留垃圾
       if (state === 'cancelled' && existsSync(rec.path)) {
         try {

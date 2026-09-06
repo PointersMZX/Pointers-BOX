@@ -1,4 +1,5 @@
 import {
+  Badge,
   Box,
   Button,
   Flex,
@@ -14,11 +15,12 @@ import {
   VStack
 } from '@chakra-ui/react'
 import { FiDownload, FiFolder, FiEdit, FiPause, FiPlay, FiX } from 'react-icons/fi'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import type { DownloadTask } from '../../../shared/types'
 import { useDownloadStore } from '../store/downloadStore'
 import { useUiStore } from '../store/uiStore'
-import { openSystemDownloads } from '../platform'
+import { backend, openSystemDownloads } from '../platform'
+import type { DownloadHistoryEntry } from '../../../shared/types'
 import { formatBytes, percentOf } from '../utils/format'
 
 function TaskRow({ task }: { task: DownloadTask }) {
@@ -121,6 +123,14 @@ export default function DownloadsPage() {
   // 下载中锁定路径（PRD 4.3）
   const hasActive = tasks.length > 0
 
+  // 下载历史（v2.0.0：keepDownloadHistory 开关开启时展示）
+  const [history, setHistory] = useState<DownloadHistoryEntry[]>([])
+  useEffect(() => {
+    if (!config?.keepDownloadHistory) return
+    void backend.listDownloadHistory().then(setHistory).catch(() => {})
+  }, [config?.keepDownloadHistory, tasks])
+
+
   const onChangeDir = async (): Promise<void> => {
     if (hasActive) {
       toast({ title: '下载进行中，无法更改下载路径', status: 'warning', duration: 3000, position: 'top' })
@@ -193,6 +203,80 @@ export default function DownloadsPage() {
           </Text>
         )}
       </Box>
+
+      {/* 下载历史（v2.0.0：设置内“保留下载历史”开启时展示） */}
+      {config?.keepDownloadHistory && (
+        <Box
+          bg="panel"
+          borderWidth="1px"
+          borderColor="pborder"
+          borderRadius="lg"
+          p={4}
+          mb={4}
+          className="pbox-blur-panel"
+        >
+          <Flex align="center" justify="space-between" mb={3}>
+            <HStack>
+              <Text fontWeight="bold" color="ptext" fontSize="sm">
+                下载历史
+              </Text>
+              <Badge borderRadius="full" fontSize="2xs" colorScheme="purple" variant="subtle">
+                {history.length}
+              </Badge>
+            </HStack>
+            <Button
+              size="xs"
+              variant="ghost"
+              color="ptextmuted"
+              _hover={{ color: 'red.400' }}
+              isDisabled={history.length === 0}
+              onClick={async () => {
+                await backend.clearDownloadHistory()
+                setHistory([])
+                toast({ title: '下载历史已清空', status: 'info', duration: 2000, position: 'top' })
+              }}
+            >
+              清空历史
+            </Button>
+          </Flex>
+          {history.length === 0 ? (
+            <Text fontSize="xs" color="ptextmuted">
+              暂无历史记录（完成的下载将出现在这里）
+            </Text>
+          ) : (
+            <Stack spacing={2}>
+              {history.map((h) => (
+                <Flex key={h.id + String(h.completedAt)} align="center" gap={3} wrap="wrap">
+                  <Box minW={0} flex="1">
+                    <Text fontSize="sm" color="ptext" noOfLines={1} title={h.filename}>
+                      {h.filename}
+                    </Text>
+                    <Text fontSize="2xs" color="ptextmuted" noOfLines={1} title={h.path}>
+                      {h.path}
+                    </Text>
+                  </Box>
+                  <Text fontSize="2xs" color="ptextmuted" flexShrink={0}>
+                    {formatBytes(h.total)} · {new Date(h.completedAt).toLocaleString('zh-CN')}
+                  </Text>
+                  <Button
+                    size="2xs"
+                    variant="outline"
+                    borderColor="pborder"
+                    color="ptext"
+                    flexShrink={0}
+                    onClick={async () => {
+                      const ok = await backend.openPath(h.path)
+                      if (!ok) toast({ title: '无法打开文件位置', status: 'warning', duration: 2000, position: 'top' })
+                    }}
+                  >
+                    打开位置
+                  </Button>
+                </Flex>
+              ))}
+            </Stack>
+          )}
+        </Box>
+      )}
 
       {/* 进行中任务（完成后自动从列表消失） */}
       <Stack spacing={3}>

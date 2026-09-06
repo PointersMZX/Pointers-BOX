@@ -9,7 +9,7 @@ import {
   VStack
 } from '@chakra-ui/react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { FiExternalLink, FiX } from 'react-icons/fi'
 import type { Resource } from '../../../shared/types'
 import { getResourceShares } from '../../../shared/validate'
@@ -33,6 +33,16 @@ export default function ResourceDetailModal({ resource, isOpen, onClose }: Props
   const shineRef = useRef<HTMLDivElement>(null)
   const rafRef = useRef(0)
   const [portalEl] = useState(() => (typeof document !== 'undefined' ? document.body : null))
+
+  // Escape 关闭（标准弹窗行为）
+  useEffect(() => {
+    if (!isOpen) return
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [isOpen, onClose])
 
   // 内容滚动 → 玻璃高光微偏移（液态折射随视角变化，rAF 节流）
   const handleScroll = (): void => {

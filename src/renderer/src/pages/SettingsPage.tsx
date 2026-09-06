@@ -15,6 +15,7 @@ import {
   RadioGroup,
   SimpleGrid,
   Stack,
+  Switch,
   Text,
   useDisclosure,
   useToast,
@@ -26,6 +27,7 @@ import {
   FiChevronUp,
   FiDownload,
   FiFolder,
+  FiSave,
   FiRefreshCw,
   FiUploadCloud
 } from 'react-icons/fi'
@@ -334,6 +336,45 @@ export default function SettingsPage() {
 
   // v2.0.0：应用版本显示本地版本（package.json），与远程 box.json 无关
   const [localVersion, setLocalVersion] = useState('')
+  // v2.0.0：配置导出/导入 + 下载历史开关
+  const [keepHistory, setKeepHistory] = useState(false)
+  useEffect(() => {
+    void backend.getConfig().then((cfg) => setKeepHistory(cfg.keepDownloadHistory)).catch(() => {})
+  }, [])
+
+  const onExportConfig = async (): Promise<void> => {
+    const path = await backend.exportConfig()
+    toast({
+      title: path ? `配置已导出：${path}` : '已取消导出',
+      status: path ? 'success' : 'info',
+      duration: 4000,
+      position: 'top'
+    })
+  }
+
+  const onImportConfig = async (): Promise<void> => {
+    const cfg = await backend.importConfig()
+    if (!cfg) {
+      toast({ title: '已取消导入或文件无效', status: 'info', duration: 3000, position: 'top' })
+      return
+    }
+    useThemeStore.getState().applyLocal(cfg.theme, cfg.accent)
+    void useDownloadStore.getState().loadConfig()
+    toast({ title: '配置导入成功（含主题/路径/收藏）', status: 'success', duration: 3500, position: 'top' })
+  }
+
+  const onToggleHistory = async (): Promise<void> => {
+    const next = !keepHistory
+    setKeepHistory(next)
+    await backend.setConfig({ keepDownloadHistory: next })
+    void useDownloadStore.getState().loadConfig()
+    toast({
+      title: next ? '已开启下载历史（之后的完成任务将记录）' : '已关闭下载历史并保留现有记录',
+      status: 'info',
+      duration: 3500,
+      position: 'top'
+    })
+  }
   useEffect(() => {
     backend.getAppVersion().then(setLocalVersion).catch(() => {})
   }, [])
@@ -407,7 +448,7 @@ export default function SettingsPage() {
       <Section title="更新检查">
         <Flex align="center" justify="space-between" wrap="wrap" gap={3}>
           <Text fontSize="sm" color="ptextmuted">
-            当前版本：{result?.current ?? box?.app_version ?? 'v2.0.0'}
+            当前版本：{result?.current ?? (localVersion ? `v${localVersion}` : 'v2.0.0')}
           </Text>
           <Button
             size="sm"
@@ -497,8 +538,53 @@ export default function SettingsPage() {
             更改路径
           </Button>
         </Flex>
+        <Flex align="center" justify="space-between" gap={3} wrap="wrap">
+          <Text fontSize="sm" color="ptext">
+            保留下载历史
+            <Text as="span" fontSize="xs" color="ptextmuted" ml={2}>
+              （默认关闭；开启后记录已完成的下载任务）
+            </Text>
+          </Text>
+          <Switch
+            colorScheme="brand"
+            isChecked={keepHistory}
+            onChange={() => void onToggleHistory()}
+            aria-label="保留下载历史"
+          />
+        </Flex>
         <Text fontSize="xs" color="ptextmuted">
           路径保存至本地配置，下次启动自动读取
+        </Text>
+      </Section>
+
+      {/* 配置导出/导入（v2.0.0：主题/下载路径/收藏一键迁移） */}
+      <Section title="配置管理">
+        <HStack wrap="wrap">
+          <Button
+            size="sm"
+            variant="outline"
+            leftIcon={<FiSave />}
+            borderColor="pborder"
+            color="ptext"
+            _hover={{ bg: 'hoverbg' }}
+            onClick={() => void onExportConfig()}
+          >
+            导出配置
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            leftIcon={<FiUploadCloud />}
+            borderColor="pborder"
+            color="ptext"
+            _hover={{ bg: 'hoverbg' }}
+            onClick={() => void onImportConfig()}
+          >
+            导入配置
+          </Button>
+        </HStack>
+        <Text fontSize="xs" color="ptextmuted">
+          导出内容：主题外观 / 强调色 / 下载路径 / 浏览器偏好 / 收藏 / 下载历史开关
         </Text>
       </Section>
 

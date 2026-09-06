@@ -1,13 +1,88 @@
 import { create } from 'zustand'
 import { DEFAULT_START_URL } from '../../../shared/browser'
 
-// 内置浏览器状态：跨页面"领取"跳转的桥梁
-interface BrowserState {
+// 内置浏览器多标签状态机（v2.0.0）：新建/关闭/切换/拖拽排序；标签内会话独立保留
+export interface BrowserTab {
+  id: string
   url: string
-  navigateTo: (url: string) => void
+  title: string
 }
 
-export const useBrowserStore = create<BrowserState>((set) => ({
-  url: DEFAULT_START_URL,
-  navigateTo: (url) => set({ url })
+interface BrowserState {
+  tabs: BrowserTab[]
+  activeId: string
+  /** 外部跳转（领取等）：导航到当前活动标签 */
+  navigateTo: (url: string) => void
+  /** 新建标签（默认起始页）并激活 */
+  newTab: (url?: string) => void
+  /** 关闭标签；关闭最后一个时自动新建空白标签，保证至少一个 */
+  closeTab: (id: string) => void
+  setActive: (id: string) => void
+  updateTab: (id: string, patch: Partial<Pick<BrowserTab, 'url' | 'title'>>) => void
+  /** 拖拽排序：把 from 位置的标签移动到 to 位置 */
+  reorderTabs: (from: number, to: number) => void
+  /** 会话重置：全部标签回到起始页 */
+  resetAllTabs: (url?: string) => void
+}
+
+let seq = 0
+function makeTab(url: string): BrowserTab {
+  seq += 1
+  return { id: `tab-${seq}`, url, title: '新标签页' }
+}
+
+const first = makeTab(DEFAULT_START_URL)
+
+export const useBrowserStore = create<BrowserState>((set, get) => ({
+  tabs: [first],
+  activeId: first.id,
+
+  navigateTo: (url) => {
+    const { tabs, activeId } = get()
+    set({ tabs: tabs.map((t) => (t.id === activeId ? { ...t, url } : t)) })
+  },
+
+  newTab: (url = DEFAULT_START_URL) => {
+    const t = makeTab(url)
+    set({ tabs: [...get().tabs, t], activeId: t.id })
+  },
+
+  closeTab: (id) => {
+    const { tabs, activeId } = get()
+    const idx = tabs.findIndex((t) => t.id === id)
+    if (idx === -1) return
+    let next = tabs.filter((t) => t.id !== id)
+    let nextActive = activeId
+    if (next.length === 0) {
+      const fresh = makeTab(DEFAULT_START_URL)
+      next = [fresh]
+      nextActive = fresh.id
+    } else if (activeId === id) {
+      const neighbor = next[Math.min(idx, next.length - 1)] ?? next[0]
+      nextActive = (neighbor as BrowserTab).id
+    }
+    set({ tabs: next, activeId: nextActive })
+  },
+
+  setActive: (id) => set({ activeId: id }),
+
+  updateTab: (id, patch) =>
+    set({ tabs: get().tabs.map((t) => (t.id === id ? { ...t, ...patch } : t)) }),
+
+  reorderTabs: (from, to) => {
+    const tabs = [...get().tabs]
+    if (from === to || from < 0 || to < 0 || from >= tabs.length || to >= tabs.length) return
+    const moved = tabs.splice(from, 1)[0]
+    if (moved) tabs.splice(to, 0, moved)
+    set({ tabs })
+  },
+
+  resetAllTabs: (url = DEFAULT_START_URL) => {
+    set({ tabs: get().tabs.map((t) => ({ ...t, url, title: '新标签页' })) })
+  }
 }))
+
+/** 当前活动标签（tabs 异常时兜底第一个） */
+export function getActiveTab(s: { tabs: BrowserTab[]; activeId: string }): BrowserTab {
+  return s.tabs.find((t) => t.id === s.activeId) ?? (s.tabs[0] as BrowserTab)
+}

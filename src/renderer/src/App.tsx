@@ -6,6 +6,7 @@ import { useUiStore } from './store/uiStore'
 import { useDataStore } from './store/dataStore'
 import { useDownloadStore } from './store/downloadStore'
 import { useThemeStore } from './store/themeStore'
+import { useFavoritesStore } from './store/favoritesStore'
 import { buildTheme } from './theme/buildTheme'
 import Sidebar from './components/Sidebar'
 import BottomNav from './components/BottomNav'
@@ -68,10 +69,11 @@ function ThemedShell() {
     )
   }, [themeKey, accent, setColorMode])
 
-  // 平台探测 + 数据引导 + 托盘跳转监听 + 主题配置加载
+  // 平台探测 + 数据引导 + 托盘跳转监听 + 主题配置加载 + 收藏加载
   useEffect(() => {
     useUiStore.getState().setPlatform(currentPlatform())
     void useDataStore.getState().bootstrap()
+    void useFavoritesStore.getState().bootstrap()
     void backend
       .getConfig()
       .then((cfg) => useThemeStore.getState().applyLocal(cfg.theme, cfg.accent))

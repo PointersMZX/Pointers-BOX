@@ -60,6 +60,20 @@ export interface AppConfig {
   theme: import('./theme').ThemeKey
   /** 强调色（仅液态玻璃主题可自定义）#rrggbb */
   accent: string
+  /** 收藏的资源 id（本地，字符串化；v2.0.0） */
+  favorites: string[]
+  /** 保留下载历史（默认关闭，与 PRD 4.3 默认约定共存；v2.0.0） */
+  keepDownloadHistory: boolean
+}
+
+// ── 下载历史（v2.0.0：默认关闭的开关，开启后记录已完成任务） ───
+
+export interface DownloadHistoryEntry {
+  id: string
+  filename: string
+  path: string
+  total: number
+  completedAt: number
 }
 
 // ── 下载 ─────────────────────────────────────────────────────
@@ -129,6 +143,13 @@ export type RestoreTarget = 'resources' | 'box'
 export interface PBoxApi {
   /** 本地应用版本（package.json version，如 2.0.0）；与远程 box.json 的 app_version 无关 */
   getAppVersion(): Promise<string>
+  /** 导出配置到用户选择的文件（主题/路径/收藏等）；返回文件路径，取消返回 null */
+  exportConfig(): Promise<string | null>
+  /** 从文件导入配置并合并应用；成功返回配置，失败/取消返回 null */
+  importConfig(): Promise<AppConfig | null>
+  /** 下载历史（keepDownloadHistory 开启时才有数据） */
+  listDownloadHistory(): Promise<DownloadHistoryEntry[]>
+  clearDownloadHistory(): Promise<void>
   getData(): Promise<DataSnapshot>
   refreshData(force?: boolean): Promise<DataSnapshot>
   restoreData(type: RestoreTarget): Promise<boolean>

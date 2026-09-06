@@ -6,7 +6,7 @@
 //
 // 修复：在 guest 内覆写 window.open、拦截 target="_blank" 链接，统一转为当前页
 // 导航。附件 URL 的当前页导航会触发 will-download 下载管道且页面不跳走（E2E 验证）。
-import { app, session } from 'electron'
+import { app, clipboard, Menu, session, shell } from 'electron'
 import { isHttpUrl } from '../shared/browser'
 import { attachDownloadHandling } from './downloads'
 import type { WebContents } from 'electron'
@@ -67,6 +67,41 @@ export function attachWebviewPolicies(): void {
     contents.on('dom-ready', () => injectNavOverride(contents))
     contents.on('did-navigate', () => injectNavOverride(contents))
     contents.on('did-navigate-in-page', () => injectNavOverride(contents))
+
+    // 右键菜单（v2.0.0）：系统浏览器逃生口（风险表 R6 预留方案，应对个别站点反爬/兼容问题）
+    contents.on('context-menu', (_event, params) => {
+      const items: Electron.MenuItemConstructorOptions[] = []
+      if (params.linkURL && isHttpUrl(params.linkURL)) {
+        items.push({
+          label: '在系统浏览器中打开链接',
+          click: () => void shell.openExternal(params.linkURL)
+        })
+        items.push({
+          label: '复制链接地址',
+          click: () => clipboard.writeText(params.linkURL)
+        })
+      }
+      const pageUrl = contents.getURL()
+      if (isHttpUrl(pageUrl)) {
+        items.push({
+          label: '用系统浏览器打开此页',
+          click: () => void shell.openExternal(pageUrl)
+        })
+      }
+      items.push(
+        { type: 'separator' },
+        {
+          label: '刷新页面',
+          click: () => contents.reload()
+        },
+        {
+          label: '返回',
+          enabled: contents.navigationHistory.canGoBack(),
+          click: () => contents.goBack()
+        }
+      )
+      Menu.buildFromTemplate(items).popup()
+    })
   })
 
   // will-attach-webview 在宿主 webContents 上触发：强制 guest 安全参数与统一分区

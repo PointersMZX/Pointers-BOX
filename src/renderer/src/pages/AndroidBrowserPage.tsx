@@ -13,11 +13,11 @@ import { FiArrowLeft, FiArrowRight, FiGlobe, FiRefreshCw, FiSearch } from 'react
 import { useState } from 'react'
 import { DEFAULT_START_URL, normalizeAddressInput } from '../../../shared/browser'
 import { androidOpenClaim, androidOpenExternal, androidResetSession } from '../platform/capacitor'
-import { useBrowserStore } from '../store/browserStore'
+import { useBrowserStore, getActiveTab } from '../store/browserStore'
 
 // 安卓端内置浏览器启动器：打开原生 InAppBrowserActivity（WebView+工具栏+下载接管）
 export default function AndroidBrowserPage() {
-  const storeUrl = useBrowserStore((s) => s.url)
+  const storeUrl = useBrowserStore((s) => getActiveTab(s).url)
   const setStoreUrl = useBrowserStore((s) => s.navigateTo)
   const [address, setAddress] = useState(storeUrl)
   const [resetFirst, setResetFirst] = useState(false)

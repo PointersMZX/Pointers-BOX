@@ -1,9 +1,10 @@
-import { Badge, Box, HStack, Text } from '@chakra-ui/react'
+import { Badge, Box, HStack, Icon, Text } from '@chakra-ui/react'
 import { motion, useMotionValue, useTransform } from 'framer-motion'
 import { useState } from 'react'
-import { FiEye } from 'react-icons/fi'
+import { FiEye, FiStar } from 'react-icons/fi'
 import type { Resource } from '../../../shared/types'
 import { getResourceShares } from '../../../shared/validate'
+import { useFavoritesStore } from '../store/favoritesStore'
 import ResourceDetailModal from './ResourceDetailModal'
 import GlassButton from './GlassButton'
 
@@ -24,6 +25,8 @@ export default function ResourceCard({ resource, onOpen }: Props) {
   // 滑动形变：跟随滑动方向轻微弯曲
   const rotate = useTransform(x, [-140, 140], [-5, 5])
   const skewX = useTransform(x, [-140, 140], [4, -4])
+  const fav = useFavoritesStore((st) => st.ids.has(String(resource.id)))
+  const toggleFav = useFavoritesStore((st) => st.toggle)
 
   const openDetail = (): void => {
     if (onOpen) onOpen(resource)
@@ -67,16 +70,33 @@ export default function ResourceCard({ resource, onOpen }: Props) {
             <Text fontWeight="bold" noOfLines={1} title={resource.name} color="ptext" flex="1">
               {resource.name}
             </Text>
-            <Badge
-              borderRadius="full"
-              fontSize="2xs"
-              px={2}
-              flexShrink={0}
-              colorScheme="purple"
-              variant="subtle"
-            >
-              {getResourceShares(resource).length} 项
-            </Badge>
+            <HStack spacing={1} flexShrink={0}>
+              <Badge
+                borderRadius="full"
+                fontSize="2xs"
+                px={2}
+                colorScheme="purple"
+                variant="subtle"
+              >
+                {getResourceShares(resource).length} 项
+              </Badge>
+              {/* 收藏星标（v2.0.0）：本地 config.favorites */}
+              <Box
+                as="button"
+                aria-label={fav ? '取消收藏' : '收藏'}
+                title={fav ? '取消收藏' : '收藏'}
+                p={1}
+                borderRadius="md"
+                color={fav ? 'var(--pbox-accent)' : 'ptextmuted'}
+                _hover={{ bg: 'hoverbg' }}
+                onClick={(e: { stopPropagation: () => void }) => {
+                  e.stopPropagation()
+                  void toggleFav(resource.id)
+                }}
+              >
+                <Icon as={FiStar} boxSize={3.5} fill={fav ? 'var(--pbox-accent)' : 'none'} />
+              </Box>
+            </HStack>
           </HStack>
           <Text fontSize="sm" color="ptextmuted" noOfLines={3} flex="1">
             {resource.introduction || '暂无简介'}

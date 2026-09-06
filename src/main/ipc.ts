@@ -1,10 +1,12 @@
 import { app, dialog, ipcMain, shell } from 'electron'
-import { existsSync, mkdirSync } from 'fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
+import { join } from 'path'
 import type { AppConfig, RestoreTarget } from '../shared/types'
 import { getConfig, setConfig } from './configStore'
 import { getSnapshot, refreshRemote, restoreFromFile } from './dataStore'
 import { hasActiveDownloads, cancelDownload, pauseDownload, resumeDownload } from './downloads'
 import { resetBrowserSession } from './sessions'
+import { listHistory, clearHistory } from './history'
 import { checkUpdate, downloadUpdate, installUpdate } from './updater'
 
 export function registerIpcHandlers(): void {
@@ -19,6 +21,41 @@ export function registerIpcHandlers(): void {
       target === 'box' ? ('box' as RestoreTarget) : ('resources' as RestoreTarget)
     )
   )
+
+  // 配置导出/导入（v2.0.0：主题/路径/收藏等一键迁移）
+  ipcMain.handle('config:export', async () => {
+    const picked = await dialog.showSaveDialog({
+      title: '导出配置',
+      defaultPath: join(app.getPath('documents'), 'pointers-box-config.json'),
+      filters: [{ name: 'JSON', extensions: ['json'] }]
+    })
+    if (picked.canceled || !picked.filePath) return null
+    try {
+      writeFileSync(picked.filePath, JSON.stringify({ app: 'pointers-box', exportedAt: Date.now(), config: getConfig() }, null, 2), 'utf-8')
+      return picked.filePath
+    } catch {
+      return null
+    }
+  })
+  ipcMain.handle('config:import', async () => {
+    const picked = await dialog.showOpenDialog({
+      title: '导入配置',
+      properties: ['openFile'],
+      filters: [{ name: 'JSON', extensions: ['json'] }]
+    })
+    if (picked.canceled || picked.filePaths.length === 0) return null
+    try {
+      const raw = JSON.parse(readFileSync(picked.filePaths[0] ?? '', 'utf-8')) as Record<string, unknown>
+      const cfg = (typeof raw['config'] === 'object' && raw['config'] !== null ? raw['config'] : raw) as Partial<AppConfig>
+      return setConfig(cfg)
+    } catch {
+      return null
+    }
+  })
+
+  // 下载历史（v2.0.0：keepDownloadHistory 开关开启时记录）
+  ipcMain.handle('history:list', () => listHistory())
+  ipcMain.handle('history:clear', () => clearHistory())
 
   // 配置（M1）
   ipcMain.handle('config:get', () => getConfig())

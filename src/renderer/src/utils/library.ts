@@ -2,6 +2,7 @@
 import type { Resource } from '../../../shared/types'
 
 export const ALL_CATEGORY = '全部'
+export const FAV_CATEGORY = '★ 我的收藏'
 
 export interface CategoryNode {
   name: string

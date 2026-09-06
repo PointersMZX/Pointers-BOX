@@ -21,10 +21,12 @@ import {
   FiArrowRight,
   FiGlobe,
   FiHome,
+  FiPlus,
   FiRefreshCw,
-  FiSearch
+  FiSearch,
+  FiX
 } from 'react-icons/fi'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type DragEvent } from 'react'
 import {
   DEFAULT_START_URL,
   normalizeAddressInput
@@ -46,67 +48,130 @@ export default function BrowserPage() {
   return platform === 'android' ? <AndroidBrowserPage /> : <ElectronBrowserPage />
 }
 
+// 桌面多标签浏览器（v2.0.0）：新建/关闭/拖拽排序；全部 webview 常驻挂载保留各标签会话
 function ElectronBrowserPage() {
-  const storeUrl = useBrowserStore((s) => s.url)
-  const setStoreUrl = useBrowserStore((s) => s.navigateTo)
-  const webviewRef = useRef<PBoxWebview | null>(null)
+  const tabs = useBrowserStore((s) => s.tabs)
+  const activeId = useBrowserStore((s) => s.activeId)
+  const newTab = useBrowserStore((s) => s.newTab)
+  const closeTab = useBrowserStore((s) => s.closeTab)
+  const setActive = useBrowserStore((s) => s.setActive)
+  const updateTab = useBrowserStore((s) => s.updateTab)
+  const reorderTabs = useBrowserStore((s) => s.reorderTabs)
+  const resetAllTabs = useBrowserStore((s) => s.resetAllTabs)
+  const activeTab = tabs.find((t) => t.id === activeId) ?? tabs[0]
   const cancelRef = useRef<HTMLButtonElement | null>(null)
 
-  const [initialSrc] = useState(storeUrl)
-  const [address, setAddress] = useState(storeUrl)
+  // 每个 webview 的 ref 与首次挂载 URL（src 只在挂载时绑定，后续导航走 loadURL）
+  const webviewRefs = useRef(new Map<string, PBoxWebview>())
+  const initialUrls = useRef(new Map<string, string>())
+  const lastUrls = useRef(new Map<string, string>())
+  const activeIdRef = useRef(activeId)
+  activeIdRef.current = activeId
+  const dragIdx = useRef(0)
+
+  const [address, setAddress] = useState(activeTab?.url ?? DEFAULT_START_URL)
   const [loading, setLoading] = useState(false)
   const [canBack, setCanBack] = useState(false)
   const [canForward, setCanForward] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [confirmReset, setConfirmReset] = useState(false)
   const [resetting, setResetting] = useState(false)
+  // 已发出 dom-ready 的 webview（此后才允许调用其方法，否则渲染进程抛错）
+  const [readyTabs, setReadyTabs] = useState<Set<string>>(() => new Set())
 
-  // webview 事件绑定
+  // webview 事件绑定（ref 回调内幂等挂一次；处理器经 ref 读最新活动标签）
+  const bindWebview = useCallback(
+    (id: string) => (el: PBoxWebview | null): void => {
+      if (!el) {
+        webviewRefs.current.delete(id)
+        return
+      }
+      webviewRefs.current.set(id, el)
+      if (!initialUrls.current.has(id)) {
+        const url = useBrowserStore.getState().tabs.find((t) => t.id === id)?.url
+        initialUrls.current.set(id, url ?? DEFAULT_START_URL)
+      }
+      const wv = el as PBoxWebview & { __pboxBound?: boolean }
+      if (wv.__pboxBound) return
+      wv.__pboxBound = true
+      const onNavigate = (e: WebviewNavigateEvent): void => {
+        lastUrls.current.set(id, e.url)
+        useBrowserStore.getState().updateTab(id, { url: e.url })
+        if (activeIdRef.current === id) {
+          setAddress(e.url)
+          setError(null)
+        }
+      }
+      const onStart = (): void => {
+        if (activeIdRef.current === id) setLoading(true)
+      }
+      const onStop = (): void => {
+        if (activeIdRef.current !== id) return
+        setLoading(false)
+        setCanBack(wv.canGoBack())
+        setCanForward(wv.canGoForward())
+      }
+      const onFail = (e: WebviewFailLoadEvent): void => {
+        if (activeIdRef.current === id && e.errorCode !== -3) {
+          setError(`页面加载失败（${e.errorCode}）`)
+        }
+      }
+      const onTitle = (e: { title: string }): void => {
+        useBrowserStore.getState().updateTab(id, { title: e.title.trim() || '新标签页' })
+      }
+      const onReady = (): void => {
+        setReadyTabs((prev) => new Set(prev).add(id))
+        if (activeIdRef.current === id) {
+          setCanBack(wv.canGoBack())
+          setCanForward(wv.canGoForward())
+        }
+      }
+      wv.addEventListener('dom-ready', onReady)
+      wv.addEventListener('did-navigate', onNavigate)
+      wv.addEventListener('did-navigate-in-page', onNavigate)
+      wv.addEventListener('did-start-loading', onStart)
+      wv.addEventListener('did-stop-loading', onStop)
+      wv.addEventListener('did-fail-load', onFail)
+      wv.addEventListener('page-title-updated', onTitle as never)
+    },
+    []
+  )
+
+  // 切换标签：地址栏与导航态跟随活动标签（仅在 webview 就绪后读取导航态）
   useEffect(() => {
-    const wv = webviewRef.current
-    if (!wv) return
-    const onNavigate = (e: WebviewNavigateEvent): void => {
-      setAddress(e.url)
-      setStoreUrl(e.url)
-      setError(null)
-    }
-    const onStart = (): void => setLoading(true)
-    const onStop = (): void => {
-      setLoading(false)
+    setAddress(activeTab?.url ?? DEFAULT_START_URL)
+    setError(null)
+    const wv = webviewRefs.current.get(activeId)
+    if (wv && readyTabs.has(activeId)) {
       setCanBack(wv.canGoBack())
       setCanForward(wv.canGoForward())
-    }
-    const onFail = (e: WebviewFailLoadEvent): void => {
-      if (e.errorCode !== -3) setError(`页面加载失败（${e.errorCode}）`)
-    }
-    wv.addEventListener('did-navigate', onNavigate)
-    wv.addEventListener('did-navigate-in-page', onNavigate)
-    wv.addEventListener('did-start-loading', onStart)
-    wv.addEventListener('did-stop-loading', onStop)
-    wv.addEventListener('did-fail-load', onFail)
-    return () => {
-      wv.removeEventListener('did-navigate', onNavigate)
-      wv.removeEventListener('did-navigate-in-page', onNavigate)
-      wv.removeEventListener('did-start-loading', onStart)
-      wv.removeEventListener('did-stop-loading', onStop)
-      wv.removeEventListener('did-fail-load', onFail)
-    }
-  }, [])
-
-  // 外部"领取"跳转：加载目标链接
-  useEffect(() => {
-    const wv = webviewRef.current
-    if (wv && storeUrl && storeUrl !== address) {
-      void wv.loadURL(storeUrl)
+    } else {
+      setCanBack(false)
+      setCanForward(false)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [storeUrl])
+  }, [activeId, readyTabs])
+
+  // 外部跳转（领取）或程序化导航：活动标签 URL 变化时加载。
+  // 未就绪的 webview 不调用 loadURL——挂载时 src 已指向新 URL，天然完成首次加载。
+  useEffect(() => {
+    const wv = webviewRefs.current.get(activeId)
+    if (!wv || !activeTab || !readyTabs.has(activeId)) return
+    const last = lastUrls.current.get(activeId)
+    if (activeTab.url && activeTab.url !== last) {
+      lastUrls.current.set(activeId, activeTab.url)
+      void wv.loadURL(activeTab.url)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab?.url, activeId, readyTabs])
 
   const go = (raw: string): void => {
     const url = normalizeAddressInput(raw)
+    if (!activeTab) return
+    lastUrls.current.set(activeTab.id, url)
     setAddress(url)
-    setStoreUrl(url)
-    void webviewRef.current?.loadURL(url)
+    updateTab(activeTab.id, { url })
+    void webviewRefs.current.get(activeTab.id)?.loadURL(url)
   }
 
   const doReset = async (): Promise<void> => {
@@ -114,10 +179,15 @@ function ElectronBrowserPage() {
     setResetting(true)
     try {
       await backend.resetBrowserSession()
-      webviewRef.current?.clearHistory()
-      setAddress(DEFAULT_START_URL)
-      setStoreUrl(DEFAULT_START_URL)
-      void webviewRef.current?.loadURL(DEFAULT_START_URL)
+      webviewRefs.current.forEach((wv) => {
+        try {
+          wv.clearHistory()
+        } catch {
+          // 未就绪的 webview 无法清理，忽略
+        }
+      })
+      lastUrls.current.clear()
+      resetAllTabs()
     } finally {
       setResetting(false)
     }
@@ -125,11 +195,70 @@ function ElectronBrowserPage() {
 
   return (
     <Box h="full" display="flex" flexDirection="column">
+      {/* 标签条（v2.0.0：新建/关闭/拖拽排序） */}
+      <Flex align="center" gap={1} px={2} pt={2} pb={1} overflowX="auto" sx={{ scrollbarWidth: 'none' }}>
+        {tabs.map((t, i) => (
+          <Flex
+            key={t.id}
+            draggable
+            onDragStart={() => {
+              dragIdx.current = i
+            }}
+            onDragOver={(e: DragEvent) => e.preventDefault()}
+            onDrop={() => reorderTabs(dragIdx.current, i)}
+            align="center"
+            gap={2}
+            px={3}
+            py={1.5}
+            minW="120px"
+            maxW="190px"
+            borderRadius="md"
+            fontSize="xs"
+            borderWidth="1px"
+            bg={t.id === activeId ? 'panelstrong' : 'transparent'}
+            color={t.id === activeId ? 'ptext' : 'ptextmuted'}
+            borderColor={t.id === activeId ? 'pborder' : 'transparent'}
+            cursor="pointer"
+            onClick={() => setActive(t.id)}
+            role="tab"
+            aria-selected={t.id === activeId}
+          >
+            <Text noOfLines={1} flex="1" title={t.url}>
+              {t.title}
+            </Text>
+            <Box
+              as="button"
+              aria-label={`关闭标签页：${t.title}`}
+              p={0.5}
+              borderRadius="sm"
+              color="ptextmuted"
+              _hover={{ bg: 'hoverbg', color: 'red.400' }}
+              onClick={(e: { stopPropagation: () => void }) => {
+                e.stopPropagation()
+                closeTab(t.id)
+              }}
+            >
+              <FiX size={11} />
+            </Box>
+          </Flex>
+        ))}
+        <IconButton
+          aria-label="新建标签页"
+          icon={<FiPlus />}
+          size="xs"
+          variant="ghost"
+          color="ptext"
+          flexShrink={0}
+          onClick={() => newTab()}
+        />
+      </Flex>
+
       {/* 导航控制栏（PRD 4.2：← → ⟳ 🏠 + 地址栏） */}
       <Flex
         as="form"
         gap={2}
-        p={2}
+        px={2}
+        pb={2}
         bg="panel"
         borderBottomWidth="1px"
         borderColor="pborder"
@@ -149,7 +278,7 @@ function ElectronBrowserPage() {
             variant="ghost"
             color="ptext"
             isDisabled={!canBack}
-            onClick={() => webviewRef.current?.goBack()}
+            onClick={() => webviewRefs.current.get(activeId)?.goBack()}
           />
           <IconButton
             aria-label="前进"
@@ -158,7 +287,7 @@ function ElectronBrowserPage() {
             variant="ghost"
             color="ptext"
             isDisabled={!canForward}
-            onClick={() => webviewRef.current?.goForward()}
+            onClick={() => webviewRefs.current.get(activeId)?.goForward()}
           />
           <IconButton
             aria-label="刷新"
@@ -168,7 +297,7 @@ function ElectronBrowserPage() {
             color="ptext"
             onClick={() => {
               setLoading(true)
-              webviewRef.current?.reload()
+              webviewRefs.current.get(activeId)?.reload()
             }}
           />
           <IconButton
@@ -205,7 +334,7 @@ function ElectronBrowserPage() {
         <Box h="100%" w={loading ? '35%' : '0%'} bg="brand.500" transition="width .6s ease" />
       </Box>
 
-      {/* WebView（内存分区：进程退出自动清除登录状态） */}
+      {/* WebView 多标签（全部常驻挂载保留会话；仅活动标签可见） */}
       <Box flex="1" minH={0} position="relative" bg="white">
         {error ? (
           <EmptyState
@@ -219,20 +348,23 @@ function ElectronBrowserPage() {
             }
           />
         ) : null}
-        <webview
-          ref={webviewRef}
-          src={initialSrc}
-          partition="pbox-mem"
-          allowpopups={true}
-          style={{
-            display: 'flex',
-            width: '100%',
-            height: '100%',
-            position: 'absolute',
-            top: 0,
-            left: 0
-          }}
-        />
+        {tabs.map((t) => (
+          <webview
+            key={t.id}
+            ref={bindWebview(t.id)}
+            src={initialUrls.current.get(t.id) ?? t.url}
+            partition="pbox-mem"
+            allowpopups={true}
+            style={{
+              display: t.id === activeId ? 'flex' : 'none',
+              width: '100%',
+              height: '100%',
+              position: 'absolute',
+              top: 0,
+              left: 0
+            }}
+          />
+        ))}
       </Box>
 
       {/* 重置确认框（PRD 4.2：点 🏠 → 确认后清除登录状态） */}
@@ -246,7 +378,7 @@ function ElectronBrowserPage() {
             <AlertDialogHeader fontSize="lg">重置浏览器会话</AlertDialogHeader>
             <AlertDialogBody>
               <VStack align="start" spacing={1}>
-                <Text>将清除浏览器的 Cookie、缓存与登录状态，并回到起始页。</Text>
+                <Text>将清除浏览器的 Cookie、缓存与登录状态，所有标签回到起始页。</Text>
                 <Text fontSize="sm" color="gray.500">
                   此操作不可撤销，确定继续吗？
                 </Text>
