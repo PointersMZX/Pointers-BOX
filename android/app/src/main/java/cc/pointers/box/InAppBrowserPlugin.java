@@ -1,5 +1,6 @@
 package cc.pointers.box;
 
+import android.app.DownloadManager;
 import android.content.Intent;
 import android.webkit.CookieManager;
 
