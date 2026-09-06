@@ -6,7 +6,7 @@ describe('配置归一化（PRD 4.4 下载路径/Android 浏览器选项 + 主�
     downloadDir: defDir,
     androidBrowser: 'builtin' as const,
     theme: 'glass' as const,
-    accent: '#3182ce'
+    accent: '#9f7aea'
   }
 
   it('空/损坏配置回退默认值（默认液态玻璃主题）', () => {
@@ -34,6 +34,6 @@ describe('配置归一化（PRD 4.4 下载路径/Android 浏览器选项 + 主�
     expect(normalizeConfig({ downloadDir: '   ' }, defDir).downloadDir).toBe(defDir)
     expect(normalizeConfig({ androidBrowser: 'ie' }, defDir).androidBrowser).toBe('builtin')
     expect(normalizeConfig({ theme: 'neon' }, defDir).theme).toBe('glass')
-    expect(normalizeConfig({ accent: 'not-a-color' }, defDir).accent).toBe('#3182ce')
+    expect(normalizeConfig({ accent: 'not-a-color' }, defDir).accent).toBe('#9f7aea')
   })
 })

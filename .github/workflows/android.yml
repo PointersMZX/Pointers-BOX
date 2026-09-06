@@ -71,7 +71,7 @@ jobs:
       - name: Attach APK to release
         uses: softprops/action-gh-release@v2
         with:
-          name: v2.0.0 Beta
+          name: v2.0.0
           files: android/app/build/outputs/apk/release/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

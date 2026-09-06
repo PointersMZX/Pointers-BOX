@@ -8,6 +8,7 @@ import { useDownloadStore } from './store/downloadStore'
 import { useThemeStore } from './store/themeStore'
 import { buildTheme } from './theme/buildTheme'
 import Sidebar from './components/Sidebar'
+import BottomNav from './components/BottomNav'
 import StatusBar from './components/StatusBar'
 import RippleLayer from './components/RippleLayer'
 import HomePage from './pages/HomePage'
@@ -46,6 +47,7 @@ function ThemedShell() {
   const page = useUiStore((s) => s.page)
   const themeKey = useThemeStore((s) => s.themeKey)
   const accent = useThemeStore((s) => s.accent)
+  const isAndroid = useUiStore((s) => s.platform) === 'android'
   const toast = useToast()
   const shownWarnings = useRef('')
   const shellRef = useRef<HTMLDivElement>(null)
@@ -161,13 +163,16 @@ function ThemedShell() {
     <Box ref={shellRef} h="100vh" bg="appbg" position="relative" zIndex={1}>
       <Flex h="full" direction="column" overflow="hidden">
         <Flex flex="1" minH={0}>
-          <Sidebar />
-          <Box flex="1" minW={0} overflowY="auto">
+          {/* v2.0.0：Android 手机端以底部导航栏替代侧边栏（竖屏/横屏均适配） */}
+          {!isAndroid && <Sidebar />}
+          <Box flex="1" minW={0} overflowY="auto" paddingBottom={isAndroid ? '72px' : 0}>
             {renderPage(page)}
           </Box>
         </Flex>
-        <StatusBar />
+        {/* 安卓端隐藏状态栏（底栏已占据底部空间） */}
+        {!isAndroid && <StatusBar />}
       </Flex>
+      {isAndroid && <BottomNav />}
     </Box>
   )
 }

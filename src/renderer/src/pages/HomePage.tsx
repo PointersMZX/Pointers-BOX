@@ -13,6 +13,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { Resource } from '../../../shared/types'
 import EmptyState from '../components/EmptyState'
 import ResourceCard from '../components/ResourceCard'
+import ResourceDetailModal from '../components/ResourceDetailModal'
 import { useDataStore } from '../store/dataStore'
 import { sampleUnique, sampleUniqueExcluding } from '../utils/recommend'
 
@@ -24,6 +25,8 @@ export default function HomePage() {
   const loading = useDataStore((s) => s.loading)
   const refreshData = useDataStore((s) => s.refresh)
   const [picks, setPicks] = useState<Resource[]>([])
+  const [selected, setSelected] = useState<Resource | null>(null)
+  const [detailOpen, setDetailOpen] = useState(false)
   const shownIds = useRef<Set<string | number>>(new Set())
 
   // 数据首次到达（或离线恢复）时抽取一次
@@ -69,9 +72,16 @@ export default function HomePage() {
               刷新
             </Button>
           </Flex>
-          <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
+          <SimpleGrid columns={{ base: 1, sm: 2, md: 3 }} spacing={4}>
             {picks.map((r) => (
-              <ResourceCard key={String(r.id)} resource={r} />
+              <ResourceCard
+                key={String(r.id)}
+                resource={r}
+                onOpen={(res) => {
+                  setSelected(res)
+                  setDetailOpen(true)
+                }}
+              />
             ))}
           </SimpleGrid>
         </>
@@ -126,6 +136,13 @@ export default function HomePage() {
           </Box>
         </>
       )}
+
+      {/* 居中液态玻璃详情弹窗（v2.0.0） */}
+      <ResourceDetailModal
+        resource={selected}
+        isOpen={detailOpen}
+        onClose={() => setDetailOpen(false)}
+      />
     </Box>
   )
 }

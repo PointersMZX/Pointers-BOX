@@ -1,5 +1,11 @@
 // ── 领域类型（PRD 附录 JSON 模板） ─────────────────────────────
 
+/** 分享项：一个资源可包含多个不同用途的分享（本体/补丁/汉化等），每项有名称与链接 */
+export interface ShareItem {
+  name: string
+  url: string
+}
+
 export interface Resource {
   id: number | string
   name: string
@@ -7,7 +13,10 @@ export interface Resource {
   release_date?: string
   last_modified?: string
   category: string
+  /** 兼容旧格式：纯链接列表（与 shares 二选一，两者都有时优先 shares） */
   links: string[]
+  /** v2.0.0 新格式：多分享项（本体/补丁等），含名称与链接 */
+  shares?: ShareItem[]
 }
 
 export interface Announcement {

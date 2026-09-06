@@ -1,6 +1,6 @@
 // 远程 JSON 校验与清洗：顶层结构错误抛 DataFileError；条目级问题跳过并记录（PRD 7.6）
 // 纯模块（无 Electron 依赖）：主进程与 Android 渲染端共用
-import type { Announcement, AuthorWords, BoxInfo, Resource, VersionLog } from './types'
+import type { Announcement, AuthorWords, BoxInfo, Resource, ShareItem, VersionLog } from './types'
 
 export class DataFileError extends Error {
   constructor(message: string) {
@@ -57,6 +57,31 @@ export function parseLooseJson(text: string): unknown {
   throw new DataFileError('JSON 解析失败：文件内容不是合法 JSON（含围栏包裹内容）')
 }
 
+// 解析 v2.0.0 多分享项格式：接受 [{name,url}] / [{url}] / ["url"] 混合；name 缺省自动编号
+function parseShares(v: unknown, errors: string[], idx: number): ShareItem[] {
+  if (v === undefined || v === null) return [] // 未提供 shares 属正常（旧格式）
+  if (!Array.isArray(v)) {
+    errors.push(`resources[${idx}].shares 不是数组，已忽略`)
+    return []
+  }
+  const out: ShareItem[] = []
+  ;(v as unknown[]).forEach((s, si) => {
+    if (typeof s === 'string') {
+      if (s.trim() !== '') out.push({ name: `分享项 ${out.length + 1}`, url: s.trim() })
+      return
+    }
+    if (isRecord(s)) {
+      const url = asString(s['url']) ?? asString(s['link'])
+      if (url === null) {
+        errors.push(`resources[${idx}].shares[${si}] 缺少 url，已跳过`)
+        return
+      }
+      out.push({ name: asString(s['name']) ?? `分享项 ${out.length + 1}`, url })
+    }
+  })
+  return out
+}
+
 export function validateResources(raw: unknown): CleanResult<Resource[]> {
   if (!isRecord(raw) || !Array.isArray(raw['resources'])) {
     throw new DataFileError('resource.json 结构错误：缺少 resources 数组')
@@ -76,9 +101,11 @@ export function validateResources(raw: unknown): CleanResult<Resource[]> {
           (l): l is string => typeof l === 'string' && l.trim() !== ''
         )
       : []
+    const shares = parseShares(item['shares'], errors, idx)
     const idOk = typeof id === 'number' || typeof id === 'string'
-    if (!idOk || name === null || links.length === 0) {
-      errors.push(`resources[${idx}] 缺少有效 id/name/links，已跳过`)
+    // v2.0.0：links 与 shares 至少有一个即可
+    if (!idOk || name === null || (links.length === 0 && shares.length === 0)) {
+      errors.push(`resources[${idx}] 缺少有效 id/name/links/shares，已跳过`)
       return
     }
     resources.push({
@@ -88,10 +115,17 @@ export function validateResources(raw: unknown): CleanResult<Resource[]> {
       release_date: asString(item['release_date']) ?? undefined,
       last_modified: asString(item['last_modified']) ?? undefined,
       category: asString(item['category']) ?? '未分类',
-      links
+      links,
+      ...(shares.length > 0 ? { shares } : {})
     })
   })
   return { valid: resources, invalidCount: errors.length, errors }
+}
+
+/** 取资源的分享项列表：优先 shares，旧格式从 links 派生（自动编号） */
+export function getResourceShares(resource: Resource): ShareItem[] {
+  if (resource.shares && resource.shares.length > 0) return resource.shares
+  return resource.links.map((url, i) => ({ name: `分享项 ${i + 1}`, url }))
 }
 
 export function validateAnnouncement(raw: unknown): Announcement | null {

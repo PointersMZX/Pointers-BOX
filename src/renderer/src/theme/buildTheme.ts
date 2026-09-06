@@ -104,6 +104,126 @@ function makeStyles(effectiveAccent: string) {
       '@keyframes pboxRipple': {
         from: { transform: 'scale(0)', opacity: '0.5' },
         to: { transform: 'scale(1)', opacity: '0' }
+      },
+      // ── v2.0.0 液态玻璃交互组件 ───────────────────────────
+      // 按压波纹（GlassButton 点击扩散）
+      '.pbox-press-ripple': {
+        position: 'absolute',
+        borderRadius: '9999px',
+        pointerEvents: 'none',
+        background: 'rgba(255,255,255,0.5)',
+        transform: 'scale(0)',
+        opacity: '0.65',
+        animation: 'pboxPressRipple 0.5s ease-out forwards'
+      },
+      '@keyframes pboxPressRipple': {
+        to: { transform: 'scale(2.6)', opacity: '0' }
+      },
+      // 悬浮态：缓慢流动的高光（模拟光线在液态玻璃上的折射变化）
+      '.pbox-glass-flow': {
+        position: 'relative'
+      },
+      '.pbox-glass-flow::after': {
+        content: "''",
+        position: 'absolute',
+        inset: 0,
+        borderRadius: 'inherit',
+        pointerEvents: 'none',
+        opacity: '0',
+        transition: 'opacity .6s ease',
+        background:
+          'linear-gradient(115deg, transparent 32%, rgba(255,255,255,0.15) 50%, transparent 68%)',
+        backgroundSize: '240% 100%'
+      },
+      '.pbox-glass-flow:hover::after': {
+        opacity: '1',
+        animation: 'pboxFlow 3.4s ease-in-out infinite'
+      },
+      '@keyframes pboxFlow': {
+        '0%,100%': { backgroundPosition: '0% 0' },
+        '50%': { backgroundPosition: '100% 0' }
+      },
+      // 居中液态玻璃弹窗（blur40 + 圆角28 + 细白半透边框）
+      '.pbox-modal-overlay': {
+        background: 'rgba(2,6,18,0.45)',
+        backdropFilter: 'blur(40px) saturate(140%)',
+        WebkitBackdropFilter: 'blur(40px) saturate(140%)'
+      },
+      '.pbox-modal-panel': {
+        borderRadius: '28px',
+        border: '1px solid rgba(255,255,255,0.22)',
+        boxShadow: '0 24px 80px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.12)',
+        background: 'rgba(22,30,55,0.6)',
+        backdropFilter: 'blur(40px) saturate(160%)',
+        WebkitBackdropFilter: 'blur(40px) saturate(160%)',
+        overflow: 'hidden',
+        position: 'relative'
+      },
+      // 弹窗高光层：外层跟随滚动微偏移（液态折射），内层弹出时从中心向四周扩散
+      '.pbox-modal-shine': {
+        position: 'absolute',
+        inset: 0,
+        pointerEvents: 'none',
+        willChange: 'transform'
+      },
+      '.pbox-modal-shine-inner': {
+        position: 'absolute',
+        inset: 0,
+        background:
+          'radial-gradient(ellipse 70% 50% at 50% 0%, rgba(255,255,255,0.18), transparent 70%)',
+        transformOrigin: '50% 0%',
+        animation: 'pboxShineIn 0.55s cubic-bezier(.34,1.4,.64,1) both'
+      },
+      '@keyframes pboxShineIn': {
+        '0%': { opacity: '0', transform: 'scale(0.35)' },
+        '100%': { opacity: '1', transform: 'scale(1)' }
+      },
+      // 下拉刷新玻璃圆盘（淡蓝半透液态玻璃 + 流动高光 + 圆角50%）
+      '.pbox-ptr-disc': {
+        position: 'absolute',
+        left: '50%',
+        top: 0,
+        width: '68px',
+        height: '68px',
+        marginLeft: '-34px',
+        borderRadius: '9999px',
+        background:
+          'linear-gradient(160deg, rgba(180,220,255,0.30) 0%, rgba(255,255,255,0.10) 100%)',
+        border: '1px solid rgba(255,255,255,0.30)',
+        backdropFilter: 'blur(18px) saturate(150%)',
+        WebkitBackdropFilter: 'blur(18px) saturate(150%)',
+        boxShadow: '0 8px 24px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.30)',
+        overflow: 'hidden',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        willChange: 'transform, opacity'
+      },
+      // 玻璃圆盘内部流动高光
+      '.pbox-ptr-disc::before': {
+        content: "''",
+        position: 'absolute',
+        inset: '-45%',
+        background:
+          'linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.4) 50%, transparent 70%)',
+        animation: 'pboxShineFlow 2.4s ease-in-out infinite'
+      },
+      '@keyframes pboxShineFlow': {
+        '0%,100%': { transform: 'translateX(-55%)' },
+        '50%': { transform: 'translateX(55%)' }
+      },
+      // 刷新成功扩散波纹
+      '.pbox-ptr-ring': {
+        position: 'absolute',
+        inset: 0,
+        borderRadius: '9999px',
+        border: '2px solid rgba(255,255,255,0.55)',
+        pointerEvents: 'none',
+        animation: 'pboxRippleRing 0.6s ease-out forwards'
+      },
+      '@keyframes pboxRippleRing': {
+        '0%': { transform: 'scale(0.4)', opacity: '0.9' },
+        '100%': { transform: 'scale(2.3)', opacity: '0' }
       }
     }
   }
@@ -143,7 +263,7 @@ function makeGlassExtra(effectiveAccent: string) {
         height: '30vw',
         left: '38vw',
         bottom: '2vw',
-        background: 'radial-gradient(circle, #00b3a4 0%, transparent 70%)',
+        background: 'radial-gradient(circle, #c084fc 0%, transparent 70%)',
         animationDelay: '-13s'
       },
       '.pbox-blur-sidebar': {

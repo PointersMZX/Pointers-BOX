@@ -26,18 +26,7 @@ nsis:
   perMachine: false
   allowToChangeInstallationDirectory: true
 
-mac:
-  icon: resources/icons/icon.icns
-  category: public.app-category.utilities
-  identity: null
 
-linux:
-  icon: resources/icons/linux/
-  category: Utility
-  maintainer: Pointers <PointersMZX@users.noreply.github.com>
-  target:
-    - deb
-    - AppImage
 
 publish:
   provider: github

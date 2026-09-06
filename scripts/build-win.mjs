@@ -1,5 +1,5 @@
-// 双版本打包脚本：win-x64（Electron 33）+ win7-x64（Electron 22）
-// 产物输出到 release/win-x64 与 release/win7-x64
+// 双版本打包脚本：win-x64（Electron 33，Win10/11）+ win7-x64（Electron 22，Win7 兼容）
+// v2.0.0：双端统一输出到 release/install/（win10-x64 / win7-x64），安装程序由维护者自行制作
 // 用法：node scripts/build-win.mjs
 import { spawnSync } from 'node:child_process'
 import {
@@ -70,16 +70,18 @@ if (!ok33 || !ok22) {
   process.exit(1)
 }
 
-console.log('\n=== 输出到 release/ ===')
-rmDir(join(releaseDir, 'win-x64'))
-rmDir(join(releaseDir, 'win7-x64'))
-mkdirSync(releaseDir, { recursive: true })
-copyTree(join(tmpBase, 'win-33', 'win-unpacked'), join(releaseDir, 'win-x64'))
-copyTree(join(tmpBase, 'win-22', 'win-unpacked'), join(releaseDir, 'win7-x64'))
+// v2.0.0：双 Windows 端统一输出到 release/install/（用户自行制作安装程序）
+const installDir = join(releaseDir, 'install')
+console.log('\n=== 输出到 release/install/ ===')
+rmDir(join(installDir, 'win10-x64'))
+rmDir(join(installDir, 'win7-x64'))
+mkdirSync(installDir, { recursive: true })
+copyTree(join(tmpBase, 'win-33', 'win-unpacked'), join(installDir, 'win10-x64'))
+copyTree(join(tmpBase, 'win-22', 'win-unpacked'), join(installDir, 'win7-x64'))
 rmDir(tmpBase)
 
-const e33 = statSync(join(releaseDir, 'win-x64', 'Pointers-BOX.exe'))
-const e22 = statSync(join(releaseDir, 'win7-x64', 'Pointers-BOX.exe'))
-console.log(`\nwin-x64（Electron 33）: ${e33.size} bytes`)
-console.log(`win7-x64（Electron 22）: ${e22.size} bytes`)
+const e33 = statSync(join(installDir, 'win10-x64', 'Pointers-BOX.exe'))
+const e22 = statSync(join(installDir, 'win7-x64', 'Pointers-BOX.exe'))
+console.log(`\nwin10-x64（Electron 33）: ${e33.size} bytes → release/install/win10-x64/`)
+console.log(`win7-x64（Electron 22）: ${e22.size} bytes → release/install/win7-x64/`)
 console.log('全部完成')

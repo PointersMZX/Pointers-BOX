@@ -3,7 +3,8 @@ export type ThemeKey = 'glass' | 'black' | 'white'
 
 export const THEME_KEYS: readonly ThemeKey[] = ['glass', 'black', 'white']
 export const DEFAULT_THEME: ThemeKey = 'glass'
-export const DEFAULT_ACCENT = '#3182ce'
+// v2.0.0：默认主题改为紫色液体玻璃
+export const DEFAULT_ACCENT = '#9f7aea'
 
 // 仅液态玻璃主题允许自定义颜色（PRD 4.4 扩展需求）
 export function canCustomizeAccent(theme: ThemeKey): boolean {
@@ -87,14 +88,14 @@ export function accentScale(accent: string): Record<string, string> {
   }
 }
 
-// 液态玻璃主题的预设可选颜色
+// 液态玻璃主题的预设可选颜色（紫色系优先，与 v2.0.0 默认主题呼应）
 export const ACCENT_PRESETS: readonly string[] = [
-  '#3182ce',
-  '#00b3a4',
+  '#9f7aea',
   '#7c5cff',
   '#e659a8',
+  '#c084fc',
+  '#3182ce',
+  '#00b3a4',
   '#f59e0b',
-  '#ef4444',
-  '#22c55e',
   '#64748b'
 ]

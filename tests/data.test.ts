@@ -6,7 +6,8 @@ import {
   validateAuthorWords,
   validateBoxInfo,
   validateResources,
-  validateVersionLogs
+  validateVersionLogs,
+  getResourceShares
 } from '../src/shared/validate'
 
 const goodResource = {
@@ -120,5 +121,73 @@ describe('其余校验器', () => {
     expect(() => parseLooseJson('no json here')).toThrow(DataFileError)
     // 围栏内 JSON 本身损坏仍抛错
     expect(() => parseLooseJson('```json\n{oops\n```')).toThrow(DataFileError)
+  })
+})
+
+
+describe('多分享项 shares（v2.0.0 新格式）', () => {
+  it('解析 [{name,url}] 多分享项并原样保留', () => {
+    const r = validateResources({
+      resources: [
+        {
+          id: 1,
+          name: '带分享项的资源',
+          links: [],
+          shares: [
+            { name: '本体', url: 'https://x/main' },
+            { name: '补丁', url: 'https://x/patch' }
+          ]
+        }
+      ]
+    })
+    expect(r.invalidCount).toBe(0)
+    expect(r.valid[0]!.shares).toEqual([
+      { name: '本体', url: 'https://x/main' },
+      { name: '补丁', url: 'https://x/patch' }
+    ])
+  })
+
+  it('shares 缺 name 自动编号，纯字符串视为 url，link 字段兼容', () => {
+    const r = validateResources({
+      resources: [
+        {
+          id: 2,
+          name: '混合格式',
+          links: [],
+          shares: ['https://x/a', { url: 'https://x/b' }, { link: 'https://x/c', name: '汉化' }]
+        }
+      ]
+    })
+    expect(r.valid[0]!.shares).toEqual([
+      { name: '分享项 1', url: 'https://x/a' },
+      { name: '分享项 2', url: 'https://x/b' },
+      { name: '汉化', url: 'https://x/c' }
+    ])
+  })
+
+  it('只有 shares 没有 links 的资源合法', () => {
+    const r = validateResources({ resources: [{ id: 3, name: '仅shares', shares: [{ name: '本体', url: 'https://x' }] }] })
+    expect(r.valid).toHaveLength(1)
+    expect(r.valid[0]!.links).toEqual([])
+  })
+
+  it('shares 内缺 url 的项被跳过并计数', () => {
+    const r = validateResources({
+      resources: [
+        { id: 4, name: '坏分享', links: ['https://ok'], shares: [{ name: '无链接' }, 'https://good'] }
+      ]
+    })
+    expect(r.invalidCount).toBe(1)
+    expect(r.valid[0]!.shares).toEqual([{ name: '分享项 1', url: 'https://good' }])
+  })
+
+  it('getResourceShares：优先 shares；旧格式从 links 派生自动编号', () => {
+    const withShares = { id: 1, name: 'a', category: 'c', introduction: '', links: [], shares: [{ name: '本体', url: 'https://x' }] }
+    expect(getResourceShares(withShares)).toEqual([{ name: '本体', url: 'https://x' }])
+    const legacy = { id: 2, name: 'b', category: 'c', introduction: '', links: ['https://l1', 'https://l2'] }
+    expect(getResourceShares(legacy)).toEqual([
+      { name: '分享项 1', url: 'https://l1' },
+      { name: '分享项 2', url: 'https://l2' }
+    ])
   })
 })
