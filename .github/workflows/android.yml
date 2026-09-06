@@ -44,7 +44,7 @@ jobs:
           set -o pipefail
           pnpm build 2>&1 | tee webbuild.log
       - name: Sync Capacitor
-        working-directory: android
+        # 必须在仓库根运行（cap CLI 在此处定位 capacitor.config.ts 与 android/ 平台目录）
         run: |
           set -o pipefail
           npx cap sync android 2>&1 | tee capsync.log
