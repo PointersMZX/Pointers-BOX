@@ -428,7 +428,7 @@ export default function SettingsPage() {
         <Row label="应用版本" value={localVersion ? `v${localVersion}` : 'v2.0.0'} />
         <Row label="开发者" value={box?.developer} />
         <Row label="社区 QQ 群" value={box?.community_qq} />
-        <Row label="联合出品" value={box?.general_key} />
+        <Row label="通用密钥" value={box?.general_key} />
         <Box>
           <Text fontSize="sm" color="ptextmuted" mb={1}>
             应用简介
