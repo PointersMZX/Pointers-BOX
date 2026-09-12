@@ -53,6 +53,9 @@ export interface AuthorWords {
 
 export type AndroidBrowserChoice = 'builtin' | 'system'
 
+/** 更新渠道（v2.1.0）：国内镜像 Gitee / 全球官方 GitHub */
+export type UpdateChannel = 'gitee' | 'github'
+
 export interface AppConfig {
   downloadDir: string
   androidBrowser: AndroidBrowserChoice
@@ -64,6 +67,10 @@ export interface AppConfig {
   favorites: string[]
   /** 保留下载历史（默认关闭，与 PRD 4.3 默认约定共存；v2.0.0） */
   keepDownloadHistory: boolean
+  /** 更新渠道（v2.1.0）：undefined = 尚未选择（首次启动弹窗询问） */
+  updateChannel?: UpdateChannel
+  /** 后台标签闲置休眠分钟数（v2.1.0）：0 = 永不休眠 */
+  tabSleepMinutes: number
 }
 
 // ── 下载历史（v2.0.0：默认关闭的开关，开启后记录已完成任务） ───
@@ -107,6 +114,15 @@ export interface UpdateCheckResult {
   releaseUrl?: string
   releaseNotes?: string
   error?: string
+}
+
+/** 更新下载方式（v2.1.0）：双渠道支持 */
+export interface UpdateDownloadInfo {
+  channel: UpdateChannel
+  /** Gitee 渠道：Release 附件直链（含文件名与大小） */
+  assetUrl?: string
+  assetName?: string
+  assetSize?: number
 }
 
 export type UpdateEvent =

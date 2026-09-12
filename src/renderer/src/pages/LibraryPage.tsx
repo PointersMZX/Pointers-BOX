@@ -214,38 +214,44 @@ export default function LibraryPage() {
                 />
               </InputGroup>
 
-              {/* 排序（v2.0.0：时间新旧 / 字母 AZ） */}
-              <Menu>
-                <MenuButton
-                  as={Button}
-                  size="sm"
-                  variant="outline"
-                  leftIcon={<FiFilter />}
-                  rightIcon={<FiChevronDown />}
-                  borderColor="pborder"
-                  color="ptext"
-                  _hover={{ bg: 'hoverbg' }}
-                  flexShrink={0}
-                  ml={{ base: 0, md: 'auto' }}
-                >
-                  {sortLabel}
-                </MenuButton>
-                <MenuList bg="panel" borderColor="pborder" boxShadow="lg">
-                  {SORT_MODES.map((m) => (
-                    <MenuItem
-                      key={m.value}
-                      bg="transparent"
-                      color={sort === m.value ? 'var(--pbox-accent)' : 'ptext'}
-                      _hover={{ bg: 'hoverbg' }}
-                      icon={sort === m.value ? <FiCheck /> : <Box w="14px" />}
-                      onClick={() => setSort(m.value)}
-                      fontSize="sm"
-                    >
-                      {m.label}
-                    </MenuItem>
-                  ))}
-                </MenuList>
-              </Menu>
+                {/* 排序（v2.0.0：时间新旧 / 字母 AZ）
+                    v2.1.0：菜单加实底 + 背景模糊——玻璃主题下原先 8% 透明白会透出下层文字 */}
+                <Menu>
+                  <MenuButton
+                    as={Button}
+                    size="sm"
+                    variant="outline"
+                    leftIcon={<FiFilter />}
+                    rightIcon={<FiChevronDown />}
+                    borderColor="pborder"
+                    color="ptext"
+                    _hover={{ bg: 'hoverbg' }}
+                    flexShrink={0}
+                    ml={{ base: 0, md: 'auto' }}
+                  >
+                    {sortLabel}
+                  </MenuButton>
+                  <MenuList
+                    className="pbox-blur-panel"
+                    bg="panelstrong"
+                    borderColor="pborder"
+                    boxShadow="0 12px 40px rgba(2,6,18,0.45)"
+                  >
+                    {SORT_MODES.map((m) => (
+                      <MenuItem
+                        key={m.value}
+                        bg="transparent"
+                        color={sort === m.value ? 'var(--pbox-accent)' : 'ptext'}
+                        _hover={{ bg: 'hoverbg' }}
+                        icon={sort === m.value ? <FiCheck /> : <Box w="14px" />}
+                        onClick={() => setSort(m.value)}
+                        fontSize="sm"
+                      >
+                        {m.label}
+                      </MenuItem>
+                    ))}
+                  </MenuList>
+                </Menu>
             </Flex>
 
             {filtered.length > 0 ? (

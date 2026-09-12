@@ -57,7 +57,7 @@ export default function StatusBar() {
         )}
       </Flex>
       <Text>
-        Pointers-BOX {appVersion ? `v${appVersion}` : 'v2.0.0'}
+        Pointers-BOX {appVersion ? `v${appVersion}` : 'v2.1.0'}
         {platform === 'android' ? ' · Android' : ''}
       </Text>
     </Flex>

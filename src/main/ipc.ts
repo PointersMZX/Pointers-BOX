@@ -7,7 +7,7 @@ import { getSnapshot, refreshRemote, restoreFromFile } from './dataStore'
 import { hasActiveDownloads, cancelDownload, pauseDownload, resumeDownload } from './downloads'
 import { resetBrowserSession } from './sessions'
 import { listHistory, clearHistory } from './history'
-import { checkUpdate, downloadUpdate, installUpdate } from './updater'
+import { checkUpdate, downloadUpdate, installUpdate, invalidateUpdateCache } from './updater'
 
 export function registerIpcHandlers(): void {
   // 本地应用版本（v2.0.0：状态栏/设置页显示本地版本，而非远程 box.json 的 app_version）
@@ -59,9 +59,15 @@ export function registerIpcHandlers(): void {
 
   // 配置（M1）
   ipcMain.handle('config:get', () => getConfig())
-  ipcMain.handle('config:set', (_e, patch: unknown) =>
-    setConfig((typeof patch === 'object' && patch !== null ? patch : {}) as Partial<AppConfig>)
-  )
+  ipcMain.handle('config:set', (_e, patch: unknown) => {
+    const prevChannel = getConfig().updateChannel
+    const next = setConfig(
+      (typeof patch === 'object' && patch !== null ? patch : {}) as Partial<AppConfig>
+    )
+    // v2.1.0：更新渠道切换后清空检查缓存，立即生效
+    if (prevChannel !== next.updateChannel) invalidateUpdateCache()
+    return next
+  })
 
   // 内置浏览器（M5）：重置会话（清空 Cookie 与登录状态）
   ipcMain.handle('browser:resetSession', () => resetBrowserSession())

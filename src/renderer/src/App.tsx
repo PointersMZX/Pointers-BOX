@@ -1,5 +1,5 @@
 import { ChakraProvider, useColorMode, useToast, Box, Flex } from '@chakra-ui/react'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { Page } from '../../shared/routes'
 import { backend, castPage, currentPlatform } from './platform'
 import { useUiStore } from './store/uiStore'
@@ -11,7 +11,7 @@ import { buildTheme } from './theme/buildTheme'
 import Sidebar from './components/Sidebar'
 import BottomNav from './components/BottomNav'
 import StatusBar from './components/StatusBar'
-import RippleLayer from './components/RippleLayer'
+import UpdateChannelModal from './components/UpdateChannelModal'
 import HomePage from './pages/HomePage'
 import LibraryPage from './pages/LibraryPage'
 import BrowserPage from './pages/BrowserPage'
@@ -53,36 +53,40 @@ function ThemedShell() {
   const shownWarnings = useRef('')
   const shellRef = useRef<HTMLDivElement>(null)
   const { setColorMode } = useColorMode()
+  // v2.1.0：首次启动（配置中无更新渠道）弹必选弹窗，选完永不再弹
+  const [needChannelChoice, setNeedChannelChoice] = useState(false)
 
-  // 主题切换 → 内置组件明暗模式 + 弹跳动画（纯外观，不重挂载、不重置任何页面状态）
+  // 主题切换 → 内置组件明暗模式（v2.1.0：移除弹跳动画，纯切换）
   useEffect(() => {
     setColorMode(themeKey === 'white' ? 'light' : 'dark')
-    // 弹跳 + 回弹形变（Web Animations API，不改动布局与状态）
-    shellRef.current?.animate(
-      [
-        { transform: 'scale(0.96) translateY(10px)', opacity: 0.55 },
-        { transform: 'scale(1.02) translateY(-3px)', opacity: 1 },
-        { transform: 'scale(0.998) translateY(1px)' },
-        { transform: 'none' }
-      ],
-      { duration: 560, easing: 'cubic-bezier(.34,1.56,.64,1)' }
-    )
-  }, [themeKey, accent, setColorMode])
+  }, [themeKey, setColorMode])
 
-  // 平台探测 + 数据引导 + 托盘跳转监听 + 主题配置加载 + 收藏加载
+  // 平台探测 + 数据引导 + 托盘跳转监听 + 主题配置加载 + 收藏加载 + 首启渠道询问
   useEffect(() => {
     useUiStore.getState().setPlatform(currentPlatform())
     void useDataStore.getState().bootstrap()
     void useFavoritesStore.getState().bootstrap()
     void backend
       .getConfig()
-      .then((cfg) => useThemeStore.getState().applyLocal(cfg.theme, cfg.accent))
+      .then((cfg) => {
+        useThemeStore.getState().applyLocal(cfg.theme, cfg.accent)
+        if (!cfg.updateChannel) setNeedChannelChoice(true)
+      })
       .catch(() => {})
     const off = backend.onNavigate((p) => {
       const target = castPage(p)
       if (target) useUiStore.getState().setPage(target)
     })
     return () => off()
+  }, [])
+
+  // v2.1.0：窗口隐藏到托盘时暂停背景光斑动画（document.visibilitychange 在 Electron 窗口 hide 时触发）
+  useEffect(() => {
+    const onVisibility = (): void => {
+      document.body.classList.toggle('pbox-bg-paused', document.hidden)
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => document.removeEventListener('visibilitychange', onVisibility)
   }, [])
 
   // 全局快捷键 Ctrl+1/2/4/5（PRD 2.3）
@@ -175,6 +179,9 @@ function ThemedShell() {
         {!isAndroid && <StatusBar />}
       </Flex>
       {isAndroid && <BottomNav />}
+      {needChannelChoice && (
+        <UpdateChannelModal onChosen={() => setNeedChannelChoice(false)} />
+      )}
     </Box>
   )
 }
@@ -187,7 +194,6 @@ export default function App() {
   return (
     <ChakraProvider theme={buildTheme(themeKey, accent)}>
       {themeKey === 'glass' && <GlassBlobs />}
-      <RippleLayer />
       <ThemedShell />
     </ChakraProvider>
   )

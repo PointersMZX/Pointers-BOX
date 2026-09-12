@@ -23,15 +23,12 @@ interface Props {
 }
 
 /**
- * 资源详情弹窗（v2.0.0）：
- * 居中液态玻璃弹窗——0.8x 缩放弹性弹出（到位过冲 1.02x 再回弹归位）+ 高光从中心向四周扩散；
- * 点击遮罩 0.28s 弹性收束消失，高光向中心聚拢；内容滚动时弹窗外框不动、高光随滚动微偏移。
+ * 资源详情弹窗（v2.1.0 克制版）：
+ * 居中液态玻璃弹窗——0.96x 缩放 0.2s 平滑浮现（无过冲、无高光扩散）；
+ * 点击遮罩 0.18s 平滑收束消失；内容滚动时弹窗外框不动。
  * 内容：资源序号/名称/介绍/分类/日期 + 每一个分享项的名称与链接。
  */
 export default function ResourceDetailModal({ resource, isOpen, onClose }: Props) {
-  const bodyRef = useRef<HTMLDivElement>(null)
-  const shineRef = useRef<HTMLDivElement>(null)
-  const rafRef = useRef(0)
   const [portalEl] = useState(() => (typeof document !== 'undefined' ? document.body : null))
 
   // Escape 关闭（标准弹窗行为）
@@ -43,19 +40,6 @@ export default function ResourceDetailModal({ resource, isOpen, onClose }: Props
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [isOpen, onClose])
-
-  // 内容滚动 → 玻璃高光微偏移（液态折射随视角变化，rAF 节流）
-  const handleScroll = (): void => {
-    const body = bodyRef.current
-    const shine = shineRef.current
-    if (!body || !shine) return
-    cancelAnimationFrame(rafRef.current)
-    rafRef.current = requestAnimationFrame(() => {
-      const max = body.scrollHeight - body.clientHeight
-      const ratio = max > 0 ? body.scrollTop / max : 0
-      shine.style.transform = `translateY(${(ratio - 0.5) * 18}px)`
-    })
-  }
 
   if (!portalEl) return null
 
@@ -91,17 +75,12 @@ export default function ResourceDetailModal({ resource, isOpen, onClose }: Props
               display: 'flex',
               flexDirection: 'column'
             }}
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: [0.8, 1.02, 1], opacity: [0, 1, 1] }}
-            exit={{ scale: 0.8, opacity: 0, transition: { duration: 0.28, ease: 'easeIn' } }}
-            transition={{ duration: 0.42, times: [0, 0.65, 1], ease: 'easeOut' }}
+            initial={{ scale: 0.96, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.96, opacity: 0, transition: { duration: 0.18, ease: 'easeIn' } }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* 玻璃高光层（跟随滚动微偏移） */}
-            <div className="pbox-modal-shine" ref={shineRef}>
-              <div className="pbox-modal-shine-inner" />
-            </div>
-
             {/* 头部 */}
             <Flex
               position="relative"
@@ -157,8 +136,6 @@ export default function ResourceDetailModal({ resource, isOpen, onClose }: Props
 
             {/* 内容区（可滚动，弹窗外框保持不动） */}
             <Box
-              ref={bodyRef}
-              onScroll={handleScroll}
               flex="1"
               minH={0}
               overflowY="auto"
@@ -189,7 +166,7 @@ export default function ResourceDetailModal({ resource, isOpen, onClose }: Props
                     borderRadius="xl"
                     px={4}
                     py={3}
-                    className="pbox-glass-flow"
+                    className="pbox-morph"
                   >
                     <Box minW={0} flex="1">
                       <HStack spacing={2} mb={1}>

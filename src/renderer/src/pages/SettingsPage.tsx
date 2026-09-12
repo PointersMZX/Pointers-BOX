@@ -234,7 +234,7 @@ function ThemeSection() {
             ))}
           </HStack>
           <HStack align="center" spacing={3} wrap="wrap">
-            <Box w="72px" h="32px" rounded="md" bg={accent} borderWidth="1px" borderColor="pborder" className="pbox-pulse" />
+            <Box w="72px" h="32px" rounded="md" bg={accent} borderWidth="1px" borderColor="pborder" />
             {(['r', 'g', 'b'] as const).map((ch) => (
               <HStack key={ch} spacing={1}>
                 <Text fontSize="xs" color="ptextmuted" textTransform="uppercase">
@@ -388,6 +388,19 @@ export default function SettingsPage() {
     }
   }
 
+  // v2.1.0：切换更新渠道（主进程会在渠道变化时清空检查缓存）
+  const onChannelChange = async (channel: 'gitee' | 'github'): Promise<void> => {
+    await useDownloadStore.getState().saveConfig({ updateChannel: channel })
+    setDownloaded(false)
+    setDownloading(false)
+    toast({
+      title: `更新渠道已切换：${channel === 'gitee' ? '国内镜像（Gitee）' : '全球官方（GitHub）'}`,
+      status: 'info',
+      duration: 2500,
+      position: 'top'
+    })
+  }
+
   const onDownload = async (): Promise<void> => {
     setDownloading(true)
     try {
@@ -425,7 +438,7 @@ export default function SettingsPage() {
       {/* 关于应用（合并区块，PRD 4.4） */}
       <Section title="关于应用">
         <Row label="应用名称" value={box?.app_name ?? 'Pointers-BOX'} />
-        <Row label="应用版本" value={localVersion ? `v${localVersion}` : 'v2.0.0'} />
+        <Row label="应用版本" value={localVersion ? `v${localVersion}` : 'v2.1.0'} />
         <Row label="开发者" value={box?.developer} />
         <Row label="社区 QQ 群" value={box?.community_qq} />
         <Row label="通用密钥" value={box?.general_key} />
@@ -444,11 +457,32 @@ export default function SettingsPage() {
         <Row label="版权声明" value={box?.copyright} />
       </Section>
 
-      {/* 检查更新（PRD 4.4：GitHub Release 对比） */}
+      {/* 检查更新（PRD 4.4：Release 对比；v2.1.0 双渠道 Gitee/GitHub） */}
       <Section title="更新检查">
+        {/* v2.1.0：更新渠道（首启未选时此处也可选） */}
+        <Flex align="center" justify="space-between" gap={3} wrap="wrap">
+          <Text fontSize="sm" color="ptext">
+            更新渠道
+          </Text>
+          <RadioGroup
+            value={config?.updateChannel ?? 'gitee'}
+            onChange={(v) => {
+              setResult(null)
+              void onChannelChange(v as 'gitee' | 'github')
+            }}
+          >
+            <Stack direction="row" spacing={5}>
+              <Radio value="gitee">国内镜像（Gitee）</Radio>
+              <Radio value="github">全球官方（GitHub）</Radio>
+            </Stack>
+          </RadioGroup>
+        </Flex>
+        <Text fontSize="xs" color="ptextmuted">
+          国内网络建议选 Gitee（不受 GitHub 限流影响）；切换后下次检查立即生效
+        </Text>
         <Flex align="center" justify="space-between" wrap="wrap" gap={3}>
           <Text fontSize="sm" color="ptextmuted">
-            当前版本：{result?.current ?? (localVersion ? `v${localVersion}` : 'v2.0.0')}
+            当前版本：{result?.current ?? (localVersion ? `v${localVersion}` : 'v2.1.0')}
           </Text>
           <Button
             size="sm"
@@ -619,7 +653,7 @@ export default function SettingsPage() {
         </Text>
       </Section>
 
-      {/* 浏览器设置（PRD 4.4：仅 Android 端生效） */}
+      {/* 浏览器设置（PRD 4.4：Android 打开方式 + v2.1.0 桌面后台标签休眠） */}
       <Section title="浏览器设置">
         <RadioGroup
           value={config?.androidBrowser ?? 'builtin'}
@@ -638,6 +672,28 @@ export default function SettingsPage() {
             ? '选择资源链接的打开方式'
             : '此选项仅 Android 端生效，桌面端使用内置浏览器'}
         </Text>
+        {/* v2.1.0：后台标签闲置休眠（0 = 永不），降低内存占用 */}
+        <Flex align="center" justify="space-between" gap={3} wrap="wrap" mt={1}>
+          <Text fontSize="sm" color="ptext">
+            后台标签自动休眠
+            <Text as="span" fontSize="xs" color="ptextmuted" ml={2}>
+              （释放闲置标签内存；切换回来时自动重新加载）
+            </Text>
+          </Text>
+          <RadioGroup
+            value={String(config?.tabSleepMinutes ?? 5)}
+            onChange={(v) =>
+              void useDownloadStore.getState().saveConfig({ tabSleepMinutes: Number(v) })
+            }
+          >
+            <Stack direction="row" spacing={4}>
+              <Radio value="0">永不</Radio>
+              <Radio value="2">2 分钟</Radio>
+              <Radio value="5">5 分钟</Radio>
+              <Radio value="15">15 分钟</Radio>
+            </Stack>
+          </RadioGroup>
+        </Flex>
       </Section>
     </Box>
   )

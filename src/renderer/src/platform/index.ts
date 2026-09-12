@@ -3,9 +3,11 @@ import { Capacitor } from '@capacitor/core'
 import type { PBoxApi } from '../../../shared/types'
 import { isPage, type Page } from '../../../shared/routes'
 import type { AppPlatform } from '../../../shared/platformPages'
+import { UPDATE_CHANNEL_INFO } from '../../../shared/updateChannels'
 import { useBrowserStore } from '../store/browserStore'
 import { useUiStore } from '../store/uiStore'
 import {
+  ANDROID_APP_VERSION,
   androidCheckUpdate,
   androidGetData,
   androidGetConfig,
@@ -13,6 +15,7 @@ import {
   androidOnNavigate,
   androidOnUpdateEvent,
   androidOpenClaim,
+  androidOpenExternal,
   androidOpenSystemDownloads,
   androidResetSession,
   androidRestoreData,
@@ -45,7 +48,7 @@ function createDesktopBackend(api: PBoxApi): AppBackend {
 
 function createAndroidBackend(): AppBackend {
   return {
-    getAppVersion: () => Promise.resolve('2.0.0'),
+    getAppVersion: () => Promise.resolve(ANDROID_APP_VERSION),
     // 导出/导入与下载历史为桌面端功能；Android 端返回空实现
     exportConfig: () => Promise.resolve(null),
     importConfig: () => Promise.resolve(null),
@@ -64,7 +67,15 @@ function createAndroidBackend(): AppBackend {
     resumeDownload: () => Promise.resolve(false),
     resetBrowserSession: () => androidResetSession(),
     checkUpdate: () => androidCheckUpdate(),
-    downloadUpdate: () => Promise.reject(new Error('Android 端请从发布渠道获取更新')),
+    // v2.1.0：Android 更新 = 打开所选渠道的 Release 页（APK 走 CI 构建）
+    downloadUpdate: async () => {
+      const cfg = await androidGetConfig()
+      const page =
+        cfg.updateChannel === 'github'
+          ? UPDATE_CHANNEL_INFO.github.releasePage
+          : UPDATE_CHANNEL_INFO.gitee.releasePage
+      await androidOpenExternal(page)
+    },
     installUpdate: () => Promise.resolve(),
     onNavigate: (cb) => androidOnNavigate(cb),
     onDownloadEvent: (cb) => androidOnDownloadEvent(cb),

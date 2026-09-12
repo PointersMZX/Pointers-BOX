@@ -1,5 +1,4 @@
 import { Badge, Box, HStack, Icon, Text } from '@chakra-ui/react'
-import { motion, useMotionValue, useTransform } from 'framer-motion'
 import { useState } from 'react'
 import { FiEye, FiStar } from 'react-icons/fi'
 import type { Resource } from '../../../shared/types'
@@ -15,16 +14,13 @@ interface Props {
 }
 
 /**
- * 资源卡片（v2.0.0）：
- * 名称、简介、日期、分享项数量 + 「详情」按钮（不再直接领取）；
- * 滑动时面板轻微形变弯曲，松手带 2 次衰减晃动归位；悬浮高光流动。
+ * 资源卡片（v2.1.0 克制版）：
+ * 名称、简介、日期、分享项数量 + 「详情」按钮（不再直接领取）。
+ * v2.1.0：去掉拖拽形变（与下拉刷新抢指针、误触详情页的元凶）与悬浮流光。
+ * data-no-ptr：卡片区域不作为下拉刷新手势起点（只在列表空白处下拉刷新）。
  */
 export default function ResourceCard({ resource, onOpen }: Props) {
   const [localOpen, setLocalOpen] = useState(false)
-  const x = useMotionValue(0)
-  // 滑动形变：跟随滑动方向轻微弯曲
-  const rotate = useTransform(x, [-140, 140], [-5, 5])
-  const skewX = useTransform(x, [-140, 140], [4, -4])
   const fav = useFavoritesStore((st) => st.ids.has(String(resource.id)))
   const toggleFav = useFavoritesStore((st) => st.toggle)
 
@@ -35,16 +31,13 @@ export default function ResourceCard({ resource, onOpen }: Props) {
 
   return (
     <>
-      <motion.div
-        drag="x"
-        dragConstraints={{ left: 0, right: 0 }}
-        dragElastic={0.16}
-        dragTransition={{ bounceStiffness: 380, bounceDamping: 16 }}
-        style={{ x, rotate, skewX, cursor: 'pointer' }}
+      <Box
+        data-no-ptr
+        cursor="pointer"
         onClick={openDetail}
         role="button"
         tabIndex={0}
-        onKeyDown={(e: { key: string; preventDefault: () => void }) => {
+        onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault()
             openDetail()
@@ -63,7 +56,7 @@ export default function ResourceCard({ resource, onOpen }: Props) {
           flexDirection="column"
           gap={2}
           minH="170px"
-          className="pbox-morph pbox-glass-flow"
+          className="pbox-morph"
           _hover={{ shadow: 'md', borderColor: 'brand.400', bg: 'panelstrong' }}
         >
           <HStack justify="space-between" align="flex-start">
@@ -116,7 +109,7 @@ export default function ResourceCard({ resource, onOpen }: Props) {
             </GlassButton>
           </HStack>
         </Box>
-      </motion.div>
+      </Box>
 
       {/* 未提供 onOpen 时卡片自持详情弹窗 */}
       {!onOpen && (

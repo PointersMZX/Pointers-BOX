@@ -36,8 +36,9 @@ import type {
   WebviewFailLoadEvent,
   WebviewNavigateEvent
 } from '../types/webview'
-import { useBrowserStore } from '../store/browserStore'
+import { useBrowserStore, shouldSleepTab } from '../store/browserStore'
 import { useUiStore } from '../store/uiStore'
+import { useDownloadStore } from '../store/downloadStore'
 import { backend } from '../platform'
 import EmptyState from '../components/EmptyState'
 import AndroidBrowserPage from './AndroidBrowserPage'
@@ -49,6 +50,7 @@ export default function BrowserPage() {
 }
 
 // 桌面多标签浏览器（v2.0.0）：新建/关闭/拖拽排序；全部 webview 常驻挂载保留各标签会话
+// v2.1.0：后台标签闲置休眠（默认 5 分钟，设置页可调）——超时标签卸载 webview 释放渲染进程
 function ElectronBrowserPage() {
   const tabs = useBrowserStore((s) => s.tabs)
   const activeId = useBrowserStore((s) => s.activeId)
@@ -60,6 +62,8 @@ function ElectronBrowserPage() {
   const resetAllTabs = useBrowserStore((s) => s.resetAllTabs)
   const activeTab = tabs.find((t) => t.id === activeId) ?? tabs[0]
   const cancelRef = useRef<HTMLButtonElement | null>(null)
+  // 休眠判定依据：设置里的闲置分钟数（0 = 永不）
+  const sleepMinutes = useDownloadStore((s) => s.config?.tabSleepMinutes ?? 5)
 
   // 每个 webview 的 ref 与首次挂载 URL（src 只在挂载时绑定，后续导航走 loadURL）
   const webviewRefs = useRef(new Map<string, PBoxWebview>())
@@ -78,6 +82,44 @@ function ElectronBrowserPage() {
   const [resetting, setResetting] = useState(false)
   // 已发出 dom-ready 的 webview（此后才允许调用其方法，否则渲染进程抛错）
   const [readyTabs, setReadyTabs] = useState<Set<string>>(() => new Set())
+  // v2.1.0：当前应挂载 webview 的标签（活动标签 + 未休眠的后台标签）
+  const [awakeIds, setAwakeIds] = useState<Set<string>>(() => new Set(tabs.map((t) => t.id)))
+
+  // 休眠 tick（60s）：把超时后台标签移出挂载集合（React 卸载 webview = 渲染进程销毁）
+  // 切回（setActive）后 tab 不在此集合 → 重新挂载 → src 取 initialUrls 当前 URL 加载
+  useEffect(() => {
+    if (sleepMinutes <= 0) {
+      setAwakeIds(new Set(useBrowserStore.getState().tabs.map((t) => t.id)))
+      return
+    }
+    const tick = (): void => {
+      const s = useBrowserStore.getState()
+      const next = new Set<string>()
+      for (const t of s.tabs) {
+        if (!shouldSleepTab(t, s.activeId, sleepMinutes)) next.add(t.id)
+      }
+      setAwakeIds(next)
+    }
+    tick()
+    const timer = window.setInterval(tick, 60_000)
+    return () => window.clearInterval(timer)
+  }, [sleepMinutes])
+
+  // webview 卸载清理：休眠标签的 ready 状态与 initialUrls 记录一并清掉，
+  // 唤醒重挂时 src 需取该标签【当前】URL（而非首次挂载时的旧值）
+  useEffect(() => {
+    const missing = tabs.filter((t) => !awakeIds.has(t.id))
+    if (missing.length === 0) return
+    const ids = new Set(missing.map((t) => t.id))
+    setReadyTabs((prev) => {
+      const next = new Set([...prev].filter((x) => !ids.has(x)))
+      return next.size === prev.size ? prev : next
+    })
+    for (const t of missing) {
+      initialUrls.current.set(t.id, t.url)
+      webviewRefs.current.delete(t.id)
+    }
+  }, [awakeIds, tabs])
 
   // webview 事件绑定（ref 回调内幂等挂一次；处理器经 ref 读最新活动标签）
   const bindWebview = useCallback(
@@ -334,7 +376,7 @@ function ElectronBrowserPage() {
         <Box h="100%" w={loading ? '35%' : '0%'} bg="brand.500" transition="width .6s ease" />
       </Box>
 
-      {/* WebView 多标签（全部常驻挂载保留会话；仅活动标签可见） */}
+      {/* WebView 多标签（活动标签 + 未休眠后台标签挂载；v2.1.0 休眠标签卸载释放内存） */}
       <Box flex="1" minH={0} position="relative" bg="white">
         {error ? (
           <EmptyState
@@ -348,23 +390,25 @@ function ElectronBrowserPage() {
             }
           />
         ) : null}
-        {tabs.map((t) => (
-          <webview
-            key={t.id}
-            ref={bindWebview(t.id)}
-            src={initialUrls.current.get(t.id) ?? t.url}
-            partition="pbox-mem"
-            allowpopups={true}
-            style={{
-              display: t.id === activeId ? 'flex' : 'none',
-              width: '100%',
-              height: '100%',
-              position: 'absolute',
-              top: 0,
-              left: 0
-            }}
-          />
-        ))}
+        {tabs.map((t) =>
+          awakeIds.has(t.id) ? (
+            <webview
+              key={t.id}
+              ref={bindWebview(t.id)}
+              src={initialUrls.current.get(t.id) ?? t.url}
+              partition="pbox-mem"
+              allowpopups={true}
+              style={{
+                display: t.id === activeId ? 'flex' : 'none',
+                width: '100%',
+                height: '100%',
+                position: 'absolute',
+                top: 0,
+                left: 0
+              }}
+            />
+          ) : null
+        )}
       </Box>
 
       {/* 重置确认框（PRD 4.2：点 🏠 → 确认后清除登录状态） */}

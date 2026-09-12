@@ -69,6 +69,7 @@ const SURFACES: Record<ThemeKey, SurfaceTokens> = {
 }
 
 // 构建基础样式 + 通用动画 keyframes（所有主题都有）
+// v2.1.0 动效原则：平滑 ease-out、不过冲、不闪烁——去除"廉价感"的过冲弹簧与流光扫光
 function makeStyles(effectiveAccent: string) {
   return {
     global: {
@@ -80,77 +81,26 @@ function makeStyles(effectiveAccent: string) {
         overflow: 'hidden'
       },
       '#root': { height: '100vh' },
-      // 弹性回弹：交互元素统一过冲缓动
+      // v2.1.0：统一平滑过渡（替代过冲贝塞尔，观感更沉稳）
       '.chakra-button, a, [role="button"]': {
-        transition: 'all .35s cubic-bezier(.34,1.56,.64,1)'
+        transition: 'color .18s ease, background-color .18s ease, border-color .18s ease, opacity .18s ease'
       },
-      // 形变微动效（悬停轻微上浮缩放 + 圆角形变）
+      // 形变微动效（悬停轻微上浮，无圆角形变）
       '.pbox-morph': {
         transition:
-          'border-radius .35s cubic-bezier(.34,1.56,.64,1), transform .35s cubic-bezier(.34,1.56,.64,1), background-color .25s ease, border-color .25s ease'
+          'transform .22s ease-out, background-color .18s ease, border-color .18s ease'
       },
       '.pbox-morph:hover': {
-        transform: 'translateY(-2px) scale(1.012)',
-        borderRadius: '18px'
+        transform: 'translateY(-1px)'
       },
-      // 脉动闪烁（强调按钮呼吸辉光）
-      '.pbox-pulse': {
-        animation: 'pboxPulse 2.6s ease-in-out infinite'
-      },
-      '@keyframes pboxPulse': {
-        '0%,100%': { boxShadow: `0 0 0 0 ${hexToRgba(effectiveAccent, 0)}` },
-        '50%': { boxShadow: `0 0 18px 4px ${hexToRgba(effectiveAccent, 0.35)}` }
-      },
-      '@keyframes pboxRipple': {
-        from: { transform: 'scale(0)', opacity: '0.5' },
-        to: { transform: 'scale(1)', opacity: '0' }
-      },
-      // ── v2.0.0 液态玻璃交互组件 ───────────────────────────
-      // 按压波纹（GlassButton 点击扩散）
-      '.pbox-press-ripple': {
-        position: 'absolute',
-        borderRadius: '9999px',
-        pointerEvents: 'none',
-        background: 'rgba(255,255,255,0.5)',
-        transform: 'scale(0)',
-        opacity: '0.65',
-        animation: 'pboxPressRipple 0.5s ease-out forwards'
-      },
-      '@keyframes pboxPressRipple': {
-        to: { transform: 'scale(2.6)', opacity: '0' }
-      },
-      // 悬浮态：缓慢流动的高光（模拟光线在液态玻璃上的折射变化）
-      '.pbox-glass-flow': {
-        position: 'relative'
-      },
-      '.pbox-glass-flow::after': {
-        content: "''",
-        position: 'absolute',
-        inset: 0,
-        borderRadius: 'inherit',
-        pointerEvents: 'none',
-        opacity: '0',
-        transition: 'opacity .6s ease',
-        background:
-          'linear-gradient(115deg, transparent 32%, rgba(255,255,255,0.15) 50%, transparent 68%)',
-        backgroundSize: '240% 100%'
-      },
-      '.pbox-glass-flow:hover::after': {
-        opacity: '1',
-        animation: 'pboxFlow 3.4s ease-in-out infinite'
-      },
-      '@keyframes pboxFlow': {
-        '0%,100%': { backgroundPosition: '0% 0' },
-        '50%': { backgroundPosition: '100% 0' }
-      },
-      // 居中液态玻璃弹窗（blur40 + 圆角28 + 细白半透边框）
+      // 居中液态玻璃弹窗（blur40 + 圆角20 + 细白半透边框）
       '.pbox-modal-overlay': {
         background: 'rgba(2,6,18,0.45)',
         backdropFilter: 'blur(40px) saturate(140%)',
         WebkitBackdropFilter: 'blur(40px) saturate(140%)'
       },
       '.pbox-modal-panel': {
-        borderRadius: '28px',
+        borderRadius: '20px',
         border: '1px solid rgba(255,255,255,0.22)',
         boxShadow: '0 24px 80px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.12)',
         background: 'rgba(22,30,55,0.6)',
@@ -159,26 +109,7 @@ function makeStyles(effectiveAccent: string) {
         overflow: 'hidden',
         position: 'relative'
       },
-      // 弹窗高光层：外层跟随滚动微偏移（液态折射），内层弹出时从中心向四周扩散
-      '.pbox-modal-shine': {
-        position: 'absolute',
-        inset: 0,
-        pointerEvents: 'none',
-        willChange: 'transform'
-      },
-      '.pbox-modal-shine-inner': {
-        position: 'absolute',
-        inset: 0,
-        background:
-          'radial-gradient(ellipse 70% 50% at 50% 0%, rgba(255,255,255,0.18), transparent 70%)',
-        transformOrigin: '50% 0%',
-        animation: 'pboxShineIn 0.55s cubic-bezier(.34,1.4,.64,1) both'
-      },
-      '@keyframes pboxShineIn': {
-        '0%': { opacity: '0', transform: 'scale(0.35)' },
-        '100%': { opacity: '1', transform: 'scale(1)' }
-      },
-      // 下拉刷新玻璃圆盘（淡蓝半透液态玻璃 + 流动高光 + 圆角50%）
+      // 下拉刷新玻璃圆盘（淡蓝半透液态玻璃 + 圆角50%）
       '.pbox-ptr-disc': {
         position: 'absolute',
         left: '50%',
@@ -199,19 +130,6 @@ function makeStyles(effectiveAccent: string) {
         justifyContent: 'center',
         willChange: 'transform, opacity'
       },
-      // 玻璃圆盘内部流动高光
-      '.pbox-ptr-disc::before': {
-        content: "''",
-        position: 'absolute',
-        inset: '-45%',
-        background:
-          'linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.4) 50%, transparent 70%)',
-        animation: 'pboxShineFlow 2.4s ease-in-out infinite'
-      },
-      '@keyframes pboxShineFlow': {
-        '0%,100%': { transform: 'translateX(-55%)' },
-        '50%': { transform: 'translateX(55%)' }
-      },
       // 刷新成功扩散波纹
       '.pbox-ptr-ring': {
         position: 'absolute',
@@ -229,7 +147,8 @@ function makeStyles(effectiveAccent: string) {
   }
 }
 
-// 液态玻璃独有的背景波浪色斑 + 各层次模糊（按层级 26px / 20px / 14px 递进，形成立体层次感）
+// 液态玻璃独有的背景波浪色斑 + 各层次模糊
+// v2.1.0：blur 110px→64px 降 GPU 负担；窗口隐藏/系统减少动效偏好时暂停漂移
 function makeGlassExtra(effectiveAccent: string) {
   return {
     global: {
@@ -237,7 +156,7 @@ function makeGlassExtra(effectiveAccent: string) {
         position: 'fixed',
         pointerEvents: 'none',
         borderRadius: '9999px',
-        filter: 'blur(110px)',
+        filter: 'blur(64px)',
         opacity: '0.5',
         zIndex: 0,
         animation: 'pboxDrift 18s ease-in-out infinite alternate'
@@ -265,6 +184,16 @@ function makeGlassExtra(effectiveAccent: string) {
         bottom: '2vw',
         background: 'radial-gradient(circle, #c084fc 0%, transparent 70%)',
         animationDelay: '-13s'
+      },
+      // v2.1.0：窗口隐藏到托盘时暂停漂移动画（后台 0 GPU 占用）
+      'body.pbox-bg-paused .pbox-blob': {
+        animationPlayState: 'paused'
+      },
+      // 系统级"减少动效"偏好：停止漂移
+      '@media (prefers-reduced-motion: reduce)': {
+        '.pbox-blob': {
+          animation: 'none'
+        }
       },
       '.pbox-blur-sidebar': {
         backdropFilter: 'blur(26px) saturate(150%)',
@@ -303,6 +232,12 @@ export function buildTheme(themeKey: ThemeKey, accent: string): Theme {
   const config = {
     config: { initialColorMode: s.colorMode, useSystemColorMode: false },
     colors: { brand: accentScale(effectiveAccent) },
+    // v2.1.0：系统中文字体栈（替代 Chakra 默认，避免跨平台观感漂移）
+    fonts: {
+      heading:
+        '"Segoe UI", "Microsoft YaHei", "PingFang SC", "Noto Sans SC", system-ui, sans-serif',
+      body: '"Segoe UI", "Microsoft YaHei", "PingFang SC", "Noto Sans SC", system-ui, sans-serif'
+    },
     semanticTokens: {
       colors: {
         appbg: { default: s.appBg },

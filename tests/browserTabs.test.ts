@@ -1,11 +1,15 @@
 import { DEFAULT_START_URL } from '../src/shared/browser'
-import { useBrowserStore, getActiveTab } from '../src/renderer/src/store/browserStore'
+import {
+  useBrowserStore,
+  getActiveTab,
+  shouldSleepTab
+} from '../src/renderer/src/store/browserStore'
 
 describe('浏览器多标签状态机（v2.0.0）', () => {
   beforeEach(() => {
     // 重置为单标签初始态（id 动态生成，不硬编码）
     useBrowserStore.setState({
-      tabs: [{ id: 't0', url: DEFAULT_START_URL, title: '新标签页' }],
+      tabs: [{ id: 't0', url: DEFAULT_START_URL, title: '新标签页', lastActiveAt: 0 }],
       activeId: 't0'
     })
   })
@@ -77,7 +81,44 @@ describe('浏览器多标签状态机（v2.0.0）', () => {
     const s = useBrowserStore.getState()
     expect(getActiveTab(s).id).toBe(s.activeId)
     expect(
-      getActiveTab({ tabs: [{ id: 'x', url: 'u', title: 'x' }], activeId: 'missing' }).id
+      getActiveTab({ tabs: [{ id: 'x', url: 'u', title: 'x', lastActiveAt: 0 }], activeId: 'missing' }).id
     ).toBe('x')
+  })
+})
+
+describe('后台标签闲置休眠（v2.1.0）', () => {
+  const NOW = 1_700_000_000_000
+  const MIN = 60_000
+
+  it('sleepMinutes = 0 表示永不休眠', () => {
+    expect(shouldSleepTab({ id: 'bg', lastActiveAt: NOW - 99 * MIN }, 'fg', 0, NOW)).toBe(false)
+  })
+
+  it('活动标签永不休眠', () => {
+    expect(shouldSleepTab({ id: 'fg', lastActiveAt: 0 }, 'fg', 5, NOW)).toBe(false)
+  })
+
+  it('后台标签闲置超过时限休眠；未超过保持唤醒', () => {
+    expect(shouldSleepTab({ id: 'bg', lastActiveAt: NOW - 6 * MIN }, 'fg', 5, NOW)).toBe(true)
+    expect(shouldSleepTab({ id: 'bg', lastActiveAt: NOW - 4 * MIN }, 'fg', 5, NOW)).toBe(false)
+    expect(shouldSleepTab({ id: 'bg', lastActiveAt: NOW - 5 * MIN }, 'fg', 5, NOW)).toBe(true) // 恰好到点
+  })
+
+  it('setActive 切换后新活动标签时间戳刷新，原活动标签进入休眠倒计时', () => {
+    useBrowserStore.setState({
+      tabs: [
+        { id: 'a', url: DEFAULT_START_URL, title: 'a', lastActiveAt: NOW },
+        { id: 'b', url: DEFAULT_START_URL, title: 'b', lastActiveAt: NOW }
+      ],
+      activeId: 'a'
+    })
+    useBrowserStore.getState().setActive('b')
+    const { tabs, activeId } = useBrowserStore.getState()
+    expect(activeId).toBe('b')
+    expect(tabs.find((t) => t.id === 'b')!.lastActiveAt).toBeGreaterThanOrEqual(NOW)
+    // 同一标签重复 setActive 不重复刷新（幂等）
+    const before = tabs.find((t) => t.id === 'b')!.lastActiveAt
+    useBrowserStore.getState().setActive('b')
+    expect(useBrowserStore.getState().tabs.find((t) => t.id === 'b')!.lastActiveAt).toBe(before)
   })
 })

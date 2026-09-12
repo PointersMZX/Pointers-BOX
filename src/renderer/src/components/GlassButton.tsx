@@ -1,6 +1,5 @@
-import { Box } from '@chakra-ui/react'
 import { motion } from 'framer-motion'
-import { useRef, useState, type ReactNode, type MouseEvent } from 'react'
+import type { ReactNode } from 'react'
 
 interface Props {
   children: ReactNode
@@ -13,18 +12,9 @@ interface Props {
   title?: string
 }
 
-interface Ripple {
-  id: number
-  x: number
-  y: number
-  size: number
-}
-
-let rippleSeq = 0
-
 /**
- * 液态玻璃按钮（v2.0.0）：
- * 按下整体内缩 8% + 边缘泛起圆形透明扩散波纹；抬手弹性回弹过冲 ~1.03x 后归位（果冻阻尼 0.25s）。
+ * 液态玻璃按钮（v2.1.0 克制版）：
+ * 按下轻微内缩，抬手 120ms 平滑归位；去掉按压波纹与过冲弹簧。
  */
 export default function GlassButton({
   children,
@@ -35,20 +25,6 @@ export default function GlassButton({
   ariaLabel,
   title
 }: Props) {
-  const [ripples, setRipples] = useState<Ripple[]>([])
-  const ref = useRef<HTMLButtonElement>(null)
-
-  const spawnRipple = (e: MouseEvent<HTMLButtonElement>): void => {
-    const el = ref.current
-    if (!el) return
-    const rect = el.getBoundingClientRect()
-    const x = e.clientX - rect.left
-    const y = e.clientY - rect.top
-    const size = Math.max(rect.width, rect.height) * 1.2
-    const id = ++rippleSeq
-    setRipples((rs) => [...rs.slice(-3), { id, x, y, size }])
-  }
-
   const pad = size === 'sm' ? '0.4rem 0.95rem' : '0.55rem 1.25rem'
   const fontSize = size === 'sm' ? '0.8rem' : '0.88rem'
   const bg = variant === 'primary' ? 'var(--pbox-accent)' : 'var(--chakra-colors-pinput, rgba(255,255,255,0.10))'
@@ -60,22 +36,17 @@ export default function GlassButton({
 
   return (
     <motion.button
-      ref={ref}
       type="button"
       aria-label={ariaLabel}
       title={title}
       disabled={isDisabled}
-      whileTap={isDisabled ? undefined : { scale: 0.92 }}
-      whileHover={isDisabled ? undefined : { scale: 1.02 }}
-      transition={{ type: 'spring', stiffness: 480, damping: 15, mass: 0.9 }}
-      onClick={(e) => {
+      whileTap={isDisabled ? undefined : { scale: 0.97 }}
+      transition={{ duration: 0.12, ease: 'easeOut' }}
+      onClick={() => {
         if (isDisabled) return
-        spawnRipple(e)
         onClick?.()
       }}
       style={{
-        position: 'relative',
-        overflow: 'hidden',
         display: 'inline-flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -96,22 +67,7 @@ export default function GlassButton({
           variant === 'primary' ? '0 4px 18px var(--pbox-accent-soft, rgba(159,122,234,0.35))' : 'none'
       }}
     >
-      <Box as="span" display="inline-flex" alignItems="center" gap={2} position="relative" zIndex={1}>
-        {children}
-      </Box>
-      {ripples.map((r) => (
-        <Box
-          key={r.id}
-          className="pbox-press-ripple"
-          style={{
-            left: r.x - r.size / 2,
-            top: r.y - r.size / 2,
-            width: r.size,
-            height: r.size
-          }}
-          onAnimationEnd={() => setRipples((rs) => rs.filter((x) => x.id !== r.id))}
-        />
-      ))}
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>{children}</span>
     </motion.button>
   )
 }

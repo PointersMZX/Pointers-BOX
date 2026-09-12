@@ -20,6 +20,9 @@ import {
 } from '../../../shared/validate'
 import { normalizeConfig } from '../../../shared/config'
 import { resolveOpenMode } from '../../../shared/browserChoice'
+import { isNewerVersion } from '../../../shared/semver'
+import { parseReleaseJson } from '../../../shared/updates'
+import { isUpdateChannel, UPDATE_CHANNEL_INFO } from '../../../shared/updateChannels'
 
 const CONFIG_KEY = 'app-config'
 const CACHE_KEY = 'data-cache'
@@ -187,14 +190,47 @@ export function androidRestoreData(_target: RestoreTarget): Promise<boolean> {
   return Promise.resolve(false)
 }
 
-export function androidCheckUpdate(): Promise<UpdateCheckResult> {
-  return Promise.resolve({
-    current: '2.0.0',
-    latest: null,
-    hasUpdate: false,
-    error: 'Android 端请从发布渠道获取新版本'
-  })
+// v2.1.0：真实检查更新（按所选渠道拉 Release API + 版本比较）
+export async function androidCheckUpdate(): Promise<UpdateCheckResult> {
+  const current = ANDROID_APP_VERSION
+  try {
+    const channel = (await androidGetConfig()).updateChannel
+    if (!isUpdateChannel(channel)) {
+      return { current, latest: null, hasUpdate: false, error: '尚未选择更新渠道，请先在设置中选择' }
+    }
+    const info = UPDATE_CHANNEL_INFO[channel]
+    const res = await CapacitorHttp.get({
+      url: info.releaseApi,
+      headers: info.headers,
+      connectTimeout: 10_000,
+      readTimeout: 10_000
+    })
+    const status = res.status ?? 0
+    if (status === 403 || status === 401) {
+      return { current, latest: null, hasUpdate: false, error: '接口访问受限（限流），请稍后再试' }
+    }
+    if (status < 200 || status >= 300) {
+      return { current, latest: null, hasUpdate: false, error: `HTTP ${status}` }
+    }
+    const text = typeof res.data === 'string' ? res.data : JSON.stringify(res.data)
+    const release = parseReleaseJson(text)
+    if (!release) {
+      return { current, latest: null, hasUpdate: false, error: 'Release 数据缺少 tag_name' }
+    }
+    return {
+      current,
+      latest: release.tagName,
+      hasUpdate: isNewerVersion(release.tagName, current),
+      releaseUrl: release.htmlUrl ?? info.releasePage,
+      releaseNotes: release.notes?.slice(0, 600)
+    }
+  } catch (e) {
+    return { current, latest: null, hasUpdate: false, error: e instanceof Error ? e.message : String(e) }
+  }
 }
+
+/** Android 应用版本（与 android/app/build.gradle versionName 同步维护） */
+export const ANDROID_APP_VERSION = '2.1.0'
 
 export function isAndroidNative(): boolean {
   return Capacitor.isNativePlatform()

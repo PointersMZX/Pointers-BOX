@@ -86,6 +86,8 @@ export function attachDownloadHandling(target: Session = getBrowserSession()): v
     activeItems.set(id, item)
     broadcast({ type: 'started', task: makeTask(rec) })
 
+    // v2.1.0：进度广播 250ms 节流（原实现每事件即发，大文件时 IPC 洪泛）
+    let lastBroadcastAt = 0
     item.on('updated', () => {
       const cur = active.get(id)
       if (!cur) return
@@ -99,7 +101,10 @@ export function attachDownloadHandling(target: Session = getBrowserSession()): v
         cur.lastTime = now
         cur.lastReceived = cur.received
       }
-      broadcast({ type: 'progress', task: makeTask(cur) })
+      if (now - lastBroadcastAt >= 250) {
+        lastBroadcastAt = now
+        broadcast({ type: 'progress', task: makeTask(cur) })
+      }
     })
 
     item.once('done', (_e, state) => {

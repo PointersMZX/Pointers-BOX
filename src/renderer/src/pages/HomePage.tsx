@@ -128,7 +128,7 @@ export default function HomePage() {
                 borderRadius="lg"
                 p={3}
                 cursor="pointer"
-                className="pbox-morph pbox-glass-flow"
+                className="pbox-morph"
                 _hover={{ borderColor: 'brand.400', bg: 'panelstrong' }}
                 onClick={() => setFavDetail(r)}
               >
