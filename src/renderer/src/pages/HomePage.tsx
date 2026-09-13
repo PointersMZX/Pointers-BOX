@@ -8,11 +8,13 @@ import {
   Text,
   VStack
 } from '@chakra-ui/react'
+import { Skeleton } from '@chakra-ui/react'
 import { FiBell, FiHome, FiRefreshCw } from 'react-icons/fi'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Resource } from '../../../shared/types'
 import EmptyState from '../components/EmptyState'
 import GlassPullRefresh from '../components/GlassPullRefresh'
+import { CardGridSkeleton } from '../components/Skeletons'
 import ResourceCard from '../components/ResourceCard'
 import ResourceDetailModal from '../components/ResourceDetailModal'
 import { useDataStore } from '../store/dataStore'
@@ -67,7 +69,12 @@ export default function HomePage() {
   }
 
   if (!loaded && loading) {
-    return <EmptyState icon={<FiHome />} title="正在加载数据…" description="正在从平台获取资源列表" />
+    return (
+      <Box p={6}>
+        <Skeleton height="24px" width="120px" mb={4} />
+        <CardGridSkeleton />
+      </Box>
+    )
   }
 
   return (

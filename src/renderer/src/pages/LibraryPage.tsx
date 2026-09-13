@@ -20,10 +20,12 @@ import {
 import { FiBookOpen, FiCheck, FiChevronDown, FiChevronUp, FiFilter, FiSearch } from 'react-icons/fi'
 import { useEffect, useMemo, useState } from 'react'
 import type { Resource } from '../../../shared/types'
+import { Skeleton } from '@chakra-ui/react'
 import EmptyState from '../components/EmptyState'
 import ResourceCard from '../components/ResourceCard'
 import ResourceDetailModal from '../components/ResourceDetailModal'
 import GlassPullRefresh from '../components/GlassPullRefresh'
+import { CardGridSkeleton } from '../components/Skeletons'
 import { useDataStore } from '../store/dataStore'
 import { useFavoritesStore } from '../store/favoritesStore'
 import {
@@ -90,6 +92,20 @@ export default function LibraryPage() {
   const openDetail = (r: Resource): void => {
     setSelected(r)
     onOpen()
+  }
+
+  if (!loaded) {
+    // v2.3.0：加载骨架（保持页面形制，避免加载完成时布局跳动）
+    return (
+      <Box h="full" display="flex">
+        <Box flex="1" minW={0} h="full">
+          <Box p={6}>
+            <Skeleton height="16px" width="220px" mb={4} />
+            <CardGridSkeleton count={6} />
+          </Box>
+        </Box>
+      </Box>
+    )
   }
 
   if (loaded && resources.length === 0) {

@@ -8,16 +8,30 @@ interface Props {
   action?: ReactNode
 }
 
-// 全局空状态提示（PRD 7.1/7.2 空状态验收项）
+// 全局空状态提示（PRD 7.1/7.2 空状态验收项）；v2.3.0 图标升级为玻璃圆底 + 强调色
 export default function EmptyState({ icon, title, description, action }: Props) {
   return (
-    <VStack spacing={3} py={24}>
+    <VStack spacing={4} py={24}>
       {icon && (
-        <Box fontSize="5xl" color="ptextmuted">
+        <Box
+          as="span"
+          display="inline-flex"
+          alignItems="center"
+          justifyContent="center"
+          w="64px"
+          h="64px"
+          borderRadius="full"
+          bg="panel"
+          borderWidth="1px"
+          borderColor="pborder"
+          color="var(--pbox-accent)"
+          fontSize="24px"
+          className="pbox-blur-panel"
+        >
           {icon}
         </Box>
       )}
-      <Text fontSize="lg" fontWeight="semibold" color="ptextmuted">
+      <Text fontSize="lg" fontWeight="semibold" color="ptext">
         {title}
       </Text>
       {description && (
