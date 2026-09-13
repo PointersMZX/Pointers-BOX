@@ -1,0 +1,38 @@
+name: Linux Build (实验)
+
+# v2.3.0 跨平台尝试：Ubuntu 上构建 AppImage/deb，产物挂到 Actions 供下载试用（不发布 Release）
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  NPM_CONFIG_REGISTRY: https://registry.npmjs.org
+
+jobs:
+  appimage-deb:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build renderer & main
+        run: pnpm build
+      - name: Package AppImage / deb
+        run: pnpm exec electron-builder --config electron-builder.yml --linux --publish never
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-packages
+          path: |
+            release/*.AppImage
+            release/*.deb
+          if-no-files-found: error

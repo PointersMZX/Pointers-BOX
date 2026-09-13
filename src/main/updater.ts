@@ -47,6 +47,9 @@ function applyWinChannel(): void {
 // 接管更新包下载/安装事件；进度经 download:event 通道进入下载管理（PRD 7.4 末条）
 // 仅 GitHub 渠道（electron-updater 管线）会走到这些事件；Gitee 渠道进度在 downloadFromGitee 内广播
 export function initUpdater(): void {
+  // v2.3.0：macOS 未签名打包下 electron-updater 无法校验（需 codesign），先禁用应用内更新；
+  // checkUpdate 的渠道 API 检查不受影响（macOS 用户仍能看到新版本并从发布页手动下载）
+  if (process.platform === 'darwin') return
   autoUpdater.autoDownload = false
   autoUpdater.autoInstallOnAppQuit = true
   applyWinChannel()
@@ -201,6 +204,10 @@ export async function downloadUpdate(): Promise<void> {
   if (channel === 'gitee') {
     await downloadFromGitee()
     return
+  }
+  // v2.3.0：macOS 未签名包不支持应用内自动更新（electron-updater 需 codesign）
+  if (process.platform === 'darwin') {
+    throw new Error('macOS 版暂不支持应用内更新，请到发布页手动下载')
   }
   // GitHub 渠道：electron-updater 管线（channel 已在 initUpdater 按 OS 设置）
   applyWinChannel()

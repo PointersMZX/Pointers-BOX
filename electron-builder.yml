@@ -26,7 +26,20 @@ nsis:
   perMachine: false
   allowToChangeInstallationDirectory: true
 
+# v2.3.0 跨平台尝试：Linux（AppImage/deb）与 macOS（dmg，未签名仅分发）
+linux:
+  icon: resources/icons/linux
+  category: Utility
+  maintainer: Pointers <PointersMZX@users.noreply.github.com>
+  target:
+    - AppImage
+    - deb
 
+mac:
+  icon: resources/icons/icon.icns
+  category: public.app-category.utilities
+  target:
+    - dmg
 
 publish:
   provider: github
