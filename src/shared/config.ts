@@ -1,6 +1,9 @@
 import type { AndroidBrowserChoice, AppConfig } from './types'
-import { normalizeAccent, normalizeTheme } from './theme'
+import { DEFAULT_ACCENT, normalizeAccent, normalizeTheme } from './theme'
 import { normalizeTabSleepMinutes, normalizeUpdateChannel } from './updateChannels'
+
+// v2.2.0 迁移：存档里等于旧默认的强调色视为“未自定义”，自动跟随新默认
+const LEGACY_DEFAULT_ACCENT = '#9f7aea'
 
 // 配置归一化：任何来源（磁盘/部分更新）都收敛为合法 AppConfig
 export function normalizeConfig(raw: unknown, defaultDownloadDir: string): AppConfig {
@@ -17,6 +20,12 @@ export function normalizeConfig(raw: unknown, defaultDownloadDir: string): AppCo
     : []
   // 下载历史开关：默认关闭（与 PRD 4.3“不记录历史”共存，v2.0.0）
   const keepDownloadHistory = r['keepDownloadHistory'] === true
+  // 强调色：等于旧默认 #9f7aea 的存档迁移为新默认（v2.2.0）
+  const accentRaw = typeof r['accent'] === 'string' ? r['accent'].trim() : undefined
+  const accent =
+    accentRaw === undefined || accentRaw === '' || accentRaw.toLowerCase() === LEGACY_DEFAULT_ACCENT
+      ? DEFAULT_ACCENT
+      : normalizeAccent(accentRaw)
   // 更新渠道：undefined = 未选择（首启弹窗）；标签休眠默认 5 分钟（v2.1.0）
   const updateChannel = normalizeUpdateChannel(r['updateChannel'])
   const tabSleepMinutes = normalizeTabSleepMinutes(r['tabSleepMinutes'])
@@ -24,7 +33,7 @@ export function normalizeConfig(raw: unknown, defaultDownloadDir: string): AppCo
     downloadDir,
     androidBrowser,
     theme: normalizeTheme(r['theme']),
-    accent: normalizeAccent(r['accent']),
+    accent,
     favorites,
     keepDownloadHistory,
     tabSleepMinutes

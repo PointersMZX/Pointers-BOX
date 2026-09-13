@@ -6,7 +6,7 @@ describe('配置归一化（PRD 4.4 下载路径/Android 浏览器选项 + 主�
     downloadDir: defDir,
     androidBrowser: 'builtin' as const,
     theme: 'glass' as const,
-    accent: '#9f7aea',
+    accent: '#7c5cff',
     favorites: [],
     keepDownloadHistory: false,
     tabSleepMinutes: 5
@@ -47,7 +47,16 @@ describe('配置归一化（PRD 4.4 下载路径/Android 浏览器选项 + 主�
     expect(normalizeConfig({ downloadDir: '   ' }, defDir).downloadDir).toBe(defDir)
     expect(normalizeConfig({ androidBrowser: 'ie' }, defDir).androidBrowser).toBe('builtin')
     expect(normalizeConfig({ theme: 'neon' }, defDir).theme).toBe('glass')
-    expect(normalizeConfig({ accent: 'not-a-color' }, defDir).accent).toBe('#9f7aea')
+    expect(normalizeConfig({ accent: 'not-a-color' }, defDir).accent).toBe('#7c5cff')
+  })
+
+  it('v2.2.0 迁移：存档中的旧默认紫 #9f7aea 自动跟随新默认 #7c5cff', () => {
+    expect(normalizeConfig({ accent: '#9f7aea' }, defDir).accent).toBe('#7c5cff')
+    expect(normalizeConfig({ accent: '#9F7AEA' }, defDir).accent).toBe('#7c5cff')
+    // 新默认本身的存档保持稳定
+    expect(normalizeConfig({ accent: '#7c5cff' }, defDir).accent).toBe('#7c5cff')
+    // 用户显式选择的其他颜色不受迁移影响
+    expect(normalizeConfig({ accent: '#3182ce' }, defDir).accent).toBe('#3182ce')
   })
 
   it('v2.0.0：favorites 非数组回退空、数字 id 字符串化去重、history 开关仅 true 生效', () => {

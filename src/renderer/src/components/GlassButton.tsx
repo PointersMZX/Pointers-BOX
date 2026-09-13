@@ -64,7 +64,7 @@ export default function GlassButton({
         WebkitBackdropFilter: 'blur(12px)',
         backdropFilter: 'blur(12px)',
         boxShadow:
-          variant === 'primary' ? '0 4px 18px var(--pbox-accent-soft, rgba(159,122,234,0.35))' : 'none'
+          variant === 'primary' ? '0 4px 18px var(--pbox-accent-soft, rgba(124,92,255,0.35))' : 'none'
       }}
     >
       <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>{children}</span>

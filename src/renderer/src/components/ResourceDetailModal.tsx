@@ -99,7 +99,7 @@ export default function ResourceDetailModal({ resource, isOpen, onClose }: Props
                     px={2.5}
                     py={0.5}
                     fontSize="xs"
-                    bg="var(--pbox-accent-soft, rgba(159,122,234,0.35))"
+                    bg="var(--pbox-accent-soft, rgba(124,92,255,0.35))"
                     color="ptext"
                   >
                     #{String(resource.id)}
