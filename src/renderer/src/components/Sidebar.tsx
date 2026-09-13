@@ -1,4 +1,5 @@
 import { Box, Flex, Text } from '@chakra-ui/react'
+import { motion } from 'framer-motion'
 import { FiBookOpen, FiDownload, FiGlobe, FiHome, FiLink, FiSettings } from 'react-icons/fi'
 import type { IconType } from 'react-icons'
 import { visiblePages } from '../../../shared/platformPages'
@@ -16,6 +17,7 @@ const NAV_ITEMS: Record<Page, { label: string; icon: IconType }> = {
 }
 
 // 侧边导航栏：固定 200px，图标 + 文字（PRD 2.2）；液态玻璃主题带最高层模糊
+// v2.3.0：激活态改为滑动高亮胶囊（framer-motion layoutId，切换时平滑滑动）
 export default function Sidebar() {
   const page = useUiStore((s) => s.page)
   const platform = useUiStore((s) => s.platform)
@@ -54,13 +56,25 @@ export default function Sidebar() {
             rounded="md"
             fontSize="sm"
             fontWeight={active ? 'semibold' : 'normal'}
-            bg={active ? 'brand.600' : 'transparent'}
             color={active ? 'white' : 'ptextmuted'}
-            _hover={{ bg: active ? 'brand.600' : 'hoverbg', color: active ? 'white' : 'ptext' }}
+            _hover={{ color: active ? 'white' : 'ptext' }}
             onClick={() => setPage(p)}
+            position="relative"
           >
-            <item.icon size={16} />
-            <span>{item.label}</span>
+            {active && (
+              <motion.span
+                layoutId="sidebar-active-pill"
+                transition={{ type: 'spring', stiffness: 420, damping: 36 }}
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  borderRadius: '6px',
+                  background: 'var(--chakra-colors-brand-600)'
+                }}
+              />
+            )}
+            <item.icon size={16} style={{ position: 'relative', zIndex: 1 }} />
+            <span style={{ position: 'relative', zIndex: 1 }}>{item.label}</span>
           </Flex>
         )
       })}
