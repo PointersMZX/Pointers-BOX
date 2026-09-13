@@ -4,6 +4,8 @@ import { join } from 'path'
 import type { AppConfig, RestoreTarget } from '../shared/types'
 import { getConfig, setConfig } from './configStore'
 import { getSnapshot, refreshRemote, restoreFromFile } from './dataStore'
+import { getUserLinks, setUserLinks } from './linksStore'
+import { sanitizeUserLinks, mergeUserLinks } from '../shared/userLinks'
 import { hasActiveDownloads, cancelDownload, pauseDownload, resumeDownload } from './downloads'
 import { resetBrowserSession } from './sessions'
 import { listHistory, clearHistory } from './history'
@@ -56,6 +58,46 @@ export function registerIpcHandlers(): void {
   // 下载历史（v2.0.0：keepDownloadHistory 开关开启时记录）
   ipcMain.handle('history:list', () => listHistory())
   ipcMain.handle('history:clear', () => clearHistory())
+
+  // 用户自建资源链接（v2.2.0：仅存本地 user-links.json）
+  ipcMain.handle('links:get', () => getUserLinks())
+  ipcMain.handle('links:set', (_e, links: unknown) => setUserLinks(links))
+  ipcMain.handle('links:import', async () => {
+    const picked = await dialog.showOpenDialog({
+      title: '导入链接',
+      properties: ['openFile'],
+      filters: [{ name: 'JSON', extensions: ['json'] }]
+    })
+    if (picked.canceled || picked.filePaths.length === 0) return null
+    try {
+      const raw = JSON.parse(readFileSync(picked.filePaths[0] ?? '', 'utf-8')) as Record<string, unknown>
+      // 兼容两种导入格式：裸数组 或 { links: [...] } 导出格式
+      const incoming = sanitizeUserLinks(Array.isArray(raw) ? raw : raw['links'])
+      const { merged, added, skipped } = mergeUserLinks(getUserLinks(), incoming)
+      setUserLinks(merged)
+      return { added, skipped }
+    } catch {
+      return null
+    }
+  })
+  ipcMain.handle('links:export', async () => {
+    const picked = await dialog.showSaveDialog({
+      title: '导出链接',
+      defaultPath: join(app.getPath('documents'), 'pointers-box-links.json'),
+      filters: [{ name: 'JSON', extensions: ['json'] }]
+    })
+    if (picked.canceled || !picked.filePath) return null
+    try {
+      writeFileSync(
+        picked.filePath,
+        JSON.stringify({ app: 'pointers-box', exportedAt: Date.now(), links: getUserLinks() }, null, 2),
+        'utf-8'
+      )
+      return picked.filePath
+    } catch {
+      return null
+    }
+  })
 
   // 配置（M1）
   ipcMain.handle('config:get', () => getConfig())

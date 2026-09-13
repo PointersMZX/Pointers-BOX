@@ -1,5 +1,5 @@
 // 页面路由表（PRD §2.3）：浏览器页无快捷键（无 Ctrl+3）
-export const PAGES = ['home', 'library', 'browser', 'downloads', 'settings'] as const
+export const PAGES = ['home', 'library', 'links', 'browser', 'downloads', 'settings'] as const
 
 export type Page = (typeof PAGES)[number]
 

@@ -8,7 +8,8 @@ import type {
   DownloadEvent,
   RestoreTarget,
   UpdateCheckResult,
-  UpdateEvent
+  UpdateEvent,
+  UserLink
 } from '../../../shared/types'
 import {
   parseLooseJson,
@@ -23,9 +24,11 @@ import { resolveOpenMode } from '../../../shared/browserChoice'
 import { isNewerVersion } from '../../../shared/semver'
 import { parseReleaseJson } from '../../../shared/updates'
 import { isUpdateChannel, UPDATE_CHANNEL_INFO } from '../../../shared/updateChannels'
+import { sanitizeUserLinks } from '../../../shared/userLinks'
 
 const CONFIG_KEY = 'app-config'
 const CACHE_KEY = 'data-cache'
+const LINKS_KEY = 'user-links'
 const DEFAULT_ANDROID_DOWNLOAD_DIR = '/storage/emulated/0/Download'
 
 function emptyResourceData(): { resources: never[]; version_logs: never[]; announcement: null } {
@@ -134,6 +137,32 @@ export async function androidSetConfig(patch: Partial<AppConfig>): Promise<AppCo
 
 export { resolveOpenMode }
 
+// 用户自建资源链接（v2.2.0）：存 Preferences，与桌面端同构
+export async function androidGetUserLinks(): Promise<UserLink[]> {
+  try {
+    const { value } = await Preferences.get({ key: LINKS_KEY })
+    if (!value) return []
+    return sanitizeUserLinks(JSON.parse(value))
+  } catch {
+    return []
+  }
+}
+
+export async function androidSetUserLinks(links: unknown): Promise<UserLink[]> {
+  const next = sanitizeUserLinks(links)
+  await Preferences.set({ key: LINKS_KEY, value: JSON.stringify(next) })
+  return next
+}
+
+// 文件导入/导出依赖系统文件选择器，Android 端暂不支持（返回 null，UI 隐藏按钮）
+export async function androidImportUserLinks(): Promise<{ added: number; skipped: number } | null> {
+  return null
+}
+
+export async function androidExportUserLinks(): Promise<string | null> {
+  return null
+}
+
 // 内置浏览器：打开安卓原生 InAppBrowserActivity（带地址栏/导航/下载/会话重置）
 export async function androidOpenClaim(url: string, choice?: 'builtin' | 'system'): Promise<void> {
   const mode = resolveOpenMode(choice, 'android')
@@ -230,7 +259,7 @@ export async function androidCheckUpdate(): Promise<UpdateCheckResult> {
 }
 
 /** Android 应用版本（与 android/app/build.gradle versionName 同步维护） */
-export const ANDROID_APP_VERSION = '2.1.0'
+export const ANDROID_APP_VERSION = '2.2.0'
 
 export function isAndroidNative(): boolean {
   return Capacitor.isNativePlatform()

@@ -6,6 +6,7 @@ export type AppPlatform = 'desktop' | 'android'
 export const DESKTOP_PAGES: readonly Page[] = [
   'home',
   'library',
+  'links',
   'browser',
   'downloads',
   'settings'
@@ -15,6 +16,7 @@ export const DESKTOP_PAGES: readonly Page[] = [
 export const ANDROID_PAGES: readonly Page[] = [
   'home',
   'library',
+  'links',
   'browser',
   'downloads',
   'settings'

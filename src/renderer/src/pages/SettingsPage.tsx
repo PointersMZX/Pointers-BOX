@@ -438,7 +438,7 @@ export default function SettingsPage() {
       {/* 关于应用（合并区块，PRD 4.4） */}
       <Section title="关于应用">
         <Row label="应用名称" value={box?.app_name ?? 'Pointers-BOX'} />
-        <Row label="应用版本" value={localVersion ? `v${localVersion}` : 'v2.1.0'} />
+        <Row label="应用版本" value={localVersion ? `v${localVersion}` : 'v2.2.0'} />
         <Row label="开发者" value={box?.developer} />
         <Row label="社区 QQ 群" value={box?.community_qq} />
         <Row label="通用密钥" value={box?.general_key} />
@@ -482,7 +482,7 @@ export default function SettingsPage() {
         </Text>
         <Flex align="center" justify="space-between" wrap="wrap" gap={3}>
           <Text fontSize="sm" color="ptextmuted">
-            当前版本：{result?.current ?? (localVersion ? `v${localVersion}` : 'v2.1.0')}
+            当前版本：{result?.current ?? (localVersion ? `v${localVersion}` : 'v2.2.0')}
           </Text>
           <Button
             size="sm"

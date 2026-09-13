@@ -1,5 +1,5 @@
 import { Box, Flex, Text } from '@chakra-ui/react'
-import { FiBookOpen, FiDownload, FiGlobe, FiHome, FiSettings } from 'react-icons/fi'
+import { FiBookOpen, FiDownload, FiGlobe, FiHome, FiLink, FiSettings } from 'react-icons/fi'
 import type { IconType } from 'react-icons'
 import { visiblePages } from '../../../shared/platformPages'
 import type { Page } from '../../../shared/routes'
@@ -9,6 +9,7 @@ import { useThemeStore } from '../store/themeStore'
 const NAV_ITEMS: Record<Page, { label: string; icon: IconType }> = {
   home: { label: '首页', icon: FiHome },
   library: { label: '资源', icon: FiBookOpen },
+  links: { label: '链接', icon: FiLink },
   browser: { label: '浏览器', icon: FiGlobe },
   downloads: { label: '下载', icon: FiDownload },
   settings: { label: '设置', icon: FiSettings }

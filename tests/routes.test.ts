@@ -1,8 +1,8 @@
 import { PAGES, isPage, pageFromKeyboard, SHORTCUT_PAGE_MAP } from '../src/shared/routes'
 
 describe('路由表（PRD §2.3）', () => {
-  it('页面集合包含 5 个页面', () => {
-    expect([...PAGES]).toEqual(['home', 'library', 'browser', 'downloads', 'settings'])
+  it('页面集合包含 6 个页面', () => {
+    expect([...PAGES]).toEqual(['home', 'library', 'links', 'browser', 'downloads', 'settings'])
   })
 
   it('Ctrl+1/2/4/5 映射到 首页/资源库/下载/设置', () => {

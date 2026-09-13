@@ -14,6 +14,7 @@ import StatusBar from './components/StatusBar'
 import UpdateChannelModal from './components/UpdateChannelModal'
 import HomePage from './pages/HomePage'
 import LibraryPage from './pages/LibraryPage'
+import LinksPage from './pages/LinksPage'
 import BrowserPage from './pages/BrowserPage'
 import DownloadsPage from './pages/DownloadsPage'
 import SettingsPage from './pages/SettingsPage'
@@ -24,6 +25,8 @@ function renderPage(page: Page) {
       return <HomePage />
     case 'library':
       return <LibraryPage />
+    case 'links':
+      return <LinksPage />
     case 'browser':
       return <BrowserPage />
     case 'downloads':

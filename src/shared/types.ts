@@ -49,6 +49,19 @@ export interface AuthorWords {
   content: string
 }
 
+// ── 用户自建资源链接（v2.2.0：仅存本地，不参与服务器数据） ─────
+
+export interface UserLink {
+  id: string
+  /** 链接名称（必填，≤100 字） */
+  name: string
+  /** 链接地址（必填，http/https，≤2048 字符） */
+  url: string
+  /** 备注（可选，≤500 字） */
+  remark: string
+  createdAt: number
+}
+
 // ── 配置 ─────────────────────────────────────────────────────
 
 export type AndroidBrowserChoice = 'builtin' | 'system'
@@ -169,6 +182,13 @@ export interface PBoxApi {
   getData(): Promise<DataSnapshot>
   refreshData(force?: boolean): Promise<DataSnapshot>
   restoreData(type: RestoreTarget): Promise<boolean>
+  /** 用户自建资源链接（v2.2.0：仅存本地） */
+  getUserLinks(): Promise<UserLink[]>
+  setUserLinks(links: UserLink[]): Promise<UserLink[]>
+  /** 文件导入（桌面端弹选择框；Android 返回 null 表示不支持），返回新增/跳过计数 */
+  importUserLinks(): Promise<{ added: number; skipped: number } | null>
+  /** 文件导出（桌面端弹保存框；Android 返回 null 表示不支持），成功返回文件路径 */
+  exportUserLinks(): Promise<string | null>
   getConfig(): Promise<AppConfig>
   setConfig(patch: Partial<AppConfig>): Promise<AppConfig>
   chooseDownloadDir(): Promise<string | null>

@@ -11,6 +11,8 @@ import {
   androidCheckUpdate,
   androidGetData,
   androidGetConfig,
+  androidGetUserLinks,
+  androidImportUserLinks,
   androidOnDownloadEvent,
   androidOnNavigate,
   androidOnUpdateEvent,
@@ -19,7 +21,9 @@ import {
   androidOpenSystemDownloads,
   androidResetSession,
   androidRestoreData,
-  androidSetConfig
+  androidSetConfig,
+  androidSetUserLinks,
+  androidExportUserLinks
 } from './capacitor'
 
 export function currentPlatform(): AppPlatform {
@@ -57,6 +61,10 @@ function createAndroidBackend(): AppBackend {
     getData: () => androidGetData(false),
     refreshData: (force?: boolean) => androidGetData(Boolean(force)),
     restoreData: (target) => androidRestoreData(target),
+    getUserLinks: () => androidGetUserLinks(),
+    setUserLinks: (links) => androidSetUserLinks(links),
+    importUserLinks: () => androidImportUserLinks(),
+    exportUserLinks: () => androidExportUserLinks(),
     getConfig: () => androidGetConfig(),
     setConfig: (patch) => androidSetConfig(patch),
     chooseDownloadDir: () => Promise.resolve(null),

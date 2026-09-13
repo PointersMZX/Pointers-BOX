@@ -12,6 +12,7 @@ import { FiBell, FiHome, FiRefreshCw } from 'react-icons/fi'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Resource } from '../../../shared/types'
 import EmptyState from '../components/EmptyState'
+import GlassPullRefresh from '../components/GlassPullRefresh'
 import ResourceCard from '../components/ResourceCard'
 import ResourceDetailModal from '../components/ResourceDetailModal'
 import { useDataStore } from '../store/dataStore'
@@ -54,12 +55,24 @@ export default function HomePage() {
     setPicks(next)
   }
 
+  // v2.2.0：下拉刷新 = 强制拉取服务器数据（公告/资源随 store 自动更新）+ 重抽推荐
+  const onPullRefresh = async (): Promise<void> => {
+    await refreshData(true)
+    const latest = useDataStore.getState().resources
+    const next = sampleUniqueExcluding(latest, 3, shownIds.current)
+    if (next.length > 0) {
+      shownIds.current = new Set(next.map((r) => r.id))
+      setPicks(next)
+    }
+  }
+
   if (!loaded && loading) {
     return <EmptyState icon={<FiHome />} title="正在加载数据…" description="正在从平台获取资源列表" />
   }
 
   return (
-    <Box p={6}>
+    <GlassPullRefresh onRefresh={onPullRefresh}>
+      <Box p={6}>
       {picks.length > 0 ? (
         <>
           <Flex align="center" justify="space-between" mb={4}>
@@ -194,6 +207,7 @@ export default function HomePage() {
         isOpen={favDetail !== null}
         onClose={() => setFavDetail(null)}
       />
-    </Box>
+      </Box>
+    </GlassPullRefresh>
   )
 }
