@@ -1,4 +1,5 @@
 import { ChakraProvider, useColorMode, useToast, Box, Flex } from '@chakra-ui/react'
+import { motion } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
 import type { Page } from '../../shared/routes'
 import { backend, castPage, currentPlatform } from './platform'
@@ -8,6 +9,7 @@ import { useDownloadStore } from './store/downloadStore'
 import { useThemeStore } from './store/themeStore'
 import { useFavoritesStore } from './store/favoritesStore'
 import { buildTheme } from './theme/buildTheme'
+import { PAGE_ENTER, PAGE_ENTER_ACTIVE } from './theme/motion'
 import Sidebar from './components/Sidebar'
 import BottomNav from './components/BottomNav'
 import StatusBar from './components/StatusBar'
@@ -175,7 +177,15 @@ function ThemedShell() {
           {/* v2.0.0：Android 手机端以底部导航栏替代侧边栏（竖屏/横屏均适配） */}
           {!isAndroid && <Sidebar />}
           <Box flex="1" minW={0} overflowY="auto" paddingBottom={isAndroid ? '72px' : 0}>
-            {renderPage(page)}
+            {/* v2.3.0：页面切换柔和淡入（仅入场，无过冲；key 触发重挂载动画） */}
+            <motion.div
+              key={page}
+              initial={PAGE_ENTER}
+              animate={PAGE_ENTER_ACTIVE}
+              style={{ height: '100%' }}
+            >
+              {renderPage(page)}
+            </motion.div>
           </Box>
         </Flex>
         {/* 安卓端隐藏状态栏（底栏已占据底部空间） */}

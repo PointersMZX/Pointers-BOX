@@ -81,7 +81,34 @@ function makeStyles(effectiveAccent: string) {
         overflow: 'hidden'
       },
       '#root': { height: '100vh' },
-      // v2.1.0：统一平滑过渡（替代过冲贝塞尔，观感更沉稳）
+      // v2.3.0：主题化细滚动条（三主题通用的中性灰，悬浮加深）
+      '::-webkit-scrollbar': {
+        width: '10px',
+        height: '10px'
+      },
+      '::-webkit-scrollbar-track': {
+        background: 'transparent'
+      },
+      '::-webkit-scrollbar-thumb': {
+        background: 'rgba(128, 138, 158, 0.32)',
+        borderRadius: '8px',
+        border: '2px solid transparent',
+        backgroundClip: 'padding-box'
+      },
+      '::-webkit-scrollbar-thumb:hover': {
+        background: 'rgba(128, 138, 158, 0.55)',
+        border: '2px solid transparent',
+        backgroundClip: 'padding-box'
+      },
+      '::-webkit-scrollbar-corner': {
+        background: 'transparent'
+      },
+      // v2.3.0：键盘焦点可见性（无障碍；鼠标点击不触发）
+      ':focus-visible': {
+        outline: '2px solid var(--pbox-accent)',
+        outlineOffset: '2px'
+      },
+      // v2.3.0：统一平滑过渡（替代过冲贝塞尔，观感更沉稳）
       '.chakra-button, a, [role="button"]': {
         transition: 'color .18s ease, background-color .18s ease, border-color .18s ease, opacity .18s ease'
       },
