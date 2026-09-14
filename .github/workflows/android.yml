@@ -71,7 +71,8 @@ jobs:
       - name: Attach APK to release
         uses: softprops/action-gh-release@v2
         with:
-          name: v2.0.0
+          # 跟随 tag 名（v2.0.0 时代硬编码曾把 v2.1.0 Release 名错标）
+          name: ${{ github.ref_name }}
           files: android/app/build/outputs/apk/release/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
