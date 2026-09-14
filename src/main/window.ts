@@ -69,8 +69,8 @@ export function createMainWindow(): BrowserWindow {
 
   win.once('ready-to-show', () => {
     win.show()
-    // 保证启动动画至少完整展示 800ms
-    setTimeout(closeSplash, 800)
+    // 保证启动动画完整展示（落座入场 0.55s + 进度条 1.4s，取 1400ms 收尾干净不拖沓）
+    setTimeout(closeSplash, 1400)
   })
   // PRD 2.2：关闭窗口 = 隐藏到托盘，不退出进程
   win.on('close', (e) => {
