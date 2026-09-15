@@ -10,7 +10,9 @@ describe('配置归一化（PRD 4.4 下载路径/Android 浏览器选项 + 主�
     favorites: [],
     keepDownloadHistory: false,
     tabSleepMinutes: 5,
-    homeLayout: 'compact' as const
+    homeLayout: 'compact' as const,
+    // v2.2.0：更新渠道默认兜底 gitee（首启不再强制弹窗）
+    updateChannel: 'gitee' as const
   }
 
   it('空/损坏配置回退默认值（默认液态玻璃主题）', () => {
@@ -42,7 +44,9 @@ describe('配置归一化（PRD 4.4 下载路径/Android 浏览器选项 + 主�
       favorites: ['1', '2'],
       keepDownloadHistory: true,
       tabSleepMinutes: 5,
-      homeLayout: 'wide'
+      homeLayout: 'wide',
+      // v2.2.0：updateChannel 默认兜底 gitee
+      updateChannel: 'gitee'
     })
   })
 
@@ -69,11 +73,14 @@ describe('配置归一化（PRD 4.4 下载路径/Android 浏览器选项 + 主�
     expect(normalizeConfig({ keepDownloadHistory: true }, defDir).keepDownloadHistory).toBe(true)
   })
 
-  it('v2.1.0：updateChannel 未选为 undefined、合法值保留、非法值回 undefined（触发首启弹窗）', () => {
-    expect(normalizeConfig({}, defDir).updateChannel).toBeUndefined()
+  it('v2.2.0：updateChannel 默认 gitee；显式 null 清空为 undefined（触发首启弹窗）；合法值保留、非法回默认', () => {
+    expect(normalizeConfig({}, defDir).updateChannel).toBe('gitee')
     expect(normalizeConfig({ updateChannel: 'gitee' }, defDir).updateChannel).toBe('gitee')
     expect(normalizeConfig({ updateChannel: 'github' }, defDir).updateChannel).toBe('github')
-    expect(normalizeConfig({ updateChannel: 'gitlab' }, defDir).updateChannel).toBeUndefined()
+    // v2.2.0：默认值兜底 gitee，非法值不再回 undefined
+    expect(normalizeConfig({ updateChannel: 'gitlab' }, defDir).updateChannel).toBe('gitee')
+    // 显式清空（设置页写入 null）仍走首启弹窗
+    expect(normalizeConfig({ updateChannel: null }, defDir).updateChannel).toBeUndefined()
   })
 
   it('v2.1.0：tabSleepMinutes 默认 5、0 表示永不休眠、非法值回退 5', () => {

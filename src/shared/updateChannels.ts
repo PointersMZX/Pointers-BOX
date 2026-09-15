@@ -25,7 +25,7 @@ export const UPDATE_CHANNEL_INFO: Record<UpdateChannel, UpdateChannelInfo> = {
   }
 }
 
-/** 渠道归一化：非法值返回 undefined（保持"未选择"语义，触发首启弹窗） */
+/** 渠道归一化：非法值返回 undefined（v2.2.0 起由 normalizeConfig 兜底默认 gitee） */
 export function normalizeUpdateChannel(raw: unknown): UpdateChannel | undefined {
   return raw === 'gitee' || raw === 'github' ? raw : undefined
 }

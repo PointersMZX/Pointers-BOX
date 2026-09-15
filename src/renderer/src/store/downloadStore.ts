@@ -8,7 +8,7 @@ interface DownloadState {
   loadConfig: () => Promise<void>
   applyEvent: (e: DownloadEvent) => void
   chooseDir: () => Promise<string | null>
-  saveConfig: (patch: Partial<AppConfig>) => Promise<void>
+  saveConfig: (patch: Partial<AppConfig>) => Promise<AppConfig>
   openFolder: () => Promise<boolean>
   cancel: (id: string) => Promise<void>
   pause: (id: string) => Promise<void>
@@ -28,6 +28,7 @@ export const useDownloadStore = create<DownloadState>((set, get) => ({
   config: null,
 
   loadConfig: async () => {
+    // v2.2.0：主进程返回完整 AppConfig，整组同步（此前部分快照会把 homeLayout 等字段冲回 undefined）
     set({ config: await backend.getConfig() })
   },
 
@@ -47,7 +48,10 @@ export const useDownloadStore = create<DownloadState>((set, get) => ({
   },
 
   saveConfig: async (patch) => {
-    set({ config: await backend.setConfig(patch) })
+    // v2.2.0：setConfig 返回主进程合并后的完整配置，直接作为 store 新值（消除过期快照回写）
+    const next = await backend.setConfig(patch)
+    set({ config: next })
+    return next
   },
 
   openFolder: async () => {

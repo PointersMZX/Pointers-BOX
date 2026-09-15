@@ -26,8 +26,8 @@ export function normalizeConfig(raw: unknown, defaultDownloadDir: string): AppCo
     accentRaw === undefined || accentRaw === '' || accentRaw.toLowerCase() === LEGACY_DEFAULT_ACCENT
       ? DEFAULT_ACCENT
       : normalizeAccent(accentRaw)
-  // 更新渠道：undefined = 未选择（首启弹窗）；标签休眠默认 5 分钟（v2.1.0）
-  const updateChannel = normalizeUpdateChannel(r['updateChannel'])
+  // 更新渠道：默认 gitee（国内主渠道，v2.2.0 起首启不再强制弹窗）；显式清空时才 undefined（首启弹窗）
+  const updateChannel = r['updateChannel'] === null ? undefined : normalizeUpdateChannel(r['updateChannel']) ?? 'gitee'
   const tabSleepMinutes = normalizeTabSleepMinutes(r['tabSleepMinutes'])
   // 主页布局（v2.2.0）：堆叠/紧凑/宽展，默认紧凑；非法回退 compact
   const cfg: AppConfig = {
