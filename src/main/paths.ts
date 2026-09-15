@@ -12,7 +12,3 @@ export function resourcesRoot(): string {
 export function iconFile(name: string): string {
   return join(resourcesRoot(), 'icons', name)
 }
-
-export function splashFile(): string {
-  return join(resourcesRoot(), 'splash', 'splash.html')
-}

@@ -1,7 +1,6 @@
 import { create } from 'zustand'
 import type {
   Announcement,
-  AuthorWords,
   BoxInfo,
   DataSnapshot,
   RestoreTarget,
@@ -14,10 +13,10 @@ interface DataState {
   loaded: boolean
   loading: boolean
   resources: Resource[]
+  /** 版本日志（boxbbgxrz.json 独立文件；新→旧） */
   versionLogs: VersionLog[]
   announcement: Announcement | null
   box: BoxInfo | null
-  authorWords: AuthorWords | null
   offline: boolean
   lastSync: number | null
   warnings: string[]
@@ -32,10 +31,9 @@ function applySnapshot(set: SetState, snap: DataSnapshot): void {
   set({
     loaded: true,
     resources: snap.data.resources,
-    versionLogs: snap.data.version_logs,
+    versionLogs: snap.versionLogs,
     announcement: snap.data.announcement,
     box: snap.box,
-    authorWords: snap.authorWords,
     offline: snap.offline,
     lastSync: snap.lastSync,
     warnings: snap.warnings
@@ -49,7 +47,6 @@ export const useDataStore = create<DataState>((set, get) => ({
   versionLogs: [],
   announcement: null,
   box: null,
-  authorWords: null,
   offline: false,
   lastSync: null,
   warnings: [],

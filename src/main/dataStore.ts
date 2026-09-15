@@ -13,11 +13,11 @@ import {
 import { join } from 'path'
 import { REMOTE_URLS } from '../shared/types'
 import type {
-  AuthorWords,
   BoxInfo,
   DataSnapshot,
   ResourceData,
-  RestoreTarget
+  RestoreTarget,
+  VersionLog
 } from '../shared/types'
 import { backupFileName, pruneBackupNames } from './data/backup'
 import { shouldRefetch } from './data/sync'
@@ -26,7 +26,6 @@ import {
   DataFileError,
   parseLooseJson,
   validateAnnouncement,
-  validateAuthorWords,
   validateBoxInfo,
   validateResources,
   validateVersionLogs
@@ -38,7 +37,8 @@ const FETCH_TIMEOUT_MS = 10_000
 const WORK_FILES = {
   resources: 'resources.json',
   box: 'box.json',
-  boxzzyhs: 'boxzzyhs.json'
+  /** 版本更新日志（v2.2.0 起独立文件） */
+  versionLogs: 'boxbbgxrz.json'
 } as const
 
 type WorkKey = keyof typeof WORK_FILES
@@ -51,7 +51,8 @@ function backupKind(key: WorkKey): string {
 interface MemoryState {
   data: ResourceData
   box: BoxInfo | null
-  authorWords: AuthorWords | null
+  /** 版本日志（boxbbgxrz.json 独立文件；新→旧） */
+  versionLogs: VersionLog[]
   offline: boolean
   lastSync: number | null
   warnings: string[]
@@ -144,7 +145,7 @@ function loadFromDisk(): MemoryState {
   const warnings: string[] = []
   let data = emptyResourceData()
   let box: BoxInfo | null = null
-  let authorWords: AuthorWords | null = null
+  let versionLogs: VersionLog[] = []
 
   const resourcesPath = workPath('resources')
   if (existsSync(resourcesPath)) {
@@ -153,7 +154,7 @@ function loadFromDisk(): MemoryState {
       const clean = validateResources(raw)
       data = {
         resources: clean.valid,
-        version_logs: validateVersionLogs(raw),
+        version_logs: [],
         announcement: validateAnnouncement(raw)
       }
       warnings.push(...clean.errors)
@@ -171,12 +172,12 @@ function loadFromDisk(): MemoryState {
     }
   }
 
-  const wordsPath = workPath('boxzzyhs')
-  if (existsSync(wordsPath)) {
+  const logsPath = workPath('versionLogs')
+  if (existsSync(logsPath)) {
     try {
-      authorWords = validateAuthorWords(parseLooseJson(readFileSync(wordsPath, 'utf-8')))
+      versionLogs = validateVersionLogs(parseLooseJson(readFileSync(logsPath, 'utf-8')))
     } catch (e) {
-      warnings.push(`本地 boxzzyhs.json 无效已忽略：${msg(e)}`)
+      warnings.push(`本地 boxbbgxrz.json 无效已忽略：${msg(e)}`)
     }
   }
 
@@ -194,7 +195,7 @@ function loadFromDisk(): MemoryState {
   const s: MemoryState = {
     data,
     box,
-    authorWords,
+    versionLogs,
     offline: true, // 磁盘数据视作离线态，远程刷新成功后置 false
     lastSync,
     warnings
@@ -212,7 +213,7 @@ export function getSnapshot(): DataSnapshot {
   return {
     data: s.data,
     box: s.box,
-    authorWords: s.authorWords,
+    versionLogs: s.versionLogs,
     offline: s.offline,
     lastSync: s.lastSync,
     warnings: [...s.warnings]
@@ -227,7 +228,7 @@ export async function refreshRemote(force = false): Promise<DataSnapshot> {
   const results = await Promise.allSettled([
     fetchJson(REMOTE_URLS.resources),
     fetchJson(REMOTE_URLS.box),
-    fetchJson(REMOTE_URLS.boxzzyhs)
+    fetchJson(REMOTE_URLS.versionLogs)
   ])
 
   const warnings: string[] = []
@@ -239,7 +240,7 @@ export async function refreshRemote(force = false): Promise<DataSnapshot> {
       const clean = validateResources(resourcesResult.value)
       s.data = {
         resources: clean.valid,
-        version_logs: validateVersionLogs(resourcesResult.value),
+        version_logs: [],
         announcement: validateAnnouncement(resourcesResult.value)
       }
       warnings.push(...clean.errors)
@@ -267,19 +268,17 @@ export async function refreshRemote(force = false): Promise<DataSnapshot> {
     warnings.push(`box.json 获取失败：${msg(boxResult.reason)}`)
   }
 
-  const wordsResult = results[2]
-  if (wordsResult && wordsResult.status === 'fulfilled') {
+  const logsResult = results[2]
+  if (logsResult && logsResult.status === 'fulfilled') {
     try {
-      const w = validateAuthorWords(wordsResult.value)
-      if (!w) throw new DataFileError('缺少 content')
-      s.authorWords = w
-      persistWork('boxzzyhs', JSON.stringify(wordsResult.value, null, 2))
+      s.versionLogs = validateVersionLogs(logsResult.value)
+      persistWork('versionLogs', JSON.stringify(logsResult.value, null, 2))
       okCount++
     } catch (e) {
-      warnings.push(`boxzzyhs.json 解析失败（保留本地数据）：${msg(e)}`)
+      warnings.push(`boxbbgxrz.json 解析失败（保留本地数据）：${msg(e)}`)
     }
-  } else if (wordsResult && wordsResult.status === 'rejected') {
-    warnings.push(`boxzzyhs.json 获取失败：${msg(wordsResult.reason)}`)
+  } else if (logsResult && logsResult.status === 'rejected') {
+    warnings.push(`boxbbgxrz.json 获取失败：${msg(logsResult.reason)}`)
   }
 
   s.warnings = warnings
@@ -314,7 +313,7 @@ export async function restoreFromFile(target: RestoreTarget): Promise<boolean> {
       atomicWrite(workPath('resources'), JSON.stringify(raw, null, 2))
       s.data = {
         resources: clean.valid,
-        version_logs: validateVersionLogs(raw),
+        version_logs: [],
         announcement: validateAnnouncement(raw)
       }
       s.warnings = [...clean.errors]

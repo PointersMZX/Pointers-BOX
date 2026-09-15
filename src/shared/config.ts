@@ -1,6 +1,6 @@
 import type { AndroidBrowserChoice, AppConfig } from './types'
 import { DEFAULT_ACCENT, normalizeAccent, normalizeTheme } from './theme'
-import { normalizeTabSleepMinutes, normalizeUpdateChannel } from './updateChannels'
+import { normalizeHomeLayout, normalizeTabSleepMinutes, normalizeUpdateChannel } from './updateChannels'
 
 // v2.2.0 迁移：存档里等于旧默认的强调色视为“未自定义”，自动跟随新默认
 const LEGACY_DEFAULT_ACCENT = '#9f7aea'
@@ -29,6 +29,7 @@ export function normalizeConfig(raw: unknown, defaultDownloadDir: string): AppCo
   // 更新渠道：undefined = 未选择（首启弹窗）；标签休眠默认 5 分钟（v2.1.0）
   const updateChannel = normalizeUpdateChannel(r['updateChannel'])
   const tabSleepMinutes = normalizeTabSleepMinutes(r['tabSleepMinutes'])
+  // 主页布局（v2.2.0）：堆叠/紧凑/宽展，默认紧凑；非法回退 compact
   const cfg: AppConfig = {
     downloadDir,
     androidBrowser,
@@ -36,7 +37,8 @@ export function normalizeConfig(raw: unknown, defaultDownloadDir: string): AppCo
     accent,
     favorites,
     keepDownloadHistory,
-    tabSleepMinutes
+    tabSleepMinutes,
+    homeLayout: normalizeHomeLayout(r['homeLayout'])
   }
   if (updateChannel) cfg.updateChannel = updateChannel
   return cfg

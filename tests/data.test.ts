@@ -3,7 +3,6 @@ import {
   parseJson,
   parseLooseJson,
   validateAnnouncement,
-  validateAuthorWords,
   validateBoxInfo,
   validateResources,
   validateVersionLogs,
@@ -83,10 +82,21 @@ describe('其余校验器', () => {
     expect(validateVersionLogs({})).toEqual([])
   })
 
-  it('box.json：app_name 缺失判无效', () => {
+  it('boxbbgxrz.json（版本日志）：支持 {version_logs:[...]} 与顶层数组两种格式，过滤缺 version 的条目', () => {
+    expect(
+      validateVersionLogs({ version_logs: [{ version: 'v2.2.0', log: 'x' }, { log: 'y' }, 42] })
+    ).toEqual([{ version: 'v2.2.0', log: 'x' }])
+    // 顶层直接是数组
+    expect(validateVersionLogs([{ version: 'v2.1.0', log: 'y' }])).toEqual([
+      { version: 'v2.1.0', log: 'y' }
+    ])
+    expect(validateVersionLogs({})).toEqual([])
+    expect(validateVersionLogs(null)).toEqual([])
+  })
+
+  it('box.json：app_name 缺失判无效（v2.2.0 起不再读 app_version）', () => {
     const good = {
       app_name: 'Pointers-BOX',
-      app_version: 'Version 2.0.0 Beta',
       app_introduction: '简介',
       general_key: 'zycx、Pointers',
       developer: 'Pointers',
@@ -96,14 +106,6 @@ describe('其余校验器', () => {
     expect(validateBoxInfo(good)).toMatchObject({ app_name: 'Pointers-BOX', developer: 'Pointers' })
     expect(validateBoxInfo({ ...good, app_name: '' })).toBeNull()
     expect(validateBoxInfo('x')).toBeNull()
-  })
-
-  it('boxzzyhs.json：content 必填', () => {
-    expect(validateAuthorWords({ content: '这是我的第一个开源项目！' })).toEqual({
-      content: '这是我的第一个开源项目！'
-    })
-    expect(validateAuthorWords({ content: '  ' })).toBeNull()
-    expect(validateAuthorWords(null)).toBeNull()
   })
 
   it('parseJson：非法 JSON 抛 DataFileError', () => {

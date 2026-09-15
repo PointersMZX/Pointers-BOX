@@ -146,6 +146,8 @@ public class InAppBrowserActivity extends Activity {
         public void onDownloadStart(String url, String userAgent, String contentDisposition, String mimeType, long contentLength) {
             // blob:/data: 协议 DownloadManager 无法访问（网盘类"点击无反应"的主因）→ 转系统浏览器
             if (url.startsWith("blob:") || url.startsWith("data:")) {
+                String sname = guessFileName(url, contentDisposition, mimeType);
+                DownloadEventBus.postStarted(sname, contentLength);
                 Toast.makeText(InAppBrowserActivity.this,
                         "该链接为特殊协议，已转交系统浏览器下载", Toast.LENGTH_LONG).show();
                 try {
@@ -174,6 +176,7 @@ public class InAppBrowserActivity extends Activity {
                 if (dm != null) {
                     final long id = dm.enqueue(req);
                     registerDoneReceiver(dm, id, name);
+                    DownloadEventBus.postStarted(name, contentLength);
                     Toast.makeText(InAppBrowserActivity.this, "开始下载：" + name, Toast.LENGTH_SHORT).show();
                 }
             } catch (Exception e) {
@@ -192,8 +195,10 @@ public class InAppBrowserActivity extends Activity {
                 if (finishedId != id) return;
                     Uri uri = dm.getUriForDownloadedFile(id);
                     if (uri != null) {
+                        DownloadEventBus.postDone(name);
                         Toast.makeText(ctx, "下载完成：" + name, Toast.LENGTH_LONG).show();
                     } else {
+                        DownloadEventBus.postFailed(name);
                         Toast.makeText(ctx, "下载失败：" + name, Toast.LENGTH_LONG).show();
                     }
                     unregisterQuietly();

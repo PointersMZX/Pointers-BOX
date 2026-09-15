@@ -40,6 +40,14 @@ export function normalizeTabSleepMinutes(raw: unknown): number {
   return Math.floor(raw)
 }
 
+const HOME_LAYOUTS = ['stacked', 'compact', 'wide'] as const
+/** 主页布局归一化（v2.2.0）：非法回退默认 compact（紧凑，每行 2 个） */
+export function normalizeHomeLayout(raw: unknown): 'stacked' | 'compact' | 'wide' {
+  return HOME_LAYOUTS.includes(raw as 'stacked' | 'compact' | 'wide')
+    ? (raw as 'stacked' | 'compact' | 'wide')
+    : 'compact'
+}
+
 /**
  * Windows 版本分流（v2.1.0）：Win7/8 用户必须更新 Electron 22 兼容版，
  * 否则被推送到 Electron 33 安装包后应用无法启动。

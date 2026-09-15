@@ -26,13 +26,14 @@ import {
   FiChevronDown,
   FiChevronUp,
   FiDownload,
+  FiExternalLink,
   FiFolder,
   FiSave,
   FiRefreshCw,
   FiUploadCloud
 } from 'react-icons/fi'
 import { useEffect, useState } from 'react'
-import type { UpdateCheckResult } from '../../../shared/types'
+import type { HomeLayout, UpdateCheckResult } from '../../../shared/types'
 import {
   ACCENT_PRESETS,
   canCustomizeAccent,
@@ -46,7 +47,7 @@ import { useDataStore } from '../store/dataStore'
 import { useDownloadStore } from '../store/downloadStore'
 import { useThemeStore } from '../store/themeStore'
 import { useUiStore } from '../store/uiStore'
-import { backend } from '../platform'
+import { backend, openClaim } from '../platform'
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -65,6 +66,55 @@ function Section({ title, children }: { title: string; children: React.ReactNode
       <VStack align="stretch" spacing={2}>
         {children}
       </VStack>
+    </Box>
+  )
+}
+
+/** 可折叠卡片（v2.2.0）：默认收起，点标题展开；内容用 Collapse 收放 */
+function CollapsibleSection({
+  title,
+  defaultOpen = false,
+  children
+}: {
+  title: string
+  defaultOpen?: boolean
+  children: React.ReactNode
+}) {
+  const [open, setOpen] = useState(defaultOpen)
+  return (
+    <Box
+      bg="panel"
+      borderWidth="1px"
+      borderColor="pborder"
+      rounded="lg"
+      mb={4}
+      px={5}
+      py={0}
+      className="pbox-blur-panel"
+      overflow="hidden"
+    >
+      <Flex
+        as="button"
+        w="100%"
+        align="center"
+        justify="space-between"
+        py={4}
+        bg="transparent"
+        _hover={{ bg: 'hoverbg' }}
+        onClick={() => setOpen((o) => !o)}
+      >
+        <Heading size="sm" color="ptext">
+          {title}
+        </Heading>
+        <Icon as={open ? FiChevronUp : FiChevronDown} color="ptextmuted" />
+      </Flex>
+      <Collapse in={open} animateOpacity>
+        <Box pb={5}>
+          <VStack align="stretch" spacing={2}>
+            {children}
+          </VStack>
+        </Box>
+      </Collapse>
     </Box>
   )
 }
@@ -157,7 +207,7 @@ function ThemePreview({ themeKey }: { themeKey: ThemeKey }) {
   )
 }
 
-function ThemeSection() {
+function ThemeSectionInner() {
   const themeKey = useThemeStore((s) => s.themeKey)
   const accent = useThemeStore((s) => s.accent)
   const setAppearance = useThemeStore((s) => s.setAppearance)
@@ -171,7 +221,7 @@ function ThemeSection() {
   }
 
   return (
-    <Section title="主题外观">
+    <>
       <Text fontSize="xs" color="ptextmuted">
         主题仅改变外观，不影响任何功能；默认启用「液态玻璃」
       </Text>
@@ -274,15 +324,18 @@ function ThemeSection() {
           仅「液态玻璃」主题支持自定义颜色；切换到液态玻璃后可挑选预设色或用 RGB 自定义
         </Text>
       )}
-    </Section>
+    </>
   )
 }
 
-// 设置（PRD 4.4）：主题外观 / 关于应用 / 检查更新 / 下载设置 / 浏览器设置 / 数据恢复
+// 问题反馈页（v2.2.0 新增）：跳转内嵌浏览器
+const FEEDBACK_URL =
+  'https://pointers-box.cc.cd/index.php/2026-09-06/pointers-box%e9%97%ae%e9%a2%98%e5%8f%8d%e9%a6%88/'
+
+// 设置（v2.2.0）：关于应用（置顶，简介默认收起）/ 主题（次之，默认收起点进才展开）/
+// 更新检查 / 下载设置 / 配置管理 / 浏览器设置 / 问题反馈（新增）；删除「数据恢复」
 export default function SettingsPage() {
   const box = useDataStore((s) => s.box)
-  const authorWords = useDataStore((s) => s.authorWords)
-  const restore = useDataStore((s) => s.restore)
   const platform = useUiStore((s) => s.platform)
   const toast = useToast()
 
@@ -416,14 +469,9 @@ export default function SettingsPage() {
     }
   }
 
-  const onRestore = async (target: 'resources' | 'box'): Promise<void> => {
-    const ok = await restore(target)
-    toast({
-      title: ok ? '数据恢复成功' : '已取消或恢复失败',
-      status: ok ? 'success' : 'warning',
-      duration: 3000,
-      position: 'top'
-    })
+  // 问题反馈（v2.2.0）：跳内嵌浏览器
+  const onFeedback = (): void => {
+    void openClaim(FEEDBACK_URL)
   }
 
   return (
@@ -432,11 +480,8 @@ export default function SettingsPage() {
         设置
       </Heading>
 
-      {/* 主题外观（新增：液态玻璃/纯黑/纯白，仅玻璃可自定义颜色） */}
-      <ThemeSection />
-
-      {/* 关于应用（合并区块，PRD 4.4） */}
-      <Section title="关于应用">
+      {/* 关于应用（v2.2.0 置顶；简介默认收起） */}
+      <CollapsibleSection title="关于应用" defaultOpen>
         <Row label="应用名称" value={box?.app_name ?? 'Pointers-BOX'} />
         <Row label="应用版本" value={localVersion ? `v${localVersion}` : 'v2.2.0'} />
         <Row label="开发者" value={box?.developer} />
@@ -448,14 +493,13 @@ export default function SettingsPage() {
           </Text>
           <ExpandableText text={box?.app_introduction ?? ''} empty="暂未获取到应用简介" />
         </Box>
-        <Box>
-          <Text fontSize="sm" color="ptextmuted" mb={1}>
-            作者有话说
-          </Text>
-          <ExpandableText text={authorWords?.content ?? ''} empty="暂未获取到作者有话说" />
-        </Box>
         <Row label="版权声明" value={box?.copyright} />
-      </Section>
+      </CollapsibleSection>
+
+      {/* 主题（v2.2.0 次之；默认收起，点进去才展开主题设置） */}
+      <CollapsibleSection title="主题">
+        <ThemeSectionInner />
+      </CollapsibleSection>
 
       {/* 检查更新（PRD 4.4：Release 对比；v2.1.0 双渠道 Gitee/GitHub） */}
       <Section title="更新检查">
@@ -591,6 +635,28 @@ export default function SettingsPage() {
         </Text>
       </Section>
 
+      {/* 主页布局（v2.2.0）：堆叠 / 紧凑（每行 2 个）/ 宽展（每行 1 个），默认紧凑 */}
+      <Section title="主页布局">
+        <Flex align="center" justify="space-between" gap={3} wrap="wrap">
+          <Text fontSize="sm" color="ptext">
+            液态玻璃卡片布局
+            <Text as="span" fontSize="xs" color="ptextmuted" ml={2}>
+              （堆叠=全部叠起不分层；紧凑=每行 2 个；宽展=每行 1 个）
+            </Text>
+          </Text>
+          <RadioGroup
+            value={config?.homeLayout ?? 'compact'}
+            onChange={(v) => void useDownloadStore.getState().saveConfig({ homeLayout: v as HomeLayout })}
+          >
+            <Stack direction="row" spacing={4}>
+              <Radio value="stacked">堆叠</Radio>
+              <Radio value="compact">紧凑</Radio>
+              <Radio value="wide">宽展</Radio>
+            </Stack>
+          </RadioGroup>
+        </Flex>
+      </Section>
+
       {/* 配置导出/导入（v2.0.0：主题/下载路径/收藏一键迁移） */}
       <Section title="配置管理">
         <HStack wrap="wrap">
@@ -619,37 +685,6 @@ export default function SettingsPage() {
         </HStack>
         <Text fontSize="xs" color="ptextmuted">
           导出内容：主题外观 / 强调色 / 下载路径 / 浏览器偏好 / 收藏 / 下载历史开关
-        </Text>
-      </Section>
-
-      {/* 数据恢复（PRD 6.3：手动恢复 resources.json / box.json） */}
-      <Section title="数据恢复">
-        <HStack>
-          <Button
-            size="sm"
-            variant="outline"
-            leftIcon={<FiUploadCloud />}
-            borderColor="pborder"
-            color="ptext"
-            _hover={{ bg: 'hoverbg' }}
-            onClick={() => void onRestore('resources')}
-          >
-            恢复资源数据
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            leftIcon={<FiUploadCloud />}
-            borderColor="pborder"
-            color="ptext"
-            _hover={{ bg: 'hoverbg' }}
-            onClick={() => void onRestore('box')}
-          >
-            恢复应用信息
-          </Button>
-        </HStack>
-        <Text fontSize="xs" color="ptextmuted">
-          恢复前会自动备份当前数据（backups/ 目录，最多保留 10 份）
         </Text>
       </Section>
 
@@ -694,6 +729,24 @@ export default function SettingsPage() {
             </Stack>
           </RadioGroup>
         </Flex>
+      </Section>
+
+      {/* 问题反馈（v2.2.0 新增） */}
+      <Section title="问题反馈">
+        <Button
+          size="sm"
+          leftIcon={<FiExternalLink />}
+          variant="outline"
+          borderColor="pborder"
+          color="ptext"
+          _hover={{ bg: 'hoverbg' }}
+          onClick={onFeedback}
+        >
+          前往反馈页
+        </Button>
+        <Text fontSize="xs" color="ptextmuted">
+          通过内嵌浏览器打开官方反馈页，描述你遇到的问题即可
+        </Text>
       </Section>
     </Box>
   )

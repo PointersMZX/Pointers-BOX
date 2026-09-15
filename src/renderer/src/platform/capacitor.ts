@@ -14,7 +14,6 @@ import type {
 import {
   parseLooseJson,
   validateAnnouncement,
-  validateAuthorWords,
   validateBoxInfo,
   validateResources,
   validateVersionLogs
@@ -50,19 +49,19 @@ async function fetchLooseJson(url: string): Promise<unknown> {
 function buildSnapshot(raw: {
   resources: unknown
   box: unknown
-  words: unknown
+  versionLogs: unknown
 }): DataSnapshot {
   const clean = validateResources(raw.resources)
   const box = validateBoxInfo(raw.box)
-  const authorWords = validateAuthorWords(raw.words)
+  const versionLogs = validateVersionLogs(raw.versionLogs)
   return {
     data: {
       resources: clean.valid,
-      version_logs: validateVersionLogs(raw.resources),
+      version_logs: [],
       announcement: validateAnnouncement(raw.resources)
     },
     box,
-    authorWords,
+    versionLogs,
     offline: false,
     lastSync: Date.now(),
     warnings: clean.errors
@@ -74,17 +73,17 @@ export async function androidGetData(force = false): Promise<DataSnapshot> {
   const results = await Promise.allSettled([
     fetchLooseJson(REMOTE_URLS.resources),
     fetchLooseJson(REMOTE_URLS.box),
-    fetchLooseJson(REMOTE_URLS.boxzzyhs)
+    fetchLooseJson(REMOTE_URLS.versionLogs)
   ])
   const resources = results[0]
   const box = results[1]
-  const words = results[2]
+  const logs = results[2]
 
   if (resources && resources.status === 'fulfilled') {
     const snapshot = buildSnapshot({
       resources: resources.value,
       box: box && box.status === 'fulfilled' ? box.value : null,
-      words: words && words.status === 'fulfilled' ? words.value : null
+      versionLogs: logs && logs.status === 'fulfilled' ? logs.value : null
     })
     try {
       await Preferences.set({ key: CACHE_KEY, value: JSON.stringify(snapshot) })
@@ -109,7 +108,7 @@ export async function androidGetData(force = false): Promise<DataSnapshot> {
   return {
     data: emptyResourceData(),
     box: null,
-    authorWords: null,
+    versionLogs: [],
     offline: true,
     lastSync: null,
     warnings: [`资源数据获取失败：${reason}`]
@@ -198,10 +197,52 @@ interface InAppBrowserNativeInterface {
 
 const InAppBrowserNative = registerPlugin<InAppBrowserNativeInterface>('InAppBrowser')
 
+// v2.2.0：安卓下载事件桥接 —— InAppBrowserActivity 的下载（DownloadManager/blob 转系统浏览器）
+// 经 DownloadEventBus → InAppBrowserPlugin.notify('downloadEvent') 回传，这里转成渲染层 DownloadEvent。
+// started/done 映射为 DownloadTask；DownloadManager 无实时进度回传，percent 置 100（与桌面语义：完成即消失一致）。
 export function androidOnDownloadEvent(cb: (e: DownloadEvent) => void): () => void {
-  // 下载管理为桌面专属；安卓端下载由系统 DownloadManager 接管
-  void cb
-  return () => {}
+  const plugin = InAppBrowserNative as unknown as {
+    startDownloadWatch?(): Promise<void>
+    stopDownloadWatch?(): Promise<void>
+    addListener?(ev: string, cb: (r: unknown) => void): { remove(): Promise<void> } | undefined
+  }
+
+  let removed = false
+  const taskFrom = (filename: string, total: number, done: boolean) => ({
+    id: 'android-' + filename,
+    filename,
+    path: DEFAULT_ANDROID_DOWNLOAD_DIR + '/' + filename,
+    received: done ? total : 0,
+    total: total > 0 ? total : 0,
+    percent: done ? 100 : 0,
+    bytesPerSecond: 0,
+    paused: false,
+    source: 'browser' as const
+  })
+
+  void plugin.startDownloadWatch?.()
+  const sub = plugin.addListener
+    ? plugin.addListener('downloadEvent', (r) => {
+        if (removed) return
+        const ev = (r as { event?: { type?: string; filename?: string; total?: number } }).event
+        if (!ev || !ev.type || !ev.filename) return
+        if (ev.type === 'started') {
+          cb({ type: 'started', task: taskFrom(ev.filename, ev.total ?? 0, false) })
+        } else if (ev.type === 'done') {
+          cb({ type: 'progress', task: taskFrom(ev.filename, 0, true) })
+          cb({ type: 'done', id: 'android-' + ev.filename, state: 'completed' })
+        } else if (ev.type === 'failed') {
+          cb({ type: 'done', id: 'android-' + ev.filename, state: 'interrupted' })
+        }
+      })
+    : undefined
+  void sub
+
+  return () => {
+    removed = true
+    void sub?.remove()
+    void plugin.stopDownloadWatch?.()
+  }
 }
 
 export function androidOnUpdateEvent(cb: (e: UpdateEvent) => void): () => void {

@@ -9,7 +9,8 @@ describe('配置归一化（PRD 4.4 下载路径/Android 浏览器选项 + 主�
     accent: '#7c5cff',
     favorites: [],
     keepDownloadHistory: false,
-    tabSleepMinutes: 5
+    tabSleepMinutes: 5,
+    homeLayout: 'compact' as const
   }
 
   it('空/损坏配置回退默认值（默认液态玻璃主题）', () => {
@@ -28,7 +29,8 @@ describe('配置归一化（PRD 4.4 下载路径/Android 浏览器选项 + 主�
           theme: 'black',
           accent: '#ff8800',
           favorites: ['1', 2, '1'],
-          keepDownloadHistory: true
+          keepDownloadHistory: true,
+          homeLayout: 'wide'
         },
         defDir
       )
@@ -39,7 +41,8 @@ describe('配置归一化（PRD 4.4 下载路径/Android 浏览器选项 + 主�
       accent: '#ff8800',
       favorites: ['1', '2'],
       keepDownloadHistory: true,
-      tabSleepMinutes: 5
+      tabSleepMinutes: 5,
+      homeLayout: 'wide'
     })
   })
 
@@ -79,5 +82,13 @@ describe('配置归一化（PRD 4.4 下载路径/Android 浏览器选项 + 主�
     expect(normalizeConfig({ tabSleepMinutes: 15 }, defDir).tabSleepMinutes).toBe(15)
     expect(normalizeConfig({ tabSleepMinutes: -3 }, defDir).tabSleepMinutes).toBe(5)
     expect(normalizeConfig({ tabSleepMinutes: 'x' }, defDir).tabSleepMinutes).toBe(5)
+  })
+
+  it('v2.2.0：homeLayout 默认 compact、合法值保留、非法值回退 compact', () => {
+    expect(normalizeConfig({}, defDir).homeLayout).toBe('compact')
+    expect(normalizeConfig({ homeLayout: 'stacked' }, defDir).homeLayout).toBe('stacked')
+    expect(normalizeConfig({ homeLayout: 'wide' }, defDir).homeLayout).toBe('wide')
+    expect(normalizeConfig({ homeLayout: 'grid' }, defDir).homeLayout).toBe('compact')
+    expect(normalizeConfig({ homeLayout: 12 }, defDir).homeLayout).toBe('compact')
   })
 })

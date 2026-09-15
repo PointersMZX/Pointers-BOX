@@ -24,6 +24,7 @@ export interface Announcement {
   content: string
 }
 
+/** 版本日志（boxbbgxrz.json，独立文件；新→旧排列） */
 export interface VersionLog {
   version: string
   log: string
@@ -37,16 +38,11 @@ export interface ResourceData {
 
 export interface BoxInfo {
   app_name: string
-  app_version: string
   app_introduction: string
   general_key?: string
   developer: string
   community_qq: string
   copyright: string
-}
-
-export interface AuthorWords {
-  content: string
 }
 
 // ── 用户自建资源链接（v2.2.0：仅存本地，不参与服务器数据） ─────
@@ -69,6 +65,9 @@ export type AndroidBrowserChoice = 'builtin' | 'system'
 /** 更新渠道（v2.1.0）：国内镜像 Gitee / 全球官方 GitHub */
 export type UpdateChannel = 'gitee' | 'github'
 
+/** 主页卡片布局（v2.2.0）：堆叠（全部叠起不分层）/ 紧凑（每行2个）/ 宽展（每行1个全展开） */
+export type HomeLayout = 'stacked' | 'compact' | 'wide'
+
 export interface AppConfig {
   downloadDir: string
   androidBrowser: AndroidBrowserChoice
@@ -84,6 +83,8 @@ export interface AppConfig {
   updateChannel?: UpdateChannel
   /** 后台标签闲置休眠分钟数（v2.1.0）：0 = 永不休眠 */
   tabSleepMinutes: number
+  /** 主页卡片布局（v2.2.0）：堆叠/紧凑/宽展，默认紧凑 */
+  homeLayout: HomeLayout
 }
 
 // ── 下载历史（v2.0.0：默认关闭的开关，开启后记录已完成任务） ───
@@ -150,7 +151,8 @@ export type UpdateEvent =
 export interface DataSnapshot {
   data: ResourceData
   box: BoxInfo | null
-  authorWords: AuthorWords | null
+  /** 版本日志（boxbbgxrz.json，独立文件；新→旧） */
+  versionLogs: VersionLog[]
   offline: boolean
   lastSync: number | null
   /** 校验/清洗/获取过程中产生的告警（已跳过的坏条目等） */
@@ -162,7 +164,8 @@ export interface DataSnapshot {
 export const REMOTE_URLS = {
   resources: 'https://pointers-box.cc.cd/box/resources.json',
   box: 'https://pointers-box.cc.cd/box/box.json',
-  boxzzyhs: 'https://pointers-box.cc.cd/box/boxzzyhs.json'
+  /** 版本更新日志（v2.2.0 起独立文件） */
+  versionLogs: 'https://pointers-box.cc.cd/box/boxbbgxrz.json'
 } as const
 
 // ── IPC 契约（开发计划 §5，先行冻结） ─────────────────────────

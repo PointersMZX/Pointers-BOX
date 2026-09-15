@@ -1,6 +1,6 @@
 // 远程 JSON 校验与清洗：顶层结构错误抛 DataFileError；条目级问题跳过并记录（PRD 7.6）
 // 纯模块（无 Electron 依赖）：主进程与 Android 渲染端共用
-import type { Announcement, AuthorWords, BoxInfo, Resource, ShareItem, VersionLog } from './types'
+import type { Announcement, BoxInfo, Resource, ShareItem, VersionLog } from './types'
 
 export class DataFileError extends Error {
   constructor(message: string) {
@@ -137,9 +137,12 @@ export function validateAnnouncement(raw: unknown): Announcement | null {
   return { date: asString(a['date']) ?? '', content }
 }
 
+// 版本日志（boxbbgxrz.json，独立文件）：接受 { version_logs: [...] }，也容忍顶层直接是数组
 export function validateVersionLogs(raw: unknown): VersionLog[] {
-  if (!isRecord(raw) || !Array.isArray(raw['version_logs'])) return []
-  return (raw['version_logs'] as unknown[])
+  let list: unknown[] = []
+  if (Array.isArray(raw)) list = raw
+  else if (isRecord(raw) && Array.isArray(raw['version_logs'])) list = raw['version_logs'] as unknown[]
+  return list
     .filter(isRecord)
     .map((v) => ({ version: asString(v['version']) ?? '', log: asLooseString(v['log']) }))
     .filter((v) => v.version !== '')
@@ -151,17 +154,10 @@ export function validateBoxInfo(raw: unknown): BoxInfo | null {
   if (app_name === null) return null
   return {
     app_name,
-    app_version: asString(raw['app_version']) ?? '',
     app_introduction: asLooseString(raw['app_introduction']),
     general_key: asString(raw['general_key']) ?? undefined,
     developer: asString(raw['developer']) ?? '',
     community_qq: asString(raw['community_qq']) ?? '',
     copyright: asLooseString(raw['copyright'])
   }
-}
-
-export function validateAuthorWords(raw: unknown): AuthorWords | null {
-  if (!isRecord(raw)) return null
-  const content = asString(raw['content'])
-  return content === null ? null : { content }
 }

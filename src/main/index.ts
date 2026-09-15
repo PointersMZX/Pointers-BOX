@@ -1,5 +1,5 @@
 import { app, BrowserWindow } from 'electron'
-import { createMainWindow, createSplashWindow, closeSplash, getMainWindow } from './window'
+import { createMainWindow, getMainWindow } from './window'
 import { createTray } from './tray'
 import { registerIpcHandlers } from './ipc'
 import { markQuitting } from './quit'
@@ -34,9 +34,6 @@ if (!gotLock) {
     attachDownloadHandling()
     initUpdater()
     registerIpcHandlers()
-    createSplashWindow()
-    // 渲染层异常时启动动画兜底关闭
-    setTimeout(closeSplash, 8000)
     createMainWindow()
     createTray()
     app.on('activate', () => {
