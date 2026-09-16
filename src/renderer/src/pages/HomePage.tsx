@@ -143,10 +143,10 @@ function useNow(intervalMs = 30_000) {
   return now
 }
 
-// 堆叠 deck：卡片同规格重叠，顶部逐层偏移露出 16px 层边（一叠卡观感，非完全重合）
-// 当前"顶卡"完整可交互；轮转 = 顶卡移到栈底。transform 驱动换位（GPU 合成）
-const DECK_MIN_H = '220px' // 堆叠卡统一规格：同高叠放，露出层观感整齐
-const DECK_OFFSET = 16 // 每层向下偏移（露出 16px 层边）
+// 堆叠 deck：卡片重叠堆叠，顶卡完整、下层只露出"顶部一条"（裁掉主体、仅留标题区露出边）
+// 当前"顶卡"可交互；轮转 = 顶卡移到栈底。transform 驱动换位（GPU 合成）
+const DECK_MIN_H = '220px' // 顶卡高度（堆叠卡统一规格）
+const DECK_PEEK = 36 // 每层向下偏移 + 下层裁切高度（只露 36px 顶部一条）
 
 function StackedDeck({ cards }: { cards: React.ReactNode[] }) {
   const [active, setActive] = useState(0)
@@ -158,6 +158,12 @@ function StackedDeck({ cards }: { cards: React.ReactNode[] }) {
   const layer = (idx: number) => {
     const pos = posOf(idx)
     const topCard = pos === 0
+    // 顶卡：完整 220px、不透明、可交互
+    // 下层：向下偏移 pos*DECK_PEEK，只裁出顶部 DECK_PEEK 高的"卡条"（标题区），
+    // 主体被裁掉 → 一叠干净卡条观感，露出的就是"下一张卡的标题边"
+    const y = topCard ? 0 : pos * DECK_PEEK
+    const height = topCard ? undefined : DECK_PEEK
+    const opacity = topCard ? 1 : Math.max(0.3, 0.75 - (pos - 1) * 0.15)
     return (
       <Box
         key={`layer-${idx}`}
@@ -165,10 +171,12 @@ function StackedDeck({ cards }: { cards: React.ReactNode[] }) {
         left="0"
         right="0"
         top="0"
+        height={height}
+        overflow={topCard ? undefined : 'hidden'}
         zIndex={n - pos}
-        opacity={pos === 0 ? 1 : 0.6}
+        opacity={opacity}
         style={{
-          transform: `translateY(${pos * DECK_OFFSET}px)`,
+          transform: `translateY(${y}px)`,
           transition: `transform ${DUR.slow}s ${EASE.out}, opacity ${DUR.slow}s ${EASE.out}`,
           pointerEvents: topCard ? 'auto' : 'none'
         }}
@@ -178,8 +186,9 @@ function StackedDeck({ cards }: { cards: React.ReactNode[] }) {
     )
   }
 
-  // deck 高度 = 顶卡高（220px）+ (n-1)*16px 露出层
-  const deckHeight = 220 + (n - 1) * DECK_OFFSET
+  // deck 高度 = 顶卡 220px + 露出层（min(n-1,6)*PEEK）
+  const peek = Math.min(n - 1, 6) * DECK_PEEK
+  const deckHeight = 220 + peek
 
   return (
     <Box position="relative" height={deckHeight}>
