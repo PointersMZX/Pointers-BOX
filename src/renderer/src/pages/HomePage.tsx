@@ -3,10 +3,8 @@ import {
   Box,
   Button,
   Flex,
-  Grid,
   Heading,
   HStack,
-  ResponsiveValue,
   Skeleton,
   SimpleGrid,
   Text,
@@ -58,7 +56,7 @@ const LAYOUT_META: Record<
   {
     label: string
     icon: React.ComponentType<{ size?: number }>
-    columns: number | ResponsiveValue
+    columns: GridColumns
     spacing: number
   }
 > = {
@@ -84,7 +82,8 @@ const LAYOUT_META: Record<
 }
 
 // 密集布局（紧凑）的资源卡每行列数：随窗口宽窄自动 2~3 列
-function resourceGridColumns(layout: HomeLayout): ResponsiveValue | number {
+type GridColumns = 1 | { base: number; sm?: number; xl?: number }
+function resourceGridColumns(layout: HomeLayout): GridColumns {
   if (layout === 'wide') return 1
   if (layout === 'compact') return { base: 1, sm: 2, xl: 3 }
   return 1
@@ -144,10 +143,10 @@ function useNow(intervalMs = 30_000) {
   return now
 }
 
-// 堆叠 deck：全部卡片同规格（统一 minH）重叠，顶部偏移露出层，非完全重合
+// 堆叠 deck：卡片同规格重叠，顶部偏移露出层（非完全重合）
 // 当前"顶卡"可交互；轮转 = 顶卡移到栈底。transform 驱动换位（GPU 合成）
-// deck 高度 = 顶卡真实高度 + (n-1)*层间距（测量得到，不留大片空白）
-const DECK_MIN_H = '190px' // 堆叠卡统一规格：同高叠放，露出层不被内容长短拉乱
+// deck 高度 = 顶卡实测高度 + (n-1)*层间距（ResizeObserver 跟随，不留大片空白）
+const DECK_MIN_H = '170px' // 堆叠卡统一规格：同高叠放，露出层不被内容长短拉乱
 const DECK_OFFSET = 16
 
 function StackedDeck({ cards }: { cards: React.ReactNode[] }) {
@@ -187,7 +186,7 @@ function StackedDeck({ cards }: { cards: React.ReactNode[] }) {
         right="0"
         top="0"
         zIndex={n - pos}
-        opacity={pos === 0 ? 1 : Math.max(0.18, 1 - pos * 0.22)}
+        opacity={pos === 0 ? 1 : 0.3}
         style={{
           transform: `translateY(${pos * DECK_OFFSET}px) scale(${topCard ? 1 : 1 - pos * 0.015})`,
           transition: `transform ${DUR.slow}s ${EASE.out}, opacity ${DUR.slow}s ${EASE.out}`,
@@ -202,7 +201,7 @@ function StackedDeck({ cards }: { cards: React.ReactNode[] }) {
   return (
     <Box ref={deckRef} position="relative" height={deckHeight ? `${deckHeight}px` : 'auto'}>
       {Array.from({ length: n }, (_, i) => i).map((i) => layer(i))}
-      {/* 轮转：当前顶卡移到栈底（循环）——贴在 deck 底边 */}
+      {/* 轮转：当前顶卡移到栈底（循环）——贴在 deck 底边，deck 高度 = 顶卡高 + (n-1)*偏移 */}
       {n > 1 && (
         <Flex
           position="absolute"
@@ -267,18 +266,19 @@ function LayoutSwitcher({
     >
       <motion.div
         aria-hidden
-        position="absolute"
-        top={2}
-        bottom={2}
-        borderRadius="full"
-        bg="brand.500"
-        opacity={0.18}
+        style={{
+          position: 'absolute',
+          top: 2,
+          bottom: 2,
+          borderRadius: 999,
+          background: 'var(--pbox-brand)',
+          opacity: 0.18
+        }}
         transition={{ type: 'spring', stiffness: 500, damping: 38 }}
         animate={{
           left: `${(LAYOUTS.indexOf(layout) / LAYOUTS.length) * 100}%`,
           width: `${100 / LAYOUTS.length}%`
         }}
-        style={{ borderRadius: 999 }}
       />
       <Flex gap={0} position="relative" zIndex={1}>
         {LAYOUTS.map((l) => {
@@ -308,7 +308,7 @@ function LayoutSwitcher({
               border="none"
               transition={`color ${DUR.fast}s ${EASE.out}`}
               onClick={() => onChange(l)}
-              onFocusVisible={{ outline: '2px solid', outlineColor: 'brand.400' }}
+              _focusVisible={{ outline: '2px solid', outlineColor: 'brand.400' }}
             >
               <Icon size={13} />
               {m.label}
@@ -428,10 +428,11 @@ export default function HomePage() {
   // 1. 今日日期及时间（置顶）
   halfCards.push(
     <GlassCard
+      minH={DECK_MIN_H}
       key="date"
       icon={<FiClock color="var(--pbox-accent)" />}
       title="今日"
-      minH={DECK_MIN_H}
+     
       right={
         <Text fontSize="xs" color="ptextmuted">
           {weekday}
@@ -487,10 +488,11 @@ export default function HomePage() {
   if (announcement) {
     halfCards.push(
       <GlassCard
+        minH={DECK_MIN_H}
         key="announcement"
         icon={<FiBell color="var(--pbox-accent)" />}
         title="公告"
-        minH={DECK_MIN_H}
+       
         right={
           <Text fontSize="xs" color="ptextmuted" noOfLines={1}>
             {announcement.date}
@@ -508,10 +510,11 @@ export default function HomePage() {
   if (links.length > 0) {
     halfCards.push(
       <GlassCard
+        minH={DECK_MIN_H}
         key="links"
         icon={<FiLink color="var(--pbox-accent)" />}
         title="我的资源链接"
-        minH={DECK_MIN_H}
+       
         right={
           <HStack spacing={2}>
             <Text fontSize="xs" color="ptextmuted">
@@ -564,7 +567,7 @@ export default function HomePage() {
   // 5. 版本更新日志
   if (versionLogs.length > 0) {
     halfCards.push(
-      <GlassCard key="versionlogs" icon={<FiList color="var(--pbox-accent)" />} title="版本日志" minH={DECK_MIN_H}>
+      <GlassCard minH={DECK_MIN_H} key="versionlogs" icon={<FiList color="var(--pbox-accent)" />} title="版本日志">
         <VStack align="stretch" spacing={2}>
           {versionLogs.slice(0, 2).map((v) => (
             <Flex key={v.version} align="flex-start" gap={2}>
@@ -585,10 +588,11 @@ export default function HomePage() {
   if (favResources.length > 0) {
     fullCards.push(
       <GlassCard
+        minH={DECK_MIN_H}
         key="favorites"
         icon={<FiStar color="var(--pbox-accent)" />}
         title="我的收藏"
-        minH={DECK_MIN_H}
+       
         right={
           <Text fontSize="xs" color="ptextmuted">
             {favResources.length} 个
@@ -626,7 +630,7 @@ export default function HomePage() {
 
   // 7. 快捷功能入口
   halfCards.push(
-    <GlassCard key="quick" icon={<FiExternalLink color="var(--pbox-accent)" />} title="快捷入口" minH={DECK_MIN_H}>
+    <GlassCard minH={DECK_MIN_H} key="quick" icon={<FiExternalLink color="var(--pbox-accent)" />} title="快捷入口">
       <Flex gap={3} flexWrap="wrap">
         {[
           { label: '资源库', page: 'library' as Page, Icon: FiGlobe },
@@ -651,10 +655,11 @@ export default function HomePage() {
   // 8. 网络 / 更新渠道状态
   halfCards.push(
     <GlassCard
+      minH={DECK_MIN_H}
       key="status"
       icon={<FiGlobe color={offline ? 'orange.300' : 'var(--pbox-accent)'} />}
       title="数据状态"
-      minH={DECK_MIN_H}
+     
       right={
         <Badge
           colorScheme={offline ? 'orange' : 'green'}
@@ -678,7 +683,7 @@ export default function HomePage() {
 
   // 9. 更新检查
   halfCards.push(
-    <GlassCard key="update" icon={<FiDownload color="var(--pbox-accent)" />} title="检查更新" minH={DECK_MIN_H}>
+    <GlassCard minH={DECK_MIN_H} key="update" icon={<FiDownload color="var(--pbox-accent)" />} title="检查更新">
       <Flex align="center" justify="space-between" gap={3} wrap="wrap">
         <Text fontSize="sm" color="ptextmuted">
           {updateResult
