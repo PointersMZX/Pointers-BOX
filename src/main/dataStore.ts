@@ -34,6 +34,24 @@ import {
 const KEEP_BACKUPS = 10
 const FETCH_TIMEOUT_MS = 10_000
 
+// v2.2.0：box.json 应用信息嵌入包内（resources/box.json，随 asar 打包），
+// 远程不可达/未配置时以此默认值兜底——应用信息永远有值，不依赖网络
+import { resourcesRoot } from './paths'
+
+function loadEmbeddedBox(): BoxInfo | null {
+  try {
+    // 打包态：process.resourcesPath/box.json；开发态：项目根 resources/box.json
+    const embedded = [
+      join(process.resourcesPath || '', 'box.json'),
+      join(resourcesRoot(), 'box.json')
+    ].find((p) => p && existsSync(p))
+    if (!embedded) return null
+    return validateBoxInfo(parseLooseJson(readFileSync(embedded, 'utf-8')))
+  } catch {
+    return null
+  }
+}
+
 const WORK_FILES = {
   resources: 'resources.json',
   box: 'box.json',
@@ -194,7 +212,8 @@ function loadFromDisk(): MemoryState {
 
   const s: MemoryState = {
     data,
-    box,
+    // v2.2.0：无本地缓存时用包内嵌入 box.json 兜底（应用信息永远有值）
+    box: box ?? loadEmbeddedBox(),
     versionLogs,
     offline: true, // 磁盘数据视作离线态，远程刷新成功后置 false
     lastSync,
@@ -262,10 +281,15 @@ export async function refreshRemote(force = false): Promise<DataSnapshot> {
       persistWork('box', JSON.stringify(boxResult.value, null, 2))
       okCount++
     } catch (e) {
-      warnings.push(`box.json 解析失败（保留本地数据）：${msg(e)}`)
+      warnings.push(`box.json 解析失败（用包内默认）：${msg(e)}`)
+      // 包内嵌入 box.json 兜底（应用信息不依赖网络）
+      s.box = s.box ?? loadEmbeddedBox()
     }
   } else if (boxResult && boxResult.status === 'rejected') {
-    warnings.push(`box.json 获取失败：${msg(boxResult.reason)}`)
+    // 远程不可达：用包内嵌入 box.json 兜底（应用信息永远有值）
+    s.box = s.box ?? loadEmbeddedBox()
+    if (s.box) okCount++
+    else warnings.push(`box.json 获取失败且无包内默认：${msg(boxResult.reason)}`)
   }
 
   const logsResult = results[2]

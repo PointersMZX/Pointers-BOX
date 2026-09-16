@@ -11,6 +11,8 @@ interface Props {
   resource: Resource
   /** 提供时由父级打开详情弹窗；未提供时卡片内部自持弹窗 */
   onOpen?: (resource: Resource) => void
+  /** 卡片最小高度（堆叠布局下卡片规格统一，由父级传入；默认 170px 通用） */
+  minH?: string
 }
 
 /**
@@ -19,7 +21,7 @@ interface Props {
  * v2.1.0：去掉拖拽形变（与下拉刷新抢指针、误触详情页的元凶）与悬浮流光。
  * data-no-ptr：卡片区域不作为下拉刷新手势起点（只在列表空白处下拉刷新）。
  */
-export default function ResourceCard({ resource, onOpen }: Props) {
+export default function ResourceCard({ resource, onOpen, minH = '170px' }: Props) {
   const [localOpen, setLocalOpen] = useState(false)
   const fav = useFavoritesStore((st) => st.ids.has(String(resource.id)))
   const toggleFav = useFavoritesStore((st) => st.toggle)
@@ -55,7 +57,7 @@ export default function ResourceCard({ resource, onOpen }: Props) {
           display="flex"
           flexDirection="column"
           gap={2}
-          minH="170px"
+          minH={minH}
           className="pbox-morph"
           _hover={{ shadow: 'md', borderColor: 'brand.400', bg: 'panelstrong' }}
         >

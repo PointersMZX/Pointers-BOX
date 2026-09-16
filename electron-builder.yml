@@ -14,6 +14,11 @@ files:
 extraResources:
   - from: resources/icons
     to: icons
+  # v2.2.0：box.json（应用信息）嵌入包内，远程不可达时兜底
+  - from: resources/box.json
+    to: box.json
+    filter:
+      - "**/*"
 
 win:
   # 用户提供的官方图标（256x256 ICO）

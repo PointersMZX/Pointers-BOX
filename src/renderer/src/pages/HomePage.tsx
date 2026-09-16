@@ -112,16 +112,16 @@ function GlassCard({
       borderWidth="1px"
       borderColor="pborder"
       borderRadius="lg"
-      p={4}
+      p={5}
       minH={minH}
       className="pbox-blur-panel"
     >
       {(title || right) && (
-        <Flex align="center" justify="space-between" mb={2} gap={2}>
-          <HStack spacing={2} flex="1" minW={0}>
+        <Flex align="center" justify="space-between" mb={3} gap={3}>
+          <HStack spacing={2.5} flex="1" minW={0}>
             {icon}
             {title && (
-              <Heading size="sm" color="ptext" noOfLines={1}>
+              <Heading size="md" color="ptext" noOfLines={1}>
                 {title}
               </Heading>
             )}
@@ -143,35 +143,16 @@ function useNow(intervalMs = 30_000) {
   return now
 }
 
-// 堆叠 deck：卡片同规格重叠，顶部偏移露出层（非完全重合）
-// 当前"顶卡"可交互；轮转 = 顶卡移到栈底。transform 驱动换位（GPU 合成）
-// deck 高度 = 顶卡实测高度 + (n-1)*层间距（ResizeObserver 跟随，不留大片空白）
-const DECK_MIN_H = '170px' // 堆叠卡统一规格：同高叠放，露出层不被内容长短拉乱
-const DECK_OFFSET = 16
+// 堆叠 deck：卡片同规格重叠，顶部逐层偏移露出 16px 层边（一叠卡观感，非完全重合）
+// 当前"顶卡"完整可交互；轮转 = 顶卡移到栈底。transform 驱动换位（GPU 合成）
+const DECK_MIN_H = '220px' // 堆叠卡统一规格：同高叠放，露出层观感整齐
+const DECK_OFFSET = 16 // 每层向下偏移（露出 16px 层边）
 
 function StackedDeck({ cards }: { cards: React.ReactNode[] }) {
   const [active, setActive] = useState(0)
   const n = cards.length
-  const deckRef = useRef<HTMLDivElement>(null)
-  const [deckHeight, setDeckHeight] = useState(0)
 
-  // 测量顶卡渲染后的实际高度，deck 容器 = 顶卡高 + 下层露出的偏移总和
-  useLayoutEffect(() => {
-    const el = deckRef.current
-    if (!el) return
-    const measure = () => {
-      const layer0 = el.querySelector<HTMLElement>('[data-deck-layer="0"]')
-      const top = layer0 ? layer0.offsetHeight : 0
-      setDeckHeight(Math.max(top + (n - 1) * DECK_OFFSET, DECK_OFFSET * 2))
-    }
-    measure()
-    const ro = new ResizeObserver(measure)
-    const layer0 = el.querySelector<HTMLElement>('[data-deck-layer="0"]')
-    if (layer0) ro.observe(layer0)
-    return () => ro.disconnect()
-  }, [n])
-
-  // 每张卡当前层位（0=最顶）
+  // 每张卡的层位（0=最顶）：active 指向当前顶卡，其后依次为 1,2,…，尾卡回到栈底
   const posOf = (idx: number) => (idx - active + n) % n
 
   const layer = (idx: number) => {
@@ -180,15 +161,14 @@ function StackedDeck({ cards }: { cards: React.ReactNode[] }) {
     return (
       <Box
         key={`layer-${idx}`}
-        data-deck-layer={String(pos)}
         position="absolute"
         left="0"
         right="0"
         top="0"
         zIndex={n - pos}
-        opacity={pos === 0 ? 1 : 0.3}
+        opacity={pos === 0 ? 1 : 0.6}
         style={{
-          transform: `translateY(${pos * DECK_OFFSET}px) scale(${topCard ? 1 : 1 - pos * 0.015})`,
+          transform: `translateY(${pos * DECK_OFFSET}px)`,
           transition: `transform ${DUR.slow}s ${EASE.out}, opacity ${DUR.slow}s ${EASE.out}`,
           pointerEvents: topCard ? 'auto' : 'none'
         }}
@@ -198,10 +178,13 @@ function StackedDeck({ cards }: { cards: React.ReactNode[] }) {
     )
   }
 
+  // deck 高度 = 顶卡高（220px）+ (n-1)*16px 露出层
+  const deckHeight = 220 + (n - 1) * DECK_OFFSET
+
   return (
-    <Box ref={deckRef} position="relative" height={deckHeight ? `${deckHeight}px` : 'auto'}>
+    <Box position="relative" height={deckHeight}>
       {Array.from({ length: n }, (_, i) => i).map((i) => layer(i))}
-      {/* 轮转：当前顶卡移到栈底（循环）——贴在 deck 底边，deck 高度 = 顶卡高 + (n-1)*偏移 */}
+      {/* 轮转：当前顶卡移到栈底（循环）——贴在 deck 右下角 */}
       {n > 1 && (
         <Flex
           position="absolute"
@@ -450,9 +433,11 @@ export default function HomePage() {
     </GlassCard>
   )
 
-  // 2. 随机资源推荐（紧凑=密集网格；其余少量，减小占面积）
-  if (picks.length > 0) {
-    fullCards.push(
+  // 2. 随机资源推荐
+  // 堆叠模式：推荐区不参与 deck（避免标题+网格卡混杂），deck 只放干净单卡片；
+  // 紧凑/宽展模式：推荐区作为整宽卡渲染
+  const picksBlock =
+    picks.length > 0 ? (
       <Box key="picks">
         <Heading size="sm" color="ptext" mb={3}>
           今日推荐
@@ -465,6 +450,7 @@ export default function HomePage() {
             <ResourceCard
               key={String(r.id)}
               resource={r}
+              minH={layout === 'stacked' ? undefined : '170px'}
               onOpen={(res) => {
                 setSelected(res)
                 setDetailOpen(true)
@@ -473,15 +459,16 @@ export default function HomePage() {
           ))}
         </SimpleGrid>
       </Box>
-    )
-  } else if (resources.length > 0) {
-    halfCards.push(
+    ) : resources.length > 0 ? (
       <GlassCard key="picks-empty" minH={DECK_MIN_H}>
         <Text fontSize="sm" color="ptextmuted">
           推荐抽取中，点右上角「换一批」试试
         </Text>
       </GlassCard>
-    )
+    ) : null
+
+  if (layout !== 'stacked') {
+    if (picksBlock) fullCards.push(picksBlock)
   }
 
   // 3. 公告（不必整行：半宽卡，可与他卡并排）
