@@ -20,7 +20,7 @@ const goodResource = {
 }
 
 describe('validateResources', () => {
-  it('接受合法数据并保留全部字段', () => {
+  it('接受合法数据并保留全部字段（旧 { resources: [...] } 包裹格式）', () => {
     const r = validateResources({ resources: [goodResource] })
     expect(r.valid).toHaveLength(1)
     expect(r.invalidCount).toBe(0)
@@ -31,6 +31,12 @@ describe('validateResources', () => {
       release_date: '2025.01.01',
       links: ['https://platform.example.com/resource/xxxxxx']
     })
+  })
+
+  it('v2.2.0：独立文件，顶层直接是资源数组', () => {
+    const r = validateResources([goodResource])
+    expect(r.valid).toHaveLength(1)
+    expect(r.valid[0].id).toBe(20)
   })
 
   it('顶层结构错误抛 DataFileError（PRD 7.6 全局解析失败提示）', () => {
@@ -65,13 +71,18 @@ describe('validateResources', () => {
 })
 
 describe('其余校验器', () => {
-  it('announcement：取 content，date 可缺省', () => {
+  it('announcement：v2.2.0 独立文件，顶层即 { date, content }；容忍旧 { announcement: {...} } 包裹', () => {
+    expect(validateAnnouncement({ date: '2026.09.03', content: '公告' })).toEqual({
+      date: '2026.09.03',
+      content: '公告'
+    })
+    expect(validateAnnouncement({ content: 'x' })).toEqual({ date: '', content: 'x' })
+    expect(validateAnnouncement({ date: 'd' })).toBeNull()
+    // 旧包裹格式仍兼容
     expect(validateAnnouncement({ announcement: { date: '2026.09.03', content: '公告' } })).toEqual({
       date: '2026.09.03',
       content: '公告'
     })
-    expect(validateAnnouncement({ announcement: { content: 'x' } })).toEqual({ date: '', content: 'x' })
-    expect(validateAnnouncement({ announcement: { date: 'd' } })).toBeNull()
     expect(validateAnnouncement({})).toBeNull()
   })
 

@@ -83,12 +83,17 @@ function parseShares(v: unknown, errors: string[], idx: number): ShareItem[] {
 }
 
 export function validateResources(raw: unknown): CleanResult<Resource[]> {
-  if (!isRecord(raw) || !Array.isArray(raw['resources'])) {
-    throw new DataFileError('resource.json 结构错误：缺少 resources 数组')
+  // v2.2.0：独立文件，顶层直接是资源数组；同时容忍旧 { resources: [...] } 包裹格式
+  let list: unknown[]
+  if (Array.isArray(raw)) {
+    list = raw
+  } else if (isRecord(raw) && Array.isArray(raw['resources'])) {
+    list = raw['resources'] as unknown[]
+  } else {
+    throw new DataFileError('resources.json 结构错误：顶层需为资源数组（或旧格式 { resources: [...] }）')
   }
   const resources: Resource[] = []
   const errors: string[] = []
-  const list = raw['resources'] as unknown[]
   list.forEach((item, idx) => {
     if (!isRecord(item)) {
       errors.push(`resources[${idx}] 不是对象，已跳过`)
@@ -129,9 +134,9 @@ export function getResourceShares(resource: Resource): ShareItem[] {
 }
 
 export function validateAnnouncement(raw: unknown): Announcement | null {
-  if (!isRecord(raw)) return null
-  const a = raw['announcement']
-  if (!isRecord(a)) return null
+  // v2.2.0：独立公告文件，顶层即 { date, content }；同时容忍旧 { announcement: {...} } 包裹
+  const a = isRecord(raw) ? (isRecord(raw['announcement']) ? raw['announcement'] : raw) : null
+  if (!a) return null
   const content = asString(a['content'])
   if (content === null) return null
   return { date: asString(a['date']) ?? '', content }

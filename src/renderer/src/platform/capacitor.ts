@@ -48,6 +48,7 @@ async function fetchLooseJson(url: string): Promise<unknown> {
 
 function buildSnapshot(raw: {
   resources: unknown
+  announcement: unknown
   box: unknown
   versionLogs: unknown
 }): DataSnapshot {
@@ -58,7 +59,8 @@ function buildSnapshot(raw: {
     data: {
       resources: clean.valid,
       version_logs: [],
-      announcement: validateAnnouncement(raw.resources)
+      // v2.2.0：公告独立文件（announcement），不再从 resources 里读
+      announcement: validateAnnouncement(raw.announcement)
     },
     box,
     versionLogs,
@@ -72,16 +74,20 @@ export async function androidGetData(force = false): Promise<DataSnapshot> {
   void force
   const results = await Promise.allSettled([
     fetchLooseJson(REMOTE_URLS.resources),
+    fetchLooseJson(REMOTE_URLS.announcement),
     fetchLooseJson(REMOTE_URLS.box),
     fetchLooseJson(REMOTE_URLS.versionLogs)
   ])
   const resources = results[0]
-  const box = results[1]
-  const logs = results[2]
+  const announcement = results[1]
+  const box = results[2]
+  const logs = results[3]
 
   if (resources && resources.status === 'fulfilled') {
     const snapshot = buildSnapshot({
       resources: resources.value,
+      announcement:
+        announcement && announcement.status === 'fulfilled' ? announcement.value : null,
       box: box && box.status === 'fulfilled' ? box.value : null,
       versionLogs: logs && logs.status === 'fulfilled' ? logs.value : null
     })

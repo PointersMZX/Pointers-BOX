@@ -54,6 +54,8 @@ function loadEmbeddedBox(): BoxInfo | null {
 
 const WORK_FILES = {
   resources: 'resources.json',
+  /** 公告（v2.2.0 起独立文件） */
+  announcement: 'announcement.json',
   box: 'box.json',
   /** 版本更新日志（v2.2.0 起独立文件） */
   versionLogs: 'boxbbgxrz.json'
@@ -173,11 +175,22 @@ function loadFromDisk(): MemoryState {
       data = {
         resources: clean.valid,
         version_logs: [],
-        announcement: validateAnnouncement(raw)
+        announcement: data.announcement
       }
       warnings.push(...clean.errors)
     } catch (e) {
       warnings.push(`本地 resources.json 无效已忽略：${msg(e)}`)
+    }
+  }
+
+  // 公告（v2.2.0 起独立文件 announcement.json）
+  const announcementPath = workPath('announcement')
+  if (existsSync(announcementPath)) {
+    try {
+      const ann = validateAnnouncement(parseLooseJson(readFileSync(announcementPath, 'utf-8')))
+      if (ann) data = { ...data, announcement: ann }
+    } catch (e) {
+      warnings.push(`本地 announcement.json 无效已忽略：${msg(e)}`)
     }
   }
 
@@ -246,6 +259,7 @@ export async function refreshRemote(force = false): Promise<DataSnapshot> {
 
   const results = await Promise.allSettled([
     fetchJson(REMOTE_URLS.resources),
+    fetchJson(REMOTE_URLS.announcement),
     fetchJson(REMOTE_URLS.box),
     fetchJson(REMOTE_URLS.versionLogs)
   ])
@@ -253,6 +267,7 @@ export async function refreshRemote(force = false): Promise<DataSnapshot> {
   const warnings: string[] = []
   let okCount = 0
 
+  // 1. 资源
   const resourcesResult = results[0]
   if (resourcesResult && resourcesResult.status === 'fulfilled') {
     try {
@@ -260,7 +275,7 @@ export async function refreshRemote(force = false): Promise<DataSnapshot> {
       s.data = {
         resources: clean.valid,
         version_logs: [],
-        announcement: validateAnnouncement(resourcesResult.value)
+        announcement: s.data.announcement
       }
       warnings.push(...clean.errors)
       persistWork('resources', JSON.stringify(resourcesResult.value, null, 2))
@@ -272,7 +287,26 @@ export async function refreshRemote(force = false): Promise<DataSnapshot> {
     warnings.push(`resources.json 获取失败：${msg(resourcesResult.reason)}`)
   }
 
-  const boxResult = results[1]
+  // 2. 公告（独立文件）
+  const announcementResult = results[1]
+  if (announcementResult && announcementResult.status === 'fulfilled') {
+    try {
+      const ann = validateAnnouncement(announcementResult.value)
+      s.data = { ...s.data, announcement: ann }
+      if (ann) {
+        persistWork('announcement', JSON.stringify(announcementResult.value, null, 2))
+        okCount++
+      }
+    } catch (e) {
+      warnings.push(`announcement.json 解析失败（保留本地数据）：${msg(e)}`)
+    }
+  } else if (announcementResult && announcementResult.status === 'rejected') {
+    // 公告独立失败不影响其他数据；本地缓存/空公告保留
+    warnings.push(`announcement.json 获取失败：${msg(announcementResult.reason)}`)
+  }
+
+  // 3. 应用信息（嵌入包内兜底）
+  const boxResult = results[2]
   if (boxResult && boxResult.status === 'fulfilled') {
     try {
       const info = validateBoxInfo(boxResult.value)
@@ -282,17 +316,16 @@ export async function refreshRemote(force = false): Promise<DataSnapshot> {
       okCount++
     } catch (e) {
       warnings.push(`box.json 解析失败（用包内默认）：${msg(e)}`)
-      // 包内嵌入 box.json 兜底（应用信息不依赖网络）
       s.box = s.box ?? loadEmbeddedBox()
     }
   } else if (boxResult && boxResult.status === 'rejected') {
-    // 远程不可达：用包内嵌入 box.json 兜底（应用信息永远有值）
     s.box = s.box ?? loadEmbeddedBox()
     if (s.box) okCount++
     else warnings.push(`box.json 获取失败且无包内默认：${msg(boxResult.reason)}`)
   }
 
-  const logsResult = results[2]
+  // 4. 版本日志（独立文件）
+  const logsResult = results[3]
   if (logsResult && logsResult.status === 'fulfilled') {
     try {
       s.versionLogs = validateVersionLogs(logsResult.value)

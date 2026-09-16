@@ -162,9 +162,13 @@ export interface DataSnapshot {
 // ── 远程数据源（PRD §6.1，以 URL 为准） ───────────────────────
 
 export const REMOTE_URLS = {
+  /** 资源列表（v2.2.0：独立文件，顶层为资源数组） */
   resources: 'https://pointers-box.cc.cd/box/resources.json',
+  /** 公告（v2.2.0：独立文件，顶层为 { date, content }） */
+  announcement: 'https://pointers-box.cc.cd/box/announcement.json',
+  /** 应用信息（v2.2.0：嵌入包内兜底，远程可覆盖） */
   box: 'https://pointers-box.cc.cd/box/box.json',
-  /** 版本更新日志（v2.2.0 起独立文件） */
+  /** 版本更新日志（v2.2.0：独立文件） */
   versionLogs: 'https://pointers-box.cc.cd/box/boxbbgxrz.json'
 } as const
 
