@@ -9,7 +9,8 @@ import {
   cpSync,
   statSync,
   readFileSync,
-  writeFileSync
+  writeFileSync,
+  readdirSync
 } from 'node:fs'
 import { join } from 'node:path'
 
@@ -79,6 +80,18 @@ mkdirSync(installDir, { recursive: true })
 copyTree(join(tmpBase, 'win-33', 'win-unpacked'), join(installDir, 'win-64'))
 copyTree(join(tmpBase, 'win-22', 'win-unpacked'), join(installDir, 'win7-x64'))
 rmDir(tmpBase)
+
+// 体积压缩：locale 精简（55 种语言 41MB → 3 个，en-US 是 Chromium 必需回退；
+// 与 NSIS 打包脚本的 locales 精简保持一致）
+const KEEP_LOCALES = ['zh-CN', 'zh-TW', 'en-US']
+for (const outName of ['win-64', 'win7-x64']) {
+  const localesDir = join(installDir, outName, 'locales')
+  for (const f of readdirSync(localesDir)) {
+    const name = f.replace(/\.pak$/, '')
+    if (!KEEP_LOCALES.includes(name)) rmSync(join(localesDir, f))
+  }
+  console.log(`${outName}: locales 精简为 ${KEEP_LOCALES.join('/')}（${readdirSync(localesDir).length} 个）`)
+}
 
 const e33 = statSync(join(installDir, 'win-64', 'Pointers-BOX.exe'))
 const e22 = statSync(join(installDir, 'win7-x64', 'Pointers-BOX.exe'))
