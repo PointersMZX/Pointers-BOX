@@ -28,6 +28,13 @@ jobs:
           distribution: temurin
           java-version: 17
       - uses: android-actions/setup-android@v3
+        with:
+          # 关自动接受 license：新 runner 镜像里 sdkmanager --licenses 的交互提示
+          # 无 stdin 时默认按 N，action 直接失败（2026-09 镜像回归），改下面步骤显式接受
+          accept-android-sdk-licenses: false
+      - name: Accept Android SDK licenses (non-interactive)
+        run: |
+          yes 2>/dev/null | sdkmanager --licenses >/dev/null 2>&1 || true
       - uses: pnpm/action-setup@v4
         with:
           version: 9
