@@ -27,14 +27,16 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
+      # 2026-09 runner 镜像回归两点：① sdkmanager --licenses 交互提示无 stdin 时默认 N，
+      # action 的 auto-accept 直接失败；② action 默认包列表含已下线的 tools 包（仓库里已找不到，装包必败）。
+      # 对策：预先 pipe yes 接受全部 license（失败不阻断），关 auto-accept，包列表收窄。
+      - name: Pre-accept Android SDK licenses
+        run: |
+          yes 2>/dev/null | /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses >/dev/null 2>&1 || true
       - uses: android-actions/setup-android@v3
         with:
-          # 关自动接受 license：新 runner 镜像里 sdkmanager --licenses 的交互提示
-          # 无 stdin 时默认按 N，action 直接失败（2026-09 镜像回归），改下面步骤显式接受
           accept-android-sdk-licenses: false
-      - name: Accept Android SDK licenses (non-interactive)
-        run: |
-          yes 2>/dev/null | sdkmanager --licenses >/dev/null 2>&1 || true
+          packages: platform-tools
       - uses: pnpm/action-setup@v4
         with:
           version: 9
