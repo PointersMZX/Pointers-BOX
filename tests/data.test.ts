@@ -36,7 +36,7 @@ describe('validateResources', () => {
   it('v2.2.0：独立文件，顶层直接是资源数组', () => {
     const r = validateResources([goodResource])
     expect(r.valid).toHaveLength(1)
-    expect(r.valid[0].id).toBe(20)
+    expect(r.valid[0]!.id).toBe(20)
   })
 
   it('顶层结构错误抛 DataFileError（PRD 7.6 全局解析失败提示）', () => {
