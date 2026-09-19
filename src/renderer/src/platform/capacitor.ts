@@ -204,7 +204,7 @@ interface InAppBrowserNativeInterface {
 const InAppBrowserNative = registerPlugin<InAppBrowserNativeInterface>('InAppBrowser')
 
 // v2.2.0：安卓下载事件桥接 —— InAppBrowserActivity 的下载（DownloadManager/blob 转系统浏览器）
-// 经 DownloadEventBus → InAppBrowserPlugin.notify('downloadEvent') 回传，这里转成渲染层 DownloadEvent。
+// 经 DownloadEventBus → InAppBrowserPlugin.notifyListeners('downloadEvent') 回传，这里转成渲染层 DownloadEvent。
 // started/done 映射为 DownloadTask；DownloadManager 无实时进度回传，percent 置 100（与桌面语义：完成即消失一致）。
 export function androidOnDownloadEvent(cb: (e: DownloadEvent) => void): () => void {
   const plugin = InAppBrowserNative as unknown as {

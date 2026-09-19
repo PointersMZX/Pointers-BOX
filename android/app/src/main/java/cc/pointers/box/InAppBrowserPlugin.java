@@ -24,14 +24,9 @@ public class InAppBrowserPlugin extends Plugin {
 
     private DownloadEventBus.Listener listener;
 
-    @Override
-    protected void load() {
-        super.load();
-    }
-
     /**
      * v2.2.0：开始订阅下载事件。JS 侧调用后，Activity 里的下载事件会经
-     * DownloadEventBus → 本插件 → notify 抛给主 WebView 渲染层。
+     * DownloadEventBus → 本插件 → notifyListeners 抛给主 WebView 渲染层。
      * 重复调用幂等（同一 listener 只注册一次）。
      */
     @PluginMethod
@@ -58,7 +53,7 @@ public class InAppBrowserPlugin extends Plugin {
         call.resolve();
     }
 
-    /** 把下载事件抛给 JS（Capacitor notify 内部切到主线程） */
+    /** 把下载事件抛给 JS（Capacitor 6：notifyListeners 内部切到主线程派发；notify 是旧版 API，6.x 已无此方法） */
     private void postDownloadEvent(String type, String filename, long total) {
         JSObject data = new JSObject();
         data.put("type", type);
@@ -66,7 +61,7 @@ public class InAppBrowserPlugin extends Plugin {
         data.put("total", total);
         JSObject ret = new JSObject();
         ret.put("event", data);
-        notify("downloadEvent", ret);
+        notifyListeners("downloadEvent", ret);
     }
 
     @Override
