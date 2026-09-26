@@ -1,10 +1,13 @@
-// 三套外观主题（液态玻璃/纯黑/纯白）—— 仅改变外观，不含任何功能逻辑
+// 四套外观主题（v2.3.0：紫金黑/自定义/纯黑/纯白）—— 仅改变外观，不含任何功能逻辑
+// 液态玻璃：开 = 透明底 + 背景渐变 + 漂移光斑（CSS）+ 可选 WebGL 叠层（LiquidGlass 组件）
 import { extendTheme, type Theme } from '@chakra-ui/react'
 import {
   accentScale,
   DEFAULT_ACCENT,
   hexToRgb,
-  type ThemeKey
+  type ThemeKey,
+  ZJ_ACCENT,
+  ZJ_GOLD
 } from '../../../shared/theme'
 
 export function hexToRgba(hex: string, alpha: number): string {
@@ -24,12 +27,43 @@ interface SurfaceTokens {
   textPrimary: string
   textMuted: string
   inputBg: string
+  /** 玻璃开启时的 body 背景（静态渐变，WebGL 折射源栅格化它） */
+  glassBg: string
+  /** 漂移光斑颜色（b1/b2），玻璃开时可见 */
+  blob1: string
+  blob2: string
+  blobOpacity: number
+}
+
+// WebGL 玻璃色（LiquidGlass 组件消费的 CSS 变量；CSS 玻璃兜底时不使用）
+interface GlassCssVars {
+  edge: string
+  tint: string
+  base: string
 }
 
 const SURFACES: Record<ThemeKey, SurfaceTokens> = {
-  glass: {
+  zj: {
     colorMode: 'dark',
-    appBg: 'transparent',
+    appBg: '#0d0817',
+    panel: 'rgba(255,255,255,0.08)',
+    panelStrong: 'rgba(255,255,255,0.13)',
+    border: 'rgba(255,255,255,0.16)',
+    hover: 'rgba(255,255,255,0.10)',
+    sidebar: 'rgba(24,14,40,0.36)',
+    bar: 'rgba(20,10,36,0.42)',
+    textPrimary: 'gray.50',
+    textMuted: 'gray.300',
+    inputBg: 'rgba(255,255,255,0.10)',
+    // 深紫金底 + 紫晕/金晕
+    glassBg: 'radial-gradient(1100px 700px at 18% -10%, rgba(124,92,255,0.55), transparent 60%), radial-gradient(900px 620px at 88% 108%, rgba(232,179,62,0.28), transparent 60%), #0d0817',
+    blob1: ZJ_ACCENT,
+    blob2: ZJ_GOLD,
+    blobOpacity: 0.5
+  },
+  custom: {
+    colorMode: 'dark',
+    appBg: '#0a1428',
     panel: 'rgba(255,255,255,0.08)',
     panelStrong: 'rgba(255,255,255,0.13)',
     border: 'rgba(255,255,255,0.16)',
@@ -38,7 +72,12 @@ const SURFACES: Record<ThemeKey, SurfaceTokens> = {
     bar: 'rgba(8,16,32,0.38)',
     textPrimary: 'gray.50',
     textMuted: 'gray.300',
-    inputBg: 'rgba(255,255,255,0.10)'
+    inputBg: 'rgba(255,255,255,0.10)',
+    // 深色蓝底 + 强调色晕（accent 运行时注入）
+    glassBg: `radial-gradient(1000px 640px at 20% -10%, ${hexToRgba(DEFAULT_ACCENT, 0.4)}, transparent 60%), radial-gradient(800px 560px at 90% 110%, rgba(124,92,255,0.3), transparent 60%), #0a1428`,
+    blob1: DEFAULT_ACCENT,
+    blob2: '#7c5cff',
+    blobOpacity: 0.5
   },
   black: {
     colorMode: 'dark',
@@ -51,7 +90,12 @@ const SURFACES: Record<ThemeKey, SurfaceTokens> = {
     bar: '#0a0a0a',
     textPrimary: '#ededed',
     textMuted: '#8f8f8f',
-    inputBg: '#111111'
+    inputBg: '#111111',
+    // 纯黑底 + 微弱强调色晕（玻璃开时给折射源一点变化）
+    glassBg: `radial-gradient(900px 600px at 50% -20%, ${hexToRgba(DEFAULT_ACCENT, 0.22)}, transparent 65%), #000000`,
+    blob1: hexToRgba(DEFAULT_ACCENT, 0.5),
+    blob2: 'rgba(124,92,255,0.3)',
+    blobOpacity: 0.3
   },
   white: {
     colorMode: 'light',
@@ -64,8 +108,30 @@ const SURFACES: Record<ThemeKey, SurfaceTokens> = {
     bar: '#f7f7f7',
     textPrimary: '#171717',
     textMuted: '#6b6b6b',
-    inputBg: '#ffffff'
+    inputBg: '#ffffff',
+    // 纯白底 + 极淡强调色晕
+    glassBg: `radial-gradient(900px 600px at 50% -20%, ${hexToRgba(DEFAULT_ACCENT, 0.14)}, transparent 65%), #ffffff`,
+    blob1: hexToRgba(DEFAULT_ACCENT, 0.35),
+    blob2: 'rgba(124,92,255,0.2)',
+    blobOpacity: 0.25
   }
+}
+
+// 玻璃 CSS 变量（按主题定死；WebGL 玻璃不可用时仅 CSS 玻璃，变量不参与）
+function glassVarsOf(themeKey: ThemeKey, accent: string): GlassCssVars {
+  const a = hexToRgb(accent) ?? hexToRgb(DEFAULT_ACCENT)!
+  switch (themeKey) {
+    case 'zj':
+      // 紫金黑：金色发丝描边 + 紫晕染色 + 半透深紫金底板（观感基准 = XingyuMusic 紫金黑底栏）
+      return { edge: 'rgba(232,179,62,0.75)', tint: 'rgba(124,92,255,0.38)', base: 'rgba(13,8,23,0.55)' }
+    case 'custom':
+      return { edge: 'rgba(255,255,255,0.26)', tint: `rgba(${a.r},${a.g},${a.b},0.18)`, base: 'rgba(10,20,40,0.55)' }
+    case 'black':
+      return { edge: 'rgba(255,255,255,0.2)', tint: `rgba(${a.r},${a.g},${a.b},0.15)`, base: 'rgba(0,0,0,0.62)' }
+    case 'white':
+      return { edge: 'rgba(15,23,42,0.16)', tint: `rgba(${a.r},${a.g},${a.b},0.10)`, base: 'rgba(255,255,255,0.55)' }
+  }
+  return { edge: 'transparent', tint: 'transparent', base: 'transparent' }
 }
 
 // 构建基础样式 + 通用动画 keyframes（所有主题都有）
@@ -174,9 +240,10 @@ function makeStyles(effectiveAccent: string) {
   }
 }
 
-// 液态玻璃独有的背景波浪色斑 + 各层次模糊
+// 液态玻璃开启时的额外样式：背景色斑漂移 + 各层次模糊 + WebGL 玻璃激活态
 // v2.1.0：blur 110px→64px 降 GPU 负担；窗口隐藏/系统减少动效偏好时暂停漂移
-function makeGlassExtra(effectiveAccent: string) {
+function makeGlassExtra(surface: SurfaceTokens, blob1: string) {
+  const { blob2, blobOpacity } = surface
   return {
     global: {
       '.pbox-blob': {
@@ -184,7 +251,7 @@ function makeGlassExtra(effectiveAccent: string) {
         pointerEvents: 'none',
         borderRadius: '9999px',
         filter: 'blur(64px)',
-        opacity: '0.5',
+        opacity: String(blobOpacity),
         zIndex: 0,
         animation: 'pboxDrift 18s ease-in-out infinite alternate'
       },
@@ -193,14 +260,14 @@ function makeGlassExtra(effectiveAccent: string) {
         height: '46vw',
         left: '-10vw',
         top: '-14vw',
-        background: `radial-gradient(circle, ${effectiveAccent} 0%, transparent 70%)`
+        background: `radial-gradient(circle, ${blob1} 0%, transparent 70%)`
       },
       '.pbox-blob.b2': {
         width: '40vw',
         height: '40vw',
         right: '-10vw',
         bottom: '-12vw',
-        background: 'radial-gradient(circle, #7c5cff 0%, transparent 70%)',
+        background: `radial-gradient(circle, ${blob2} 0%, transparent 70%)`,
         animationDelay: '-7s',
         animationDirection: 'alternate-reverse'
       },
@@ -234,6 +301,18 @@ function makeGlassExtra(effectiveAccent: string) {
         backdropFilter: 'blur(20px) saturate(140%)',
         WebkitBackdropFilter: 'blur(20px) saturate(140%)'
       },
+      // v2.3.0：WebGL LiquidGlass 叠层接管侧栏/Android 底栏玻璃体时（documentElement.pbox-liquid-active），
+      // 撤掉被接管面板的 CSS 磨砂——折射/色散/边缘流光改由 GPU 着色器绘制；
+      // 面板保留自身半透明底色（canvas 在其下层，自然叠加成磨砂观感，与 Chakra 内联样式无冲突）。
+      // 按 id 精确命中：状态栏同用 pbox-blur-bar 但无 canvas 接管，不受影响。
+      '.pbox-liquid-active #pbox-sidebar': {
+        backdropFilter: 'none',
+        WebkitBackdropFilter: 'none'
+      },
+      '.pbox-liquid-active #pbox-bottomnav': {
+        backdropFilter: 'none',
+        WebkitBackdropFilter: 'none'
+      },
       '@keyframes pboxDrift': {
         '0%': { transform: 'translate(0, 0) scale(1)' },
         '50%': { transform: 'translate(6vw, 4vh) scale(1.12)' },
@@ -243,19 +322,23 @@ function makeGlassExtra(effectiveAccent: string) {
   }
 }
 
-// 主题工厂：accent 仅液态玻璃主题可自定义，其余固定默认色
+// 主题工厂：accent 仅自定义主题可自定义，其余固定默认色
+// glassOn = 当前生效的液态玻璃开关（锁死主题恒 true）
 // Chakra v2 返回 Theme；本函数额外注入 semanticTokens/global keyframes/blur tokens 等扩展。
 // 合并时以对象展开方式绕过 strict 约束；运行时完全兼容 Theme 接口。
-export function buildTheme(themeKey: ThemeKey, accent: string): Theme {
+export function buildTheme(themeKey: ThemeKey, accent: string, glassOn: boolean): Theme {
   const s = SURFACES[themeKey]
-  const effectiveAccent = themeKey === 'glass' ? accent : DEFAULT_ACCENT
-  const isGlass = themeKey === 'glass'
+  const effectiveAccent = themeKey === 'custom' ? accent : themeKey === 'zj' ? ZJ_ACCENT : DEFAULT_ACCENT
+  const gvars = glassVarsOf(themeKey, effectiveAccent)
+  // 主光斑色：自定义主题跟随用户强调色；其余主题用预设
+  const blob1 = themeKey === 'custom' ? effectiveAccent : s.blob1
 
   const baseStyles = makeStyles(effectiveAccent)
-  const bodyBg = isGlass ? 'transparent' : s.appBg
+  // 玻璃开：body 用静态渐变（WebGL 折射源）；关：主题固有色
+  const bodyBg = glassOn ? s.glassBg : s.appBg
   const bodyOverride = { body: { overflow: 'hidden', background: bodyBg } }
 
-  // 二次 extendTheme 将液态玻璃额外样式叠加
+  // 二次 extendTheme 将液态玻璃额外样式叠加（仅玻璃开时）
   const config = {
     config: { initialColorMode: s.colorMode, useSystemColorMode: false },
     colors: { brand: accentScale(effectiveAccent) },
@@ -280,9 +363,19 @@ export function buildTheme(themeKey: ThemeKey, accent: string): Theme {
       }
     },
     styles: {
-      global: isGlass
-        ? { ...baseStyles.global, ...bodyOverride, ...(makeGlassExtra(effectiveAccent).global as Record<string, unknown>) }
-        : { ...baseStyles.global, ...bodyOverride }
+      global: {
+        ...baseStyles.global,
+        ...bodyOverride,
+        // 液态玻璃总开关 + WebGL 组件消费的玻璃色变量（CSS 玻璃不可用/未启用时仅占位）
+        ':root': {
+          ...(baseStyles.global[':root'] as object),
+          '--liquid-glass': glassOn ? 'true' : 'false',
+          '--color-glass-edge': gvars.edge,
+          '--color-glass-tint': gvars.tint,
+          '--color-glass-base': gvars.base
+        },
+        ...(glassOn ? (makeGlassExtra(s, blob1).global as Record<string, unknown>) : {})
+      }
     }
   }
 

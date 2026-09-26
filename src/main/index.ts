@@ -15,6 +15,9 @@ if (process.platform === 'win32') {
   app.setAppUserModelId('cc.pointers.box')
 }
 
+// v2.3.0：液态玻璃 WebGL 无 GPU 兜底——允许 SwiftShader 软渲染（与 XingyuMusic 同策略）
+app.commandLine.appendSwitch('enable-unsafe-swiftshader')
+
 const gotLock = app.requestSingleInstanceLock()
 if (!gotLock) {
   app.quit()

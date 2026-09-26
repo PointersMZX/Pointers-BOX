@@ -15,7 +15,7 @@ export default function StatusBar() {
   useEffect(() => {
     backend.getAppVersion().then(setAppVersion).catch(() => {})
   }, [])
-  const isGlass = useThemeStore((s) => s.themeKey) === 'glass'
+  const isGlassOn = useThemeStore((s) => s.isGlassOn)
   const [online, setOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine)
 
   useEffect(() => {
@@ -41,7 +41,7 @@ export default function StatusBar() {
       borderColor="pborder"
       fontSize="xs"
       color="ptextmuted"
-      className={isGlass ? 'pbox-blur-bar' : undefined}
+      className={isGlassOn ? 'pbox-blur-bar' : undefined}
       position="relative"
       zIndex={1}
     >
@@ -57,7 +57,7 @@ export default function StatusBar() {
         )}
       </Flex>
       <Text>
-        Pointers-BOX {appVersion ? `v${appVersion}` : 'v2.2.0'}
+        Pointers-BOX {appVersion ? `v${appVersion}` : 'v2.3.0'}
         {platform === 'android' ? ' · Android' : ''}
       </Text>
     </Flex>

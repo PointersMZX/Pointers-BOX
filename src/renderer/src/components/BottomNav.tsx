@@ -27,6 +27,7 @@ export default function BottomNav() {
   return (
     <Box
       as="nav"
+      id="pbox-bottomnav"
       position="fixed"
       bottom={0}
       left={0}

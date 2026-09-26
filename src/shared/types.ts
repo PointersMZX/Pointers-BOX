@@ -74,10 +74,12 @@ export interface AppConfig {
   downloadDir: string
   /** v2.3.0：固定 'system'（内嵌浏览器已删除；旧 'builtin' 存档自动迁移） */
   androidBrowser: AndroidBrowserChoice
-  /** 外观主题（纯外观，不影响功能）：液态玻璃（默认）/ 纯黑 / 纯白 */
+  /** 外观主题（v2.3.0 四主题）：紫金黑（玻璃锁死开）/ 自定义（玻璃可关）/ 纯黑 / 纯白（玻璃默认关） */
   theme: import('./theme').ThemeKey
-  /** 强调色（仅液态玻璃主题可自定义）#rrggbb */
+  /** 强调色（仅自定义主题可自定义）#rrggbb */
   accent: string
+  /** 液态玻璃按主题显式开关（v2.3.0）：缺省键 = 用该主题默认（紫金黑锁死，配置被忽略） */
+  liquidGlass?: Partial<Record<import('./theme').ThemeKey, boolean>>
   /** 收藏的资源 id（本地，字符串化；v2.0.0） */
   favorites: string[]
   /** 保留下载历史（默认关闭，与 PRD 4.3 默认约定共存；v2.0.0） */

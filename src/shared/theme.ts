@@ -1,17 +1,53 @@
-// 主题系统纯逻辑（设置-主题）：主题键/强调色归一化、色阶生成（不含任何功能逻辑）
-export type ThemeKey = 'glass' | 'black' | 'white'
+// 主题系统纯逻辑（v2.3.0 四主题重做）：
+// - zj 紫金黑：玻璃锁死开启、固定紫金配色（不可自定义颜色）
+// - custom 自定义：自选强调色 + 液态玻璃可关（默认开）
+// - black 纯黑 / white 纯白：液态玻璃默认关（可开）
+// 液态玻璃开关按主题记忆：配置存 Partial<Record<ThemeKey, boolean>>，缺省用主题默认。
+export type ThemeKey = 'zj' | 'custom' | 'black' | 'white'
 
-export const THEME_KEYS: readonly ThemeKey[] = ['glass', 'black', 'white']
-export const DEFAULT_THEME: ThemeKey = 'glass'
-// v2.2.0：默认强调色改为电光紫（旧默认 #9f7aea 已从预设移除，存档会自动迁移）
+// 液态玻璃按主题显式开关（缺省键 = 未设置过，走主题默认）
+export type LiquidGlassMap = Partial<Record<ThemeKey, boolean>>
+
+export const THEME_KEYS: readonly ThemeKey[] = ['zj', 'custom', 'black', 'white']
+// v2.3.0：默认主题紫金黑（新品牌图标同款紫金视觉）
+export const DEFAULT_THEME: ThemeKey = 'zj'
+// 自定义主题默认强调色（电光紫，v2.2.0 起）
 export const DEFAULT_ACCENT = '#7c5cff'
+// 紫金黑固定配色：紫（主强调）+ 金（次色/玻璃边缘流光）
+export const ZJ_ACCENT = '#7c5cff'
+export const ZJ_GOLD = '#e8b33e'
 
-// 仅液态玻璃主题允许自定义颜色（PRD 4.4 扩展需求）
+// 各主题液态玻璃默认值：紫金黑/自定义 开，纯黑/纯白 关
+export function defaultLiquidGlass(theme: ThemeKey): boolean {
+  return theme === 'zj' || theme === 'custom'
+}
+
+// 玻璃锁死开启的主题（不提供开关）
+export function isGlassLocked(theme: ThemeKey): boolean {
+  return theme === 'zj'
+}
+
+/**
+ * 生效的液态玻璃开关：锁死主题恒开；其余取该主题显式配置，缺省回主题默认。
+ * perTheme = 配置里存的按主题开关（缺省键 = 未显式设置过）
+ */
+export function effectiveLiquidGlass(
+  theme: ThemeKey,
+  perTheme: Partial<Record<ThemeKey, boolean>> | null | undefined
+): boolean {
+  if (isGlassLocked(theme)) return true
+  const explicit = perTheme?.[theme]
+  return explicit !== undefined ? explicit : defaultLiquidGlass(theme)
+}
+
+// 仅自定义主题允许自定义颜色（v2.3.0：原“液态玻璃”主题更名为“自定义”）
 export function canCustomizeAccent(theme: ThemeKey): boolean {
-  return theme === 'glass'
+  return theme === 'custom'
 }
 
 export function normalizeTheme(v: unknown): ThemeKey {
+  // v2.2.0 旧键迁移：glass → custom（旧“液态玻璃”主题）
+  if (v === 'glass') return 'custom'
   if (typeof v === 'string' && (THEME_KEYS as readonly string[]).includes(v)) {
     return v as ThemeKey
   }
@@ -88,7 +124,7 @@ export function accentScale(accent: string): Record<string, string> {
   }
 }
 
-// 液态玻璃主题的预设可选颜色（默认色 #7c5cff 置顶；旧默认 #9f7aea 已按反馈移除）
+// 自定义主题的预设可选颜色（默认色 #7c5cff 置顶）
 export const ACCENT_PRESETS: readonly string[] = [
   '#7c5cff',
   '#e659a8',

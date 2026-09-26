@@ -15,6 +15,7 @@ import BottomNav from './components/BottomNav'
 import StatusBar from './components/StatusBar'
 import UpdateChannelModal from './components/UpdateChannelModal'
 import AnnouncementModal from './components/AnnouncementModal'
+import LiquidGlass from './components/LiquidGlass'
 import HomePage from './pages/HomePage'
 import LibraryPage from './pages/LibraryPage'
 import LinksPage from './pages/LinksPage'
@@ -79,7 +80,7 @@ function ThemedShell() {
     void backend
       .getConfig()
       .then((cfg) => {
-        useThemeStore.getState().applyLocal(cfg.theme, cfg.accent)
+        useThemeStore.getState().applyLocal(cfg.theme, cfg.accent, cfg.liquidGlass)
         if (!cfg.updateChannel) setNeedChannelChoice(true)
       })
       .catch(() => {})
@@ -215,14 +216,22 @@ function ThemedShell() {
   )
 }
 
-// 主题 Provider 外壳：主题/强调色变化时重建主题对象（含全部外观令牌与动画）
+// 主题 Provider 外壳：主题/强调色/玻璃开关变化时重建主题对象（含全部外观令牌与动画）
 export default function App() {
   const themeKey = useThemeStore((s) => s.themeKey)
   const accent = useThemeStore((s) => s.accent)
+  const glassOn = useThemeStore((s) => s.isGlassOn)
 
   return (
-    <ChakraProvider theme={buildTheme(themeKey, accent)}>
-      {themeKey === 'glass' && <GlassBlobs />}
+    <ChakraProvider theme={buildTheme(themeKey, accent, glassOn)}>
+      {/* 液态玻璃开时：CSS 光斑（漂移氛围）+ WebGL 叠层（侧栏/Android 底栏 GPU 折射，不可用自动 CSS 兜底） */}
+      {glassOn && <GlassBlobs />}
+      {glassOn && (
+        <>
+          <LiquidGlass target="#pbox-sidebar" variant="sidebar" />
+          <LiquidGlass target="#pbox-bottomnav" variant="bar" />
+        </>
+      )}
       <ThemedShell />
     </ChakraProvider>
   )

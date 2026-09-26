@@ -1,31 +1,69 @@
 import {
+  ACCENT_PRESETS,
   accentScale,
   canCustomizeAccent,
   DEFAULT_ACCENT,
   DEFAULT_THEME,
+  effectiveLiquidGlass,
   hexToRgb,
+  isGlassLocked,
   isValidHex,
   mixColor,
   normalizeAccent,
   normalizeTheme,
-  rgbToHex
+  rgbToHex,
+  ZJ_ACCENT,
+  ZJ_GOLD
 } from '../src/shared/theme'
 
-describe('主题键归一化（默认液态玻璃）', () => {
-  it('合法主题键保留，非法回退默认液态玻璃', () => {
-    expect(normalizeTheme('glass')).toBe('glass')
+describe('主题键归一化（v2.3.0 四主题，默认紫金黑）', () => {
+  it('合法主题键保留，非法回退默认紫金黑', () => {
+    expect(normalizeTheme('zj')).toBe('zj')
+    expect(normalizeTheme('custom')).toBe('custom')
     expect(normalizeTheme('black')).toBe('black')
     expect(normalizeTheme('white')).toBe('white')
     expect(normalizeTheme('aqua')).toBe(DEFAULT_THEME)
     expect(normalizeTheme(undefined)).toBe(DEFAULT_THEME)
     expect(normalizeTheme(42)).toBe(DEFAULT_THEME)
-    expect(DEFAULT_THEME).toBe('glass')
+    expect(DEFAULT_THEME).toBe('zj')
   })
 
-  it('仅液态玻璃主题可自定义颜色', () => {
-    expect(canCustomizeAccent('glass')).toBe(true)
+  it('v2.2.0 旧键 glass 迁移为 custom（旧「液态玻璃」主题）', () => {
+    expect(normalizeTheme('glass')).toBe('custom')
+  })
+
+  it('仅自定义主题可自定义颜色', () => {
+    expect(canCustomizeAccent('custom')).toBe(true)
+    expect(canCustomizeAccent('zj')).toBe(false)
     expect(canCustomizeAccent('black')).toBe(false)
     expect(canCustomizeAccent('white')).toBe(false)
+  })
+})
+
+describe('液态玻璃开关（v2.3.0 按主题记忆）', () => {
+  it('紫金黑锁死开启：任何配置都开', () => {
+    expect(isGlassLocked('zj')).toBe(true)
+    expect(effectiveLiquidGlass('zj', {})).toBe(true)
+    expect(effectiveLiquidGlass('zj', { zj: false })).toBe(true) // 锁死不可关
+    expect(effectiveLiquidGlass('zj', undefined)).toBe(true)
+  })
+
+  it('自定义默认开、纯黑/纯白默认关；显式值优先于默认', () => {
+    expect(effectiveLiquidGlass('custom', undefined)).toBe(true)
+    expect(effectiveLiquidGlass('black', undefined)).toBe(false)
+    expect(effectiveLiquidGlass('white', undefined)).toBe(false)
+    // 显式覆盖
+    expect(effectiveLiquidGlass('custom', { custom: false })).toBe(false)
+    expect(effectiveLiquidGlass('black', { black: true })).toBe(true)
+    expect(effectiveLiquidGlass('white', { white: true })).toBe(true)
+    // 未显式设置的键回各主题默认
+    expect(effectiveLiquidGlass('white', { black: true })).toBe(false)
+  })
+
+  it('各主题玻璃锁死/默认语义', () => {
+    expect(isGlassLocked('custom')).toBe(false)
+    expect(isGlassLocked('black')).toBe(false)
+    expect(isGlassLocked('white')).toBe(false)
   })
 })
 
@@ -74,11 +112,19 @@ describe('颜色工具', () => {
     )
     expect(scale['500']).toBe('#3182ce')
     expect(scale['50']).not.toBe(scale['900'])
-    // 50 比主色更接近白色，900 更接近黑色
     const mid = hexToRgb('#3182ce')!
     const light = hexToRgb(scale['50']!)!
     const dark = hexToRgb(scale['900']!)!
     expect(light.r).toBeGreaterThan(mid.r)
     expect(dark.r).toBeLessThan(mid.r)
+  })
+})
+
+describe('v2.3.0 常量', () => {
+  it('紫金黑固定紫金配色、默认色稳定', () => {
+    expect(ZJ_ACCENT).toBe('#7c5cff')
+    expect(ZJ_GOLD).toBe('#e8b33e')
+    expect(DEFAULT_ACCENT).toBe('#7c5cff')
+    expect(ACCENT_PRESETS[0]).toBe('#7c5cff')
   })
 })

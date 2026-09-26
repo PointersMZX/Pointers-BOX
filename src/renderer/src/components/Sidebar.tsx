@@ -17,15 +17,17 @@ const NAV_ITEMS: Record<Page, { label: string; icon: IconType }> = {
 }
 
 // 侧边导航栏：固定 200px，图标 + 文字（PRD 2.2）；液态玻璃主题带最高层模糊
+// 侧边导航栏：固定 200px，图标 + 文字（PRD 2.2）；液态玻璃开启时最高层模糊
 // v2.3.0：激活态改为滑动高亮胶囊（framer-motion layoutId，切换时平滑滑动）
 export default function Sidebar() {
   const page = useUiStore((s) => s.page)
   const platform = useUiStore((s) => s.platform)
   const setPage = useUiStore((s) => s.setPage)
-  const isGlass = useThemeStore((s) => s.themeKey) === 'glass'
+  const isGlassOn = useThemeStore((s) => s.isGlassOn)
 
   return (
     <Box
+      id="pbox-sidebar"
       w="200px"
       flexShrink={0}
       bg="sidebarbg"
@@ -34,7 +36,7 @@ export default function Sidebar() {
       display="flex"
       flexDirection="column"
       gap={1}
-      className={isGlass ? 'pbox-blur-sidebar' : undefined}
+      className={isGlassOn ? 'pbox-blur-sidebar' : undefined}
       borderRightWidth="1px"
       borderRightColor="pborder"
     >

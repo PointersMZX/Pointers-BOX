@@ -1,11 +1,12 @@
 import { normalizeConfig } from '../src/shared/config'
 
-describe('配置归一化（PRD 4.4 下载路径/Android 浏览器选项 + 主题外观 + v2.0.0 收藏/历史）', () => {
+describe('配置归一化（PRD 4.4 下载路径/Android 浏览器选项 + 主题外观 + v2.3.0 四主题/液态玻璃）', () => {
   const defDir = 'C:\\Users\\u\\Downloads'
   const defaults = {
     downloadDir: defDir,
     androidBrowser: 'system' as const,
-    theme: 'glass' as const,
+    // v2.3.0：默认主题紫金黑
+    theme: 'zj' as const,
     accent: '#7c5cff',
     favorites: [],
     keepDownloadHistory: false,
@@ -15,7 +16,7 @@ describe('配置归一化（PRD 4.4 下载路径/Android 浏览器选项 + 主�
     updateChannel: 'gitee' as const
   }
 
-  it('空/损坏配置回退默认值（默认液态玻璃主题）', () => {
+  it('空/损坏配置回退默认值（默认紫金黑主题）', () => {
     expect(normalizeConfig(null, defDir)).toEqual(defaults)
     expect(normalizeConfig(undefined, defDir)).toEqual(defaults)
     expect(normalizeConfig('garbage', defDir)).toEqual(defaults)
@@ -54,8 +55,25 @@ describe('配置归一化（PRD 4.4 下载路径/Android 浏览器选项 + 主�
     expect(normalizeConfig({ downloadDir: '   ' }, defDir).downloadDir).toBe(defDir)
     expect(normalizeConfig({ androidBrowser: 'ie' }, defDir).androidBrowser).toBe('system')
     expect(normalizeConfig({ androidBrowser: 'builtin' }, defDir).androidBrowser).toBe('system')
-    expect(normalizeConfig({ theme: 'neon' }, defDir).theme).toBe('glass')
+    expect(normalizeConfig({ theme: 'neon' }, defDir).theme).toBe('zj')
+    expect(normalizeConfig({ theme: 'glass' }, defDir).theme).toBe('custom') // v2.2.0 旧键迁移
     expect(normalizeConfig({ accent: 'not-a-color' }, defDir).accent).toBe('#7c5cff')
+  })
+
+  it('v2.3.0：液态玻璃按主题开关——合法布尔保留，zj 键剔除，非对象回退缺省', () => {
+    // 未提供 = 无该键（各主题走自身默认）
+    expect('liquidGlass' in normalizeConfig({}, defDir)).toBe(false)
+    // 合法值保留（zj 锁死，配置被剔除）
+    expect(normalizeConfig({ liquidGlass: { zj: false, custom: false, black: true, white: false } }, defDir).liquidGlass).toEqual({
+      custom: false,
+      black: true,
+      white: false
+    })
+    // 仅 zj 键 = 全被剔除 → 无该键
+    expect('liquidGlass' in normalizeConfig({ liquidGlass: { zj: false } }, defDir)).toBe(false)
+    // 非法值（字符串/数组/非布尔）整块回退缺省
+    expect('liquidGlass' in normalizeConfig({ liquidGlass: 'on' }, defDir)).toBe(false)
+    expect('liquidGlass' in normalizeConfig({ liquidGlass: { black: 'yes' } }, defDir)).toBe(false)
   })
 
   it('v2.2.0 迁移：存档中的旧默认紫 #9f7aea 自动跟随新默认 #7c5cff', () => {

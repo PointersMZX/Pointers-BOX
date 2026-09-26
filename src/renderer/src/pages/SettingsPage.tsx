@@ -39,6 +39,7 @@ import {
   canCustomizeAccent,
   DEFAULT_ACCENT,
   hexToRgb,
+  isGlassLocked,
   rgbToHex,
   THEME_KEYS
 } from '../../../shared/theme'
@@ -157,13 +158,54 @@ function ExpandableText({ text, empty }: { text: string; empty: string }) {
 // ── 主题外观（纯外观功能，不影响任何业务逻辑） ──────────────────
 
 const THEME_LABELS: Record<ThemeKey, string> = {
-  glass: '液态玻璃',
+  zj: '紫金黑',
+  custom: '自定义',
   black: '纯黑',
   white: '纯白'
 }
 
+const THEME_BADGE: Record<ThemeKey, string> = {
+  zj: '默认 · 玻璃常开',
+  custom: '自选颜色 · 玻璃可关',
+  black: '玻璃默认关',
+  white: '玻璃默认关'
+}
+
 function ThemePreview({ themeKey }: { themeKey: ThemeKey }) {
-  if (themeKey === 'glass') {
+  if (themeKey === 'zj') {
+    return (
+      <Box
+        h="64px"
+        rounded="md"
+        mb={2}
+        bg="radial-gradient(circle at 24% 18%, rgba(124,92,255,0.55), transparent 55%), radial-gradient(circle at 82% 88%, rgba(232,179,62,0.35), transparent 55%), #0d0817"
+        position="relative"
+        overflow="hidden"
+      >
+        <Box
+          position="absolute"
+          left="8%"
+          top="18%"
+          w="28%"
+          h="64%"
+          rounded="md"
+          bg="rgba(255,255,255,0.14)"
+          style={{ backdropFilter: 'blur(4px)' }}
+        />
+        <Box
+          position="absolute"
+          left="42%"
+          top="30%"
+          w="46%"
+          h="40%"
+          rounded="md"
+          bg="rgba(255,255,255,0.09)"
+        />
+        <Box position="absolute" right="8%" bottom="12%" w="14%" h="14%" rounded="full" bg="#e8b33e" />
+      </Box>
+    )
+  }
+  if (themeKey === 'custom') {
     return (
       <Box
         h="64px"
@@ -210,22 +252,26 @@ function ThemePreview({ themeKey }: { themeKey: ThemeKey }) {
 function ThemeSectionInner() {
   const themeKey = useThemeStore((s) => s.themeKey)
   const accent = useThemeStore((s) => s.accent)
+  const liquidGlass = useThemeStore((s) => s.liquidGlass)
+  const isGlassOn = useThemeStore((s) => s.isGlassOn)
   const setAppearance = useThemeStore((s) => s.setAppearance)
   const canCustom = canCustomizeAccent(themeKey)
+  const locked = isGlassLocked(themeKey)
   const rgb = hexToRgb(accent) ?? hexToRgb(DEFAULT_ACCENT)!
 
   const setChannel = (ch: 'r' | 'g' | 'b', v: number): void => {
     if (!Number.isFinite(v)) return
     const next = { ...rgb, [ch]: Math.min(255, Math.max(0, Math.round(v))) }
-    setAppearance('glass', rgbToHex(next.r, next.g, next.b))
+    setAppearance('custom', rgbToHex(next.r, next.g, next.b))
   }
 
   return (
     <>
       <Text fontSize="xs" color="ptextmuted">
-        主题仅改变外观，不影响任何功能；默认启用「液态玻璃」
+        主题仅改变外观，不影响任何功能；默认「紫金黑」（液态玻璃锁死开启），「自定义」支持自选颜色与玻璃开关，
+        「纯黑 / 纯白」玻璃默认关闭
       </Text>
-      <SimpleGrid columns={3} spacing={3}>
+      <SimpleGrid columns={{ base: 2, sm: 4 }} spacing={3}>
         {THEME_KEYS.map((k) => {
           const active = themeKey === k
           return (
@@ -251,15 +297,32 @@ function ThemeSectionInner() {
                   <Icon as={FiCheck} color="brand.400" />
                 )}
               </Flex>
-              {k === 'glass' && (
-                <Badge position="absolute" right={2} top={2} colorScheme="brand" fontSize="9px">
-                  可自定义颜色
-                </Badge>
-              )}
+              <Text position="absolute" right={3} top={3} fontSize="9px" color="ptextmuted">
+                {THEME_BADGE[k]}
+              </Text>
             </Box>
           )
         })}
       </SimpleGrid>
+
+      {/* 液态玻璃开关（v2.3.0）：按主题记忆；紫金黑锁死不可关 */}
+      <Flex align="center" justify="space-between" gap={3} wrap="wrap" pt={2} borderTopWidth="1px" borderTopColor="pborder">
+        <Text fontSize="sm" color="ptext">
+          液态玻璃
+          <Text as="span" fontSize="xs" color="ptextmuted" ml={2}>
+            {locked
+              ? '（紫金黑主题锁死开启，不可关闭）'
+              : '（侧栏/底栏 GPU 折射玻璃体；无 GPU 时自动回落磨砂玻璃）'}
+          </Text>
+        </Text>
+        <Switch
+          colorScheme="brand"
+          isChecked={isGlassOn}
+          isDisabled={locked}
+          onChange={() => setAppearance(themeKey, undefined, !isGlassOn)}
+          aria-label="液态玻璃"
+        />
+      </Flex>
 
       {canCustom ? (
         <Box pt={2} borderTopWidth="1px" borderTopColor="pborder">
@@ -279,7 +342,7 @@ function ThemeSectionInner() {
                 borderWidth="2px"
                 borderColor={accent === c ? 'ptext' : 'transparent'}
                 className="pbox-morph"
-                onClick={() => setAppearance('glass', c)}
+                onClick={() => setAppearance('custom', c)}
               />
             ))}
           </HStack>
@@ -313,7 +376,7 @@ function ThemeSectionInner() {
               onChange={(e) => {
                 const v = e.target.value.trim()
                 if (/^#[0-9a-fA-F]{6}$/.test(v) || /^#[0-9a-fA-F]{3}$/.test(v)) {
-                  setAppearance('glass', v)
+                  setAppearance('custom', v)
                 }
               }}
             />
@@ -321,7 +384,8 @@ function ThemeSectionInner() {
         </Box>
       ) : (
         <Text fontSize="xs" color="ptextmuted">
-          仅「液态玻璃」主题支持自定义颜色；切换到液态玻璃后可挑选预设色或用 RGB 自定义
+          仅「自定义」主题支持自定义颜色；切换到自定义后可挑选预设色或用 RGB 自定义
+          {Object.keys(liquidGlass).length > 0 ? '；已按主题记住的液态玻璃开关将随主题保留' : ''}
         </Text>
       )}
     </>
@@ -411,7 +475,7 @@ export default function SettingsPage() {
       toast({ title: '已取消导入或文件无效', status: 'info', duration: 3000, position: 'top' })
       return
     }
-    useThemeStore.getState().applyLocal(cfg.theme, cfg.accent)
+    useThemeStore.getState().applyLocal(cfg.theme, cfg.accent, cfg.liquidGlass)
     void useDownloadStore.getState().loadConfig()
     toast({ title: '配置导入成功（含主题/路径/收藏）', status: 'success', duration: 3500, position: 'top' })
   }
