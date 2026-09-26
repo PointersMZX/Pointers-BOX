@@ -14,6 +14,7 @@ import Sidebar from './components/Sidebar'
 import BottomNav from './components/BottomNav'
 import StatusBar from './components/StatusBar'
 import UpdateChannelModal from './components/UpdateChannelModal'
+import AnnouncementModal from './components/AnnouncementModal'
 import HomePage from './pages/HomePage'
 import LibraryPage from './pages/LibraryPage'
 import LinksPage from './pages/LinksPage'
@@ -60,6 +61,10 @@ function ThemedShell() {
   const { setColorMode } = useColorMode()
   // v2.1.0：首次启动（配置中无更新渠道）弹必选弹窗，选完永不再弹
   const [needChannelChoice, setNeedChannelChoice] = useState(false)
+  // v2.3.0：平台公告启动弹窗——公告数据首次到达即弹一次（同一会话内关闭后不重弹）；
+  // 与首启渠道弹窗互斥：渠道未选定前不弹，选完若仍有未展示公告则补弹
+  const [announceOpen, setAnnounceOpen] = useState(false)
+  const announceShown = useRef(false)
 
   // 主题切换 → 内置组件明暗模式（v2.1.0：移除弹跳动画，纯切换）
   useEffect(() => {
@@ -170,6 +175,14 @@ function ThemedShell() {
     }
   })
 
+  // v2.3.0：公告启动弹窗（数据首达即弹一次；首启渠道弹窗未处理完前挂起，选完渠道后 effect 自动补弹）
+  const announcement = useDataStore((s) => s.announcement)
+  useEffect(() => {
+    if (!announcement || announceShown.current || needChannelChoice) return
+    announceShown.current = true
+    setAnnounceOpen(true)
+  }, [announcement, needChannelChoice])
+
   return (
     <Box ref={shellRef} h="100vh" bg="appbg" position="relative" zIndex={1}>
       <Flex h="full" direction="column" overflow="hidden">
@@ -192,9 +205,12 @@ function ThemedShell() {
         {!isAndroid && <StatusBar />}
       </Flex>
       {isAndroid && <BottomNav />}
-      {needChannelChoice && (
-        <UpdateChannelModal onChosen={() => setNeedChannelChoice(false)} />
-      )}
+      {needChannelChoice && <UpdateChannelModal onChosen={() => setNeedChannelChoice(false)} />}
+      <AnnouncementModal
+        announcement={announcement}
+        open={announceOpen}
+        onClose={() => setAnnounceOpen(false)}
+      />
     </Box>
   )
 }
