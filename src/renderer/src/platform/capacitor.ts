@@ -5,7 +5,6 @@ import { REMOTE_URLS } from '../../../shared/types'
 import type {
   AppConfig,
   DataSnapshot,
-  DownloadEvent,
   RestoreTarget,
   UpdateCheckResult,
   UpdateEvent,
@@ -19,7 +18,6 @@ import {
   validateVersionLogs
 } from '../../../shared/validate'
 import { normalizeConfig } from '../../../shared/config'
-import { resolveOpenMode } from '../../../shared/browserChoice'
 import { isNewerVersion } from '../../../shared/semver'
 import { parseReleaseJson } from '../../../shared/updates'
 import { isUpdateChannel, UPDATE_CHANNEL_INFO } from '../../../shared/updateChannels'
@@ -140,8 +138,6 @@ export async function androidSetConfig(patch: Partial<AppConfig>): Promise<AppCo
   return next
 }
 
-export { resolveOpenMode }
-
 // 用户自建资源链接（v2.2.0）：存 Preferences，与桌面端同构
 export async function androidGetUserLinks(): Promise<UserLink[]> {
   try {
@@ -168,88 +164,18 @@ export async function androidExportUserLinks(): Promise<string | null> {
   return null
 }
 
-// 内置浏览器：打开安卓原生 InAppBrowserActivity（带地址栏/导航/下载/会话重置）
-export async function androidOpenClaim(url: string, choice?: 'builtin' | 'system'): Promise<void> {
-  const mode = resolveOpenMode(choice, 'android')
-  if (mode === 'system-browser') {
-    await androidOpenExternal(url)
-    return
-  }
-  await InAppBrowserNative.open({ url })
-}
-
-// 会话重置：清空安卓 WebView 的 Cookie 与缓存
-export async function androidResetSession(): Promise<void> {
-  await InAppBrowserNative.resetSession()
-}
-
-// 打开系统下载记录（下载由系统 DownloadManager 接管）
-export async function androidOpenSystemDownloads(): Promise<void> {
-  await InAppBrowserNative.openSystemDownloads()
-}
-
-// 系统浏览器打开
+// 系统浏览器打开（v2.3.0：内嵌 WebView 浏览器已删除，全部链接自动跳转系统浏览器；
+// 下载功能同步取消——如需下载请在系统浏览器内进行）
 export async function androidOpenExternal(url: string): Promise<void> {
-  await InAppBrowserNative.openExternal({ url })
+  await SystemBrowserNative.openExternal({ url })
 }
 
-// 安卓原生插件桥（android/app/src/main/java/cc/pointers/box/InAppBrowserPlugin.java）
-interface InAppBrowserNativeInterface {
-  open(options: { url: string }): Promise<void>
-  resetSession(): Promise<void>
-  openSystemDownloads(): Promise<void>
+// 安卓原生插件桥（android/app/src/main/java/cc/pointers/box/SystemBrowserPlugin.java）
+interface SystemBrowserNativeInterface {
   openExternal(options: { url: string }): Promise<void>
 }
 
-const InAppBrowserNative = registerPlugin<InAppBrowserNativeInterface>('InAppBrowser')
-
-// v2.2.0：安卓下载事件桥接 —— InAppBrowserActivity 的下载（DownloadManager/blob 转系统浏览器）
-// 经 DownloadEventBus → InAppBrowserPlugin.notifyListeners('downloadEvent') 回传，这里转成渲染层 DownloadEvent。
-// started/done 映射为 DownloadTask；DownloadManager 无实时进度回传，percent 置 100（与桌面语义：完成即消失一致）。
-export function androidOnDownloadEvent(cb: (e: DownloadEvent) => void): () => void {
-  const plugin = InAppBrowserNative as unknown as {
-    startDownloadWatch?(): Promise<void>
-    stopDownloadWatch?(): Promise<void>
-    addListener?(ev: string, cb: (r: unknown) => void): { remove(): Promise<void> } | undefined
-  }
-
-  let removed = false
-  const taskFrom = (filename: string, total: number, done: boolean) => ({
-    id: 'android-' + filename,
-    filename,
-    path: DEFAULT_ANDROID_DOWNLOAD_DIR + '/' + filename,
-    received: done ? total : 0,
-    total: total > 0 ? total : 0,
-    percent: done ? 100 : 0,
-    bytesPerSecond: 0,
-    paused: false,
-    source: 'browser' as const
-  })
-
-  void plugin.startDownloadWatch?.()
-  const sub = plugin.addListener
-    ? plugin.addListener('downloadEvent', (r) => {
-        if (removed) return
-        const ev = (r as { event?: { type?: string; filename?: string; total?: number } }).event
-        if (!ev || !ev.type || !ev.filename) return
-        if (ev.type === 'started') {
-          cb({ type: 'started', task: taskFrom(ev.filename, ev.total ?? 0, false) })
-        } else if (ev.type === 'done') {
-          cb({ type: 'progress', task: taskFrom(ev.filename, 0, true) })
-          cb({ type: 'done', id: 'android-' + ev.filename, state: 'completed' })
-        } else if (ev.type === 'failed') {
-          cb({ type: 'done', id: 'android-' + ev.filename, state: 'interrupted' })
-        }
-      })
-    : undefined
-  void sub
-
-  return () => {
-    removed = true
-    void sub?.remove()
-    void plugin.stopDownloadWatch?.()
-  }
-}
+const SystemBrowserNative = registerPlugin<SystemBrowserNativeInterface>('SystemBrowser')
 
 export function androidOnUpdateEvent(cb: (e: UpdateEvent) => void): () => void {
   void cb
@@ -306,7 +232,7 @@ export async function androidCheckUpdate(): Promise<UpdateCheckResult> {
 }
 
 /** Android 应用版本（与 android/app/build.gradle versionName 同步维护） */
-export const ANDROID_APP_VERSION = '2.2.0'
+export const ANDROID_APP_VERSION = '2.3.0'
 
 export function isAndroidNative(): boolean {
   return Capacitor.isNativePlatform()

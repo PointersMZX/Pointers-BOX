@@ -60,16 +60,19 @@ export interface UserLink {
 
 // ── 配置 ─────────────────────────────────────────────────────
 
-export type AndroidBrowserChoice = 'builtin' | 'system'
-
 /** 更新渠道（v2.1.0）：国内镜像 Gitee / 全球官方 GitHub */
 export type UpdateChannel = 'gitee' | 'github'
 
 /** 主页卡片布局（v2.2.0）：堆叠（全部叠起不分层）/ 紧凑（每行2个）/ 宽展（每行1个全展开） */
 export type HomeLayout = 'stacked' | 'compact' | 'wide'
 
+// v2.3.0：Android 内嵌浏览器已删除，打开方式固定为系统浏览器；
+// 类型收敛为 'system'，仅作配置迁移锚点（旧 'builtin' 存档由 normalizeConfig 迁移）
+export type AndroidBrowserChoice = 'system'
+
 export interface AppConfig {
   downloadDir: string
+  /** v2.3.0：固定 'system'（内嵌浏览器已删除；旧 'builtin' 存档自动迁移） */
   androidBrowser: AndroidBrowserChoice
   /** 外观主题（纯外观，不影响功能）：液态玻璃（默认）/ 纯黑 / 纯白 */
   theme: import('./theme').ThemeKey

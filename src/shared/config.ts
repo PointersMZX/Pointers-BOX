@@ -13,7 +13,8 @@ export function normalizeConfig(raw: unknown, defaultDownloadDir: string): AppCo
     typeof downloadDirRaw === 'string' && downloadDirRaw.trim() !== ''
       ? downloadDirRaw
       : defaultDownloadDir
-  const androidBrowser: AndroidBrowserChoice = r['androidBrowser'] === 'system' ? 'system' : 'builtin'
+  // v2.3.0：内嵌浏览器已删除，Android 固定系统浏览器；旧 'builtin' 存档无感知迁移
+  const androidBrowser: AndroidBrowserChoice = 'system'
   // 收藏：接受 string/number 数组，统一字符串化去重（v2.0.0）
   const favorites = Array.isArray(r['favorites'])
     ? [...new Set((r['favorites'] as unknown[]).map((v) => String(v)))]

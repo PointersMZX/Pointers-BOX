@@ -18,8 +18,7 @@ import { FiDownload, FiFolder, FiEdit, FiPause, FiPlay, FiX } from 'react-icons/
 import { useEffect, useState } from 'react'
 import type { DownloadTask } from '../../../shared/types'
 import { useDownloadStore } from '../store/downloadStore'
-import { useUiStore } from '../store/uiStore'
-import { backend, openSystemDownloads } from '../platform'
+import { backend } from '../platform'
 import type { DownloadHistoryEntry } from '../../../shared/types'
 import { formatBytes, percentOf } from '../utils/format'
 
@@ -110,8 +109,6 @@ export default function DownloadsPage() {
   const loadConfig = useDownloadStore((s) => s.loadConfig)
   const chooseDir = useDownloadStore((s) => s.chooseDir)
   const openFolder = useDownloadStore((s) => s.openFolder)
-  const platform = useUiStore((s) => s.platform)
-  const isAndroid = platform === 'android'
   const toast = useToast()
 
   // 事件订阅已提升至 App 全局（ThemedShell），此处仅加载本地配置
@@ -167,11 +164,6 @@ export default function DownloadsPage() {
             </Text>
           </HStack>
           <HStack>
-            {isAndroid && (
-              <Button size="sm" variant="outline" onClick={() => void openSystemDownloads()}>
-                打开系统下载记录
-              </Button>
-            )}
             <Button
               size="sm"
               variant="outline"

@@ -328,7 +328,7 @@ function ThemeSectionInner() {
   )
 }
 
-// 问题反馈页（v2.2.0 新增）：跳转内嵌浏览器
+// 问题反馈页（v2.2.0 新增）：桌面端跳内置浏览器 / Android 系统浏览器
 const FEEDBACK_URL =
   'https://pointers-box.cc.cd/index.php/2026-09-06/pointers-box%e9%97%ae%e9%a2%98%e5%8f%8d%e9%a6%88/'
 
@@ -469,7 +469,7 @@ export default function SettingsPage() {
     }
   }
 
-  // 问题反馈（v2.2.0）：跳内嵌浏览器
+  // 问题反馈（v2.2.0）：桌面端跳内置浏览器页 / Android 系统浏览器（v2.3.0）
   const onFeedback = (): void => {
     void openClaim(FEEDBACK_URL)
   }
@@ -483,7 +483,7 @@ export default function SettingsPage() {
       {/* 关于应用（v2.2.0 置顶；简介默认收起） */}
       <CollapsibleSection title="关于应用" defaultOpen>
         <Row label="应用名称" value={box?.app_name ?? 'Pointers-BOX'} />
-        <Row label="应用版本" value={localVersion ? `v${localVersion}` : 'v2.2.0'} />
+        <Row label="应用版本" value={localVersion ? `v${localVersion}` : 'v2.3.0'} />
         <Row label="开发者" value={box?.developer} />
         <Row label="社区 QQ 群" value={box?.community_qq} />
         <Row label="通用密钥" value={box?.general_key} />
@@ -526,7 +526,7 @@ export default function SettingsPage() {
         </Text>
         <Flex align="center" justify="space-between" wrap="wrap" gap={3}>
           <Text fontSize="sm" color="ptextmuted">
-            当前版本：{result?.current ?? (localVersion ? `v${localVersion}` : 'v2.2.0')}
+            当前版本：{result?.current ?? (localVersion ? `v${localVersion}` : 'v2.3.0')}
           </Text>
           <Button
             size="sm"
@@ -593,8 +593,9 @@ export default function SettingsPage() {
         )}
       </Section>
 
-      {/* 下载设置（PRD 4.4：默认下载路径 + 持久化） */}
-      <Section title="下载设置">
+      {/* 下载设置（PRD 4.4：默认下载路径 + 持久化；v2.3.0 Android 无下载功能，整节隐藏） */}
+      {platform !== 'android' && (
+        <Section title="下载设置">
         <Flex align="center" justify="space-between" gap={3} wrap="wrap">
           <HStack minW={0}>
             <Icon as={FiFolder} color="brand.400" />
@@ -633,7 +634,8 @@ export default function SettingsPage() {
         <Text fontSize="xs" color="ptextmuted">
           路径保存至本地配置，下次启动自动读取
         </Text>
-      </Section>
+        </Section>
+      )}
 
       {/* 主页布局（v2.2.0）：堆叠 / 紧凑（每行 2 个）/ 宽展（每行 1 个），默认紧凑 */}
       <Section title="主页布局">
@@ -688,47 +690,37 @@ export default function SettingsPage() {
         </Text>
       </Section>
 
-      {/* 浏览器设置（PRD 4.4：Android 打开方式 + v2.1.0 桌面后台标签休眠） */}
+      {/* 浏览器设置（v2.3.0：Android 内嵌浏览器已删除，固定系统浏览器；桌面端后台标签休眠保留） */}
       <Section title="浏览器设置">
-        <RadioGroup
-          value={config?.androidBrowser ?? 'builtin'}
-          isDisabled={platform !== 'android'}
-          onChange={(v) =>
-            void useDownloadStore.getState().saveConfig({ androidBrowser: v as 'builtin' | 'system' })
-          }
-        >
-          <Stack direction="row" spacing={6}>
-            <Radio value="builtin">内置浏览器</Radio>
-            <Radio value="system">系统浏览器</Radio>
-          </Stack>
-        </RadioGroup>
-        <Text fontSize="xs" color="ptextmuted">
+        <Text fontSize="sm" color="ptext">
           {platform === 'android'
-            ? '选择资源链接的打开方式'
-            : '此选项仅 Android 端生效，桌面端使用内置浏览器'}
+            ? 'Android 端资源链接与页面统一通过系统浏览器打开（v2.3.0 起不再内置浏览器）；下载请在系统浏览器内进行。'
+            : '桌面端使用内置浏览器；后台标签闲置可自动休眠以释放内存。'}
         </Text>
-        {/* v2.1.0：后台标签闲置休眠（0 = 永不），降低内存占用 */}
-        <Flex align="center" justify="space-between" gap={3} wrap="wrap" mt={1}>
-          <Text fontSize="sm" color="ptext">
-            后台标签自动休眠
-            <Text as="span" fontSize="xs" color="ptextmuted" ml={2}>
-              （释放闲置标签内存；切换回来时自动重新加载）
+        {/* v2.1.0：后台标签闲置休眠（0 = 永不），降低内存占用；仅桌面端有后台标签 */}
+        {platform !== 'android' && (
+          <Flex align="center" justify="space-between" gap={3} wrap="wrap" mt={2}>
+            <Text fontSize="sm" color="ptext">
+              后台标签自动休眠
+              <Text as="span" fontSize="xs" color="ptextmuted" ml={2}>
+                （释放闲置标签内存；切换回来时自动重新加载）
+              </Text>
             </Text>
-          </Text>
-          <RadioGroup
-            value={String(config?.tabSleepMinutes ?? 5)}
-            onChange={(v) =>
-              void useDownloadStore.getState().saveConfig({ tabSleepMinutes: Number(v) })
-            }
-          >
-            <Stack direction="row" spacing={4}>
-              <Radio value="0">永不</Radio>
-              <Radio value="2">2 分钟</Radio>
-              <Radio value="5">5 分钟</Radio>
-              <Radio value="15">15 分钟</Radio>
-            </Stack>
-          </RadioGroup>
-        </Flex>
+            <RadioGroup
+              value={String(config?.tabSleepMinutes ?? 5)}
+              onChange={(v) =>
+                void useDownloadStore.getState().saveConfig({ tabSleepMinutes: Number(v) })
+              }
+            >
+              <Stack direction="row" spacing={4}>
+                <Radio value="0">永不</Radio>
+                <Radio value="2">2 分钟</Radio>
+                <Radio value="5">5 分钟</Radio>
+                <Radio value="15">15 分钟</Radio>
+              </Stack>
+            </RadioGroup>
+          </Flex>
+        )}
       </Section>
 
       {/* 问题反馈（v2.2.0 新增） */}
@@ -745,7 +737,7 @@ export default function SettingsPage() {
           前往反馈页
         </Button>
         <Text fontSize="xs" color="ptextmuted">
-          通过内嵌浏览器打开官方反馈页，描述你遇到的问题即可
+          通过浏览器打开官方反馈页（Android 端为系统浏览器），描述你遇到的问题即可
         </Text>
       </Section>
     </Box>

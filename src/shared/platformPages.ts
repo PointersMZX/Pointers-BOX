@@ -1,4 +1,4 @@
-// 平台可见页面（PRD 4.3 下载管理为桌面专属；Android 打开方式决定浏览器页形态）
+// 平台可见页面（下载管理为桌面专属；v2.3.0 Android 无下载功能、浏览器只走系统浏览器）
 import type { Page } from './routes'
 
 export type AppPlatform = 'desktop' | 'android'
@@ -12,13 +12,12 @@ export const DESKTOP_PAGES: readonly Page[] = [
   'settings'
 ]
 
-// Android 与桌面同功能集：内置浏览器走原生 InAppBrowserActivity，下载由系统 DownloadManager 接管
+// v2.3.0：删除 Android 内嵌浏览器与下载功能——浏览器页只拉起系统浏览器，无下载管理页
 export const ANDROID_PAGES: readonly Page[] = [
   'home',
   'library',
   'links',
   'browser',
-  'downloads',
   'settings'
 ]
 

@@ -19,19 +19,22 @@ describe('UI 路由仓库（PRD 2.3 + 平台页面集）', () => {
     }
   })
 
-  it('Android 平台同样可切换到全部页面（全功能集）', () => {
+  it('Android 平台可切换到其 5 个可见页（v2.3.0 无下载页）', () => {
     useUiStore.getState().setPlatform('android')
     const { setPage } = useUiStore.getState()
-    for (const p of ['library', 'browser', 'downloads', 'settings', 'home'] as const) {
+    for (const p of ['library', 'browser', 'settings', 'home'] as const) {
       setPage(p)
       expect(useUiStore.getState().page).toBe(p)
     }
+    // downloads 在 Android 不可见：setPage 被平台可见性拦截，保持当前页
+    setPage('downloads')
+    expect(useUiStore.getState().page).toBe('home')
   })
 
-  it('切回桌面平台时页面保留', () => {
+  it('切回桌面平台时页面保留（可见页在两端均保留）', () => {
     useUiStore.getState().setPlatform('android')
-    useUiStore.getState().setPage('downloads')
+    useUiStore.getState().setPage('browser')
     useUiStore.getState().setPlatform('desktop')
-    expect(useUiStore.getState().page).toBe('downloads')
+    expect(useUiStore.getState().page).toBe('browser')
   })
 })

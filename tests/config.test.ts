@@ -4,7 +4,7 @@ describe('配置归一化（PRD 4.4 下载路径/Android 浏览器选项 + 主�
   const defDir = 'C:\\Users\\u\\Downloads'
   const defaults = {
     downloadDir: defDir,
-    androidBrowser: 'builtin' as const,
+    androidBrowser: 'system' as const,
     theme: 'glass' as const,
     accent: '#7c5cff',
     favorites: [],
@@ -50,9 +50,10 @@ describe('配置归一化（PRD 4.4 下载路径/Android 浏览器选项 + 主�
     })
   })
 
-  it('非法值被纠正：空路径回退、浏览器枚举外回退 builtin、主题/颜色非法回退默认', () => {
+  it('非法值被纠正：空路径回退、浏览器固定 system（v2.3.0 无内置）、主题/颜色非法回退默认', () => {
     expect(normalizeConfig({ downloadDir: '   ' }, defDir).downloadDir).toBe(defDir)
-    expect(normalizeConfig({ androidBrowser: 'ie' }, defDir).androidBrowser).toBe('builtin')
+    expect(normalizeConfig({ androidBrowser: 'ie' }, defDir).androidBrowser).toBe('system')
+    expect(normalizeConfig({ androidBrowser: 'builtin' }, defDir).androidBrowser).toBe('system')
     expect(normalizeConfig({ theme: 'neon' }, defDir).theme).toBe('glass')
     expect(normalizeConfig({ accent: 'not-a-color' }, defDir).accent).toBe('#7c5cff')
   })

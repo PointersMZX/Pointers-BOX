@@ -13,13 +13,9 @@ import {
   androidGetConfig,
   androidGetUserLinks,
   androidImportUserLinks,
-  androidOnDownloadEvent,
   androidOnNavigate,
   androidOnUpdateEvent,
-  androidOpenClaim,
   androidOpenExternal,
-  androidOpenSystemDownloads,
-  androidResetSession,
   androidRestoreData,
   androidSetConfig,
   androidSetUserLinks,
@@ -35,7 +31,7 @@ export function castPage(v: string): Page | null {
   return isPage(v) ? v : null
 }
 
-// PBoxApi + 领取跳转；桌面端领取=切换到内置浏览器页，Android=内置/系统浏览器拉起
+// PBoxApi + 领取跳转；桌面端领取=切换到内置浏览器页，Android=系统浏览器拉起（v2.3.0）
 export interface AppBackend extends PBoxApi {
   openClaim(url: string): Promise<void>
 }
@@ -73,7 +69,8 @@ function createAndroidBackend(): AppBackend {
     cancelDownload: () => Promise.resolve(false),
     pauseDownload: () => Promise.resolve(false),
     resumeDownload: () => Promise.resolve(false),
-    resetBrowserSession: () => androidResetSession(),
+    // v2.3.0：无内嵌 WebView，会话重置为无效操作
+    resetBrowserSession: () => Promise.resolve(),
     checkUpdate: () => androidCheckUpdate(),
     // v2.1.0：Android 更新 = 打开所选渠道的 Release 页（APK 走 CI 构建）
     downloadUpdate: async () => {
@@ -86,11 +83,14 @@ function createAndroidBackend(): AppBackend {
     },
     installUpdate: () => Promise.resolve(),
     onNavigate: (cb) => androidOnNavigate(cb),
-    onDownloadEvent: (cb) => androidOnDownloadEvent(cb),
+    // v2.3.0：Android 无下载功能（内嵌浏览器已删），下载事件恒为空订阅
+    onDownloadEvent: (cb) => {
+      void cb
+      return () => {}
+    },
     onUpdateEvent: (cb) => androidOnUpdateEvent(cb),
     openClaim: async (url) => {
-      const config = await androidGetConfig()
-      await androidOpenClaim(url, config.androidBrowser)
+      await androidOpenExternal(url)
     }
   }
 }
@@ -105,11 +105,3 @@ export const backend: AppBackend = detectBackend()
 export async function openClaim(url: string): Promise<void> {
   await backend.openClaim(url)
 }
-
-// 安卓：打开系统下载记录（下载由系统 DownloadManager 接管）
-export async function openSystemDownloads(): Promise<void> {
-  await androidOpenSystemDownloads()
-}
-
-// 安卓：重置内置浏览器会话
-export { androidResetSession }

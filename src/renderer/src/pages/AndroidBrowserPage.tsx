@@ -9,33 +9,25 @@ import {
   Text,
   VStack
 } from '@chakra-ui/react'
-import { FiArrowLeft, FiArrowRight, FiGlobe, FiRefreshCw, FiSearch } from 'react-icons/fi'
+import { FiArrowLeft, FiExternalLink, FiGlobe, FiSearch } from 'react-icons/fi'
 import { useState } from 'react'
 import { DEFAULT_START_URL, normalizeAddressInput } from '../../../shared/browser'
-import { androidOpenClaim, androidOpenExternal, androidResetSession } from '../platform/capacitor'
+import { androidOpenExternal } from '../platform/capacitor'
 import { useBrowserStore, getActiveTab } from '../store/browserStore'
 
-// 安卓端内置浏览器启动器：打开原生 InAppBrowserActivity（WebView+工具栏+下载接管）
+// 安卓端浏览器（v2.3.0）：内嵌浏览器已删除——自动跳转系统浏览器，无下载功能
 export default function AndroidBrowserPage() {
   const storeUrl = useBrowserStore((s) => getActiveTab(s).url)
   const setStoreUrl = useBrowserStore((s) => s.navigateTo)
   const [address, setAddress] = useState(storeUrl)
-  const [resetFirst, setResetFirst] = useState(false)
   const [opening, setOpening] = useState(false)
 
-  const open = async (mode: 'builtin' | 'system'): Promise<void> => {
-    const url = normalizeAddressInput(address)
-    setAddress(url)
+  const open = (mode: 'current' | 'start'): Promise<void> => {
+    const url = normalizeAddressInput(mode === 'start' ? DEFAULT_START_URL : address)
+    if (mode === 'current') setAddress(url)
     setStoreUrl(url)
     setOpening(true)
-    try {
-      if (mode === 'builtin' && resetFirst) {
-        await androidResetSession()
-      }
-      await androidOpenClaim(url, mode)
-    } finally {
-      setOpening(false)
-    }
+    return androidOpenExternal(url).finally(() => setOpening(false))
   }
 
   return (
@@ -44,11 +36,11 @@ export default function AndroidBrowserPage() {
         <Flex align="center" gap={2}>
           <FiGlobe color="var(--pbox-accent)" />
           <Text fontSize="lg" fontWeight="bold" color="ptext">
-            内置浏览器
+            浏览器
           </Text>
         </Flex>
         <Text fontSize="sm" color="ptextmuted" textAlign="center">
-          在独立窗口中打开平台页面，支持导航工具栏与文件下载（由系统下载管理器接管）
+          资源与页面均通过系统浏览器打开（v2.3.0 起不再内置浏览器）；下载请在系统浏览器内进行
         </Text>
 
         <InputGroup size="md">
@@ -70,35 +62,20 @@ export default function AndroidBrowserPage() {
         <HStack spacing={3} wrap="wrap" justify="center">
           <Button
             colorScheme="brand"
-            leftIcon={<FiGlobe />}
+            leftIcon={<FiExternalLink />}
             isLoading={opening}
-            onClick={() => void open('builtin')}
+            onClick={() => void open('current')}
           >
-            打开内置浏览器
+            用系统浏览器打开
           </Button>
           <Button
             variant="outline"
             borderColor="pborder"
             color="ptext"
-            leftIcon={<FiRefreshCw />}
-            onClick={() => void open('system')}
+            leftIcon={<FiArrowLeft />}
+            onClick={() => void open('start')}
           >
-            用系统浏览器打开
-          </Button>
-        </HStack>
-
-        <HStack spacing={2}>
-          <Button size="xs" variant="ghost" leftIcon={<FiArrowLeft />} onClick={() => void open('builtin')}>
             回到起始页
-          </Button>
-          <Button
-            size="xs"
-            variant="ghost"
-            leftIcon={<FiArrowRight />}
-            colorScheme="red"
-            onClick={() => void androidResetSession()}
-          >
-            重置会话
           </Button>
         </HStack>
 
