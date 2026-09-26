@@ -17,6 +17,7 @@ import {
   FiColumns,
   FiDownload,
   FiExternalLink,
+  FiEye,
   FiGlobe,
   FiHome,
   FiLayers,
@@ -42,6 +43,7 @@ import { useFavoritesStore } from '../store/favoritesStore'
 import { useLinksStore } from '../store/linksStore'
 import { useUiStore } from '../store/uiStore'
 import { sampleUnique, sampleUniqueExcluding } from '../utils/recommend'
+import { getResourceShares } from '../../../shared/validate'
 import { DUR, EASE } from '../theme/motion'
 import type { Page } from '../../../shared/routes'
 
@@ -401,6 +403,7 @@ export default function HomePage() {
   const weekday = '日一二三四五六'[now.getDay()]
 
   const setPage = useUiStore((s) => s.setPage)
+  const platform = useUiStore((s) => s.platform)
 
   if (!loaded && loading) {
     return (
@@ -443,8 +446,8 @@ export default function HomePage() {
   )
 
   // 2. 随机资源推荐
-  // 堆叠模式：推荐区不参与 deck（避免标题+网格卡混杂），deck 只放干净单卡片；
-  // 紧凑/宽展模式：推荐区作为整宽卡渲染
+  // 堆叠模式（v2.3.0 补回）：推荐作为 deck 内一张干净卡片（紧凑双行 + 卡内换一批），
+  // 避免标题+网格卡混入 deck；紧凑/宽展模式：推荐区作为整宽卡渲染
   const picksBlock =
     picks.length > 0 ? (
       <Box key="picks">
@@ -476,8 +479,83 @@ export default function HomePage() {
       </GlassCard>
     ) : null
 
-  if (layout !== 'stacked') {
-    if (picksBlock) fullCards.push(picksBlock)
+  // 堆叠 deck 专用推荐卡：双行紧凑（名称/简介 + 分享项数 + 详情），点击行开详情弹窗
+  const stackedPicksCard =
+    picks.length > 0 ? (
+      <GlassCard
+        key="picks"
+        minH={DECK_MIN_H}
+        icon={<FiStar color="var(--pbox-accent)" />}
+        title="今日推荐"
+        right={
+          <HStack spacing={2}>
+            <Text fontSize="xs" color="ptextmuted">
+              {picks.length} 张
+            </Text>
+            <GlassButton size="sm" variant="ghost" ariaLabel="换一批推荐" onClick={reshuffle}>
+              换一批
+            </GlassButton>
+          </HStack>
+        }
+      >
+        <VStack align="stretch" spacing={2}>
+          {picks.map((r) => (
+            <Flex
+              key={String(r.id)}
+              align="center"
+              gap={3}
+              as="button"
+              type="button"
+              bg="transparent"
+              border="none"
+              cursor="pointer"
+              rounded="md"
+              px={2}
+              py={1.5}
+              _hover={{ bg: 'hoverbg' }}
+              onClick={() => {
+                setSelected(r)
+                setDetailOpen(true)
+              }}
+            >
+              <Box flex="1" minW={0}>
+                <Text fontSize="sm" fontWeight="semibold" noOfLines={1} color="ptext">
+                  {r.name}
+                </Text>
+                <Text fontSize="xs" color="ptextmuted" noOfLines={1}>
+                  {r.introduction || r.category}
+                </Text>
+              </Box>
+              <Badge
+                colorScheme="brand"
+                variant="subtle"
+                borderRadius="full"
+                fontSize="2xs"
+                flexShrink={0}
+              >
+                {getResourceShares(r).length} 项
+              </Badge>
+              <FiEye size={14} color="ptextmuted" aria-hidden />
+            </Flex>
+          ))}
+        </VStack>
+      </GlassCard>
+    ) : null
+
+  if (layout === 'stacked') {
+    // 堆叠：deck 放紧凑推荐卡（有推荐→推荐卡；无推荐但有资源→抽取中占位卡）
+    if (stackedPicksCard) fullCards.push(stackedPicksCard)
+    else if (resources.length > 0) {
+      fullCards.push(
+        <GlassCard key="picks-empty" minH={DECK_MIN_H}>
+          <Text fontSize="sm" color="ptextmuted">
+            推荐抽取中，点「换一批」试试
+          </Text>
+        </GlassCard>
+      )
+    }
+  } else if (picksBlock) {
+    fullCards.push(picksBlock)
   }
 
   // 3. 公告（不必整行：半宽卡，可与他卡并排）
@@ -624,16 +702,18 @@ export default function HomePage() {
     )
   }
 
-  // 7. 快捷功能入口
+  // 7. 快捷功能入口（v2.3.0：Android 无下载功能，隐藏下载入口）
+  const quickAll: { label: string; page: Page; Icon: React.ComponentType<{ size?: number }> }[] = [
+    { label: '资源库', page: 'library', Icon: FiGlobe },
+    { label: '链接', page: 'links', Icon: FiLink },
+    { label: '浏览器', page: 'browser', Icon: FiExternalLink },
+    { label: '下载', page: 'downloads', Icon: FiDownload }
+  ]
+  const quickEntries = quickAll.filter((q) => !(platform === 'android' && q.page === 'downloads'))
   halfCards.push(
     <GlassCard minH={DECK_MIN_H} key="quick" icon={<FiExternalLink color="var(--pbox-accent)" />} title="快捷入口">
       <Flex gap={3} flexWrap="wrap">
-        {[
-          { label: '资源库', page: 'library' as Page, Icon: FiGlobe },
-          { label: '链接', page: 'links' as Page, Icon: FiLink },
-          { label: '浏览器', page: 'browser' as Page, Icon: FiExternalLink },
-          { label: '下载', page: 'downloads' as Page, Icon: FiDownload }
-        ].map((q) => (
+        {quickEntries.map((q) => (
           <GlassButton
             key={q.page}
             size="sm"
