@@ -11,12 +11,14 @@ import type {
   UserLink
 } from '../../../shared/types'
 import {
+  mergeBoxInfo,
   parseLooseJson,
   validateAnnouncement,
   validateBoxInfo,
   validateResources,
   validateVersionLogs
 } from '../../../shared/validate'
+import { EMBEDDED_BOX } from '../../../shared/embeddedBox'
 import { normalizeConfig } from '../../../shared/config'
 import { isNewerVersion } from '../../../shared/semver'
 import { parseReleaseJson } from '../../../shared/updates'
@@ -51,7 +53,8 @@ function buildSnapshot(raw: {
   versionLogs: unknown
 }): DataSnapshot {
   const clean = validateResources(raw.resources)
-  const box = validateBoxInfo(raw.box)
+  // v2.3.1：Android 端无 node 文件系统，box 缺字段/获取失败时用包内嵌入常量做字段级兜底
+  const box = mergeBoxInfo(EMBEDDED_BOX, validateBoxInfo(raw.box))
   const versionLogs = validateVersionLogs(raw.versionLogs)
   return {
     data: {
@@ -97,12 +100,17 @@ export async function androidGetData(force = false): Promise<DataSnapshot> {
     return snapshot
   }
 
-  // 离线兜底：读取上次缓存
+  // 离线兜底：读取上次缓存（旧缓存可能缺字段，同样用嵌入值补齐）
   try {
     const { value } = await Preferences.get({ key: CACHE_KEY })
     if (value) {
       const cached = JSON.parse(value) as DataSnapshot
-      return { ...cached, offline: true, lastSync: cached.lastSync ?? null }
+      return {
+        ...cached,
+        box: mergeBoxInfo(EMBEDDED_BOX, cached.box ?? null),
+        offline: true,
+        lastSync: cached.lastSync ?? null
+      }
     }
   } catch {
     // 无缓存
@@ -111,7 +119,8 @@ export async function androidGetData(force = false): Promise<DataSnapshot> {
     resources && resources.status === 'rejected' ? String(resources.reason) : '网络不可用'
   return {
     data: emptyResourceData(),
-    box: null,
+    // v2.3.1：彻底离线（无缓存）时应用信息仍用包内嵌入值，不依赖网络
+    box: EMBEDDED_BOX,
     versionLogs: [],
     offline: true,
     lastSync: null,
@@ -232,7 +241,7 @@ export async function androidCheckUpdate(): Promise<UpdateCheckResult> {
 }
 
 /** Android 应用版本（与 android/app/build.gradle versionName 同步维护） */
-export const ANDROID_APP_VERSION = '2.3.0'
+export const ANDROID_APP_VERSION = '2.3.1'
 
 export function isAndroidNative(): boolean {
   return Capacitor.isNativePlatform()

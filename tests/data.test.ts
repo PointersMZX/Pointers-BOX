@@ -1,5 +1,6 @@
 import { readFileSync } from 'fs'
 import { join } from 'path'
+import { EMBEDDED_BOX } from '../src/shared/embeddedBox'
 import {
   DataFileError,
   mergeBoxInfo,
@@ -184,6 +185,14 @@ describe('v2.3.1 mergeBoxInfo（嵌入 box.json 字段级兜底）', () => {
     // v2.3.1：通用密钥/应用简介恢复显示值
     expect(box!.general_key).toBe('zycx（自研项目默认使用项目名称）')
     expect(box!.app_introduction).toBe('Pointers资源分享平台')
+  })
+
+  it('shared EMBEDDED_BOX 常量与 resources/box.json 双端同源（不漂移）', () => {
+    const raw = JSON.parse(
+      readFileSync(join(__dirname, '..', 'resources', 'box.json'), 'utf-8')
+    )
+    const fromFile = validateBoxInfo(raw)!
+    expect(EMBEDDED_BOX).toEqual(fromFile)
   })
 })
 

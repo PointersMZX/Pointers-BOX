@@ -37,20 +37,26 @@ const FETCH_TIMEOUT_MS = 10_000
 
 // v2.2.0：box.json 应用信息嵌入包内（resources/box.json，随 asar 打包），
 // 远程不可达/未配置时以此默认值兜底——应用信息永远有值，不依赖网络
+// v2.3.1：文件缺失/损坏时最终回落到 shared 常量 EMBEDDED_BOX（双端同源）
 import { resourcesRoot } from './paths'
+import { EMBEDDED_BOX } from '../shared/embeddedBox'
 
-function loadEmbeddedBox(): BoxInfo | null {
+function loadEmbeddedBox(): BoxInfo {
   try {
     // 打包态：process.resourcesPath/box.json；开发态：项目根 resources/box.json
     const embedded = [
       join(process.resourcesPath || '', 'box.json'),
       join(resourcesRoot(), 'box.json')
     ].find((p) => p && existsSync(p))
-    if (!embedded) return null
-    return validateBoxInfo(parseLooseJson(readFileSync(embedded, 'utf-8')))
+    if (embedded) {
+      const parsed = parseLooseJson(readFileSync(embedded, 'utf-8'))
+      const validated = validateBoxInfo(parsed)
+      if (validated) return validated
+    }
   } catch {
-    return null
+    // 读取/解析失败走常量兜底
   }
+  return EMBEDDED_BOX
 }
 
 const WORK_FILES = {
