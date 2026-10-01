@@ -33,9 +33,10 @@ export default function BottomNav() {
       left={0}
       right={0}
       zIndex={1200}
-      bg="barbg"
+      bg="var(--pbox-bg-bar)"
       borderTopWidth="1px"
-      borderTopColor="pborder"
+      // v2.3.1：发丝边按主题（紫金黑 = 金发丝）
+      borderTopColor="var(--pbox-edge, rgba(255,255,255,0.16))"
       className="pbox-blur-bar"
       pb="env(safe-area-inset-bottom)"
       role="navigation"
@@ -60,14 +61,14 @@ export default function BottomNav() {
               _hover={{ color: active ? 'var(--pbox-accent)' : 'ptext' }}
               aria-current={active ? 'page' : undefined}
             >
-              {/* 顶部指示条 */}
+              {/* 顶部指示条（v2.3.1：按主题，紫金黑 = 紫金渐变） */}
               <Box
                 position="absolute"
                 top={0}
                 w="32px"
                 h="3px"
                 borderBottomRadius="full"
-                bg={active ? 'var(--pbox-accent)' : 'transparent'}
+                bg={active ? 'var(--pbox-indicator, var(--pbox-accent))' : 'transparent'}
                 transition="all .25s cubic-bezier(.34,1.56,.64,1)"
               />
               <Box as={item.icon} size={20} />

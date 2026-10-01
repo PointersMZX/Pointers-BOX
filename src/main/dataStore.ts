@@ -24,6 +24,7 @@ import { shouldRefetch } from './data/sync'
 import { requestText } from './netRequest'
 import {
   DataFileError,
+  mergeBoxInfo,
   parseLooseJson,
   validateAnnouncement,
   validateBoxInfo,
@@ -225,8 +226,9 @@ function loadFromDisk(): MemoryState {
 
   const s: MemoryState = {
     data,
-    // v2.2.0：无本地缓存时用包内嵌入 box.json 兜底（应用信息永远有值）
-    box: box ?? loadEmbeddedBox(),
+    // v2.2.0：无本地缓存时用包内嵌入 box.json 兜底（应用信息永远有值）；
+    // v2.3.1：字段级合并——本地缺的字段用嵌入值补齐（通用密钥/应用简介常显）
+    box: mergeBoxInfo(loadEmbeddedBox(), box),
     versionLogs,
     offline: true, // 磁盘数据视作离线态，远程刷新成功后置 false
     lastSync,
@@ -305,13 +307,13 @@ export async function refreshRemote(force = false): Promise<DataSnapshot> {
     warnings.push(`announcement.json 获取失败：${msg(announcementResult.reason)}`)
   }
 
-  // 3. 应用信息（嵌入包内兜底）
+  // 3. 应用信息（嵌入包内兜底；v2.3.1 字段级合并：远端缺的字段用嵌入默认补齐）
   const boxResult = results[2]
   if (boxResult && boxResult.status === 'fulfilled') {
     try {
       const info = validateBoxInfo(boxResult.value)
       if (!info) throw new DataFileError('缺少 app_name')
-      s.box = info
+      s.box = mergeBoxInfo(loadEmbeddedBox(), info)
       persistWork('box', JSON.stringify(boxResult.value, null, 2))
       okCount++
     } catch (e) {
@@ -380,7 +382,8 @@ export async function restoreFromFile(target: RestoreTarget): Promise<boolean> {
       if (!info) throw new DataFileError('box.json 结构错误：缺少 app_name')
       backupWork('box')
       atomicWrite(workPath('box'), JSON.stringify(raw, null, 2))
-      s.box = info
+      // v2.3.1：与远程同规则——缺字段用包内嵌入值补齐
+      s.box = mergeBoxInfo(loadEmbeddedBox(), info)
       s.warnings = []
     }
     return true

@@ -547,7 +547,7 @@ export default function SettingsPage() {
       {/* 关于应用（v2.2.0 置顶；简介默认收起） */}
       <CollapsibleSection title="关于应用" defaultOpen>
         <Row label="应用名称" value={box?.app_name ?? 'Pointers-BOX'} />
-        <Row label="应用版本" value={localVersion ? `v${localVersion}` : 'v2.3.0'} />
+        <Row label="应用版本" value={localVersion ? `v${localVersion}` : 'v2.3.1'} />
         <Row label="开发者" value={box?.developer} />
         <Row label="社区 QQ 群" value={box?.community_qq} />
         <Row label="通用密钥" value={box?.general_key} />
@@ -590,7 +590,7 @@ export default function SettingsPage() {
         </Text>
         <Flex align="center" justify="space-between" wrap="wrap" gap={3}>
           <Text fontSize="sm" color="ptextmuted">
-            当前版本：{result?.current ?? (localVersion ? `v${localVersion}` : 'v2.3.0')}
+            当前版本：{result?.current ?? (localVersion ? `v${localVersion}` : 'v2.3.1')}
           </Text>
           <Button
             size="sm"

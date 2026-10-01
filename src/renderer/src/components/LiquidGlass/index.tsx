@@ -8,28 +8,30 @@ import { useEffect, useRef } from 'react'
 import { fragmentSrc, vertexSrc } from './shaders'
 
 // 面板变体参数（沿 XingyuMusic 调优值：sidebar=轻（toolbar 参数），bar=强（player 参数））
+// v2.3.1：玻璃效果提强——折射带加宽、折射量/色散翻倍、边缘流光更亮更宽、
+// 指针高光更强、磨砂模糊加深（折射源实体感更足）
 const VARIANT_PARAMS = {
   sidebar: {
     radius: 10,
-    refractionHeight: 26,
-    refractionAmount: 6,
-    depthEffect: 0.22,
-    chromatic: 1.6,
-    edgeFalloff: 2.8,
-    sheen: 0.7,
-    glow: 1.1,
-    blur: 2
+    refractionHeight: 34,
+    refractionAmount: 11,
+    depthEffect: 0.28,
+    chromatic: 2.6,
+    edgeFalloff: 2.2,
+    sheen: 0.95,
+    glow: 1.6,
+    blur: 2.5
   },
   bar: {
     radius: 14,
-    refractionHeight: 40,
-    refractionAmount: 10,
-    depthEffect: 0.3,
-    chromatic: 2.2,
-    edgeFalloff: 2.4,
-    sheen: 0.85,
-    glow: 1.4,
-    blur: 2.5
+    refractionHeight: 56,
+    refractionAmount: 18,
+    depthEffect: 0.34,
+    chromatic: 3.4,
+    edgeFalloff: 1.8,
+    sheen: 1.15,
+    glow: 2.1,
+    blur: 3
   }
 }
 

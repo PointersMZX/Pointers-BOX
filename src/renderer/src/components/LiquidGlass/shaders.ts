@@ -130,8 +130,8 @@ void main() {
   vec3 shade = mix(vec3(1.0), u_tint.rgb, shadeMix);
   vec3 rgb = col.rgb * shade + u_base.rgb * u_base.a;
 
-  // 液态微光（缓慢呼吸，让玻璃"活着"）
-  float caustic = 0.03 * (0.5 + 0.5 * sin(u_time * 0.6 + css.x * 0.045 + css.y * 0.09));
+  // 液态微光（缓慢呼吸，让玻璃"活着"；v2.3.1：微光提亮一档）
+  float caustic = 0.05 * (0.5 + 0.5 * sin(u_time * 0.6 + css.x * 0.045 + css.y * 0.09));
   rgb += caustic * u_edgeColor.rgb * u_edgeColor.a;
 
   // ---------- SDF 边缘光（Metric s3）：流光方向随时间摆动 ----------
@@ -145,17 +145,17 @@ void main() {
   vec3 lightCol = mix(u_edgeColor.rgb, vec3(1.0), 0.4);
   rgb += lightCol * rim;
 
-  // 顶部镜面光
+  // 顶部镜面光（v2.3.1：提强）
   float sheen = (1.0 - smoothstep(0.0, 1.0, css.y / max(u_panelSize.y, 1.0))) * u_sheen;
-  rgb += u_edgeColor.rgb * sheen * 0.55;
+  rgb += u_edgeColor.rgb * sheen * 0.8;
 
   // ---------- 指针高光（Metric s1） ----------
   float gd = distance(css, u_pointer);
   float glow = (1.0 - smoothstep(45.0, 130.0, gd)) * u_pointerA * u_glow;
   rgb += u_glowColor.rgb * glow;
 
-  // ---------- 合成 ----------
-  float alpha = coverage * clamp(u_base.a + u_tint.a * 0.85 + rim * 0.7 + sheen * 0.55 + glow * 0.6, 0.0, 0.99);
+  // ---------- 合成（v2.3.1：边缘/镜面/高光权重提强，玻璃体更"亮"） ----------
+  float alpha = coverage * clamp(u_base.a + u_tint.a * 0.9 + rim * 0.9 + sheen * 0.8 + glow * 0.8, 0.0, 0.99);
   gl_FragColor = vec4(rgb, alpha);
 }
 `

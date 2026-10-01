@@ -1,5 +1,8 @@
+import { readFileSync } from 'fs'
+import { join } from 'path'
 import {
   DataFileError,
+  mergeBoxInfo,
   parseJson,
   parseLooseJson,
   validateAnnouncement,
@@ -118,7 +121,6 @@ describe('其余校验器', () => {
     expect(validateBoxInfo({ ...good, app_name: '' })).toBeNull()
     expect(validateBoxInfo('x')).toBeNull()
   })
-
   it('parseJson：非法 JSON 抛 DataFileError', () => {
     expect(() => parseJson('{oops')).toThrow(DataFileError)
     expect(parseJson('{"a":1}')).toEqual({ a: 1 })
@@ -137,6 +139,53 @@ describe('其余校验器', () => {
   })
 })
 
+
+describe('v2.3.1 mergeBoxInfo（嵌入 box.json 字段级兜底）', () => {
+  const embedded = {
+    app_name: 'Pointers-BOX',
+    app_introduction: 'Pointers资源分享平台',
+    general_key: 'zycx（自研项目默认使用项目名称）',
+    developer: 'Pointers',
+    community_qq: '335753296',
+    copyright: 'Copyright © 2026 Pointers-BOX All Rights Reserved'
+  }
+
+  it('远端/本地缺字段时用嵌入值补齐；非空字段以 overlay 优先', () => {
+    // 远端 box 无 general_key / app_introduction → 补齐为嵌入值
+    const remote = validateBoxInfo({
+      app_name: 'Pointers-BOX',
+      developer: 'Pointers',
+      community_qq: '335753296',
+      copyright: 'c'
+    })!
+    const merged = mergeBoxInfo(embedded, remote)!
+    expect(merged.general_key).toBe('zycx（自研项目默认使用项目名称）')
+    expect(merged.app_introduction).toBe('Pointers资源分享平台')
+    // overlay 非空值优先
+    const withKey = validateBoxInfo({ app_name: 'Pointers-BOX', general_key: '远端密钥' })!
+    expect(mergeBoxInfo(embedded, withKey)!.general_key).toBe('远端密钥')
+    // 缺 app_introduction → 嵌入值
+    expect(mergeBoxInfo(embedded, withKey)!.app_introduction).toBe('Pointers资源分享平台')
+  })
+
+  it('单侧为 null 时取另一侧；双 null 返回 null', () => {
+    expect(mergeBoxInfo(embedded, null)).toBe(embedded)
+    expect(mergeBoxInfo(null, embedded)).toBe(embedded)
+    expect(mergeBoxInfo(null, null)).toBeNull()
+  })
+
+  it('包内嵌入 box.json（resources/box.json）值正确且可校验', () => {
+    const raw = JSON.parse(
+      readFileSync(join(__dirname, '..', 'resources', 'box.json'), 'utf-8')
+    )
+    const box = validateBoxInfo(raw)
+    expect(box).not.toBeNull()
+    expect(box!.app_name).toBe('Pointers-BOX')
+    // v2.3.1：通用密钥/应用简介恢复显示值
+    expect(box!.general_key).toBe('zycx（自研项目默认使用项目名称）')
+    expect(box!.app_introduction).toBe('Pointers资源分享平台')
+  })
+})
 
 describe('多分享项 shares（v2.0.0 新格式）', () => {
   it('解析 [{name,url}] 多分享项并原样保留', () => {

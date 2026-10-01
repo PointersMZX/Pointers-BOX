@@ -30,7 +30,7 @@ export default function Sidebar() {
       id="pbox-sidebar"
       w="200px"
       flexShrink={0}
-      bg="sidebarbg"
+      bg="var(--pbox-bg-sidebar)"
       color="ptextmuted"
       py={4}
       display="flex"
@@ -38,9 +38,10 @@ export default function Sidebar() {
       gap={1}
       className={isGlassOn ? 'pbox-blur-sidebar' : undefined}
       borderRightWidth="1px"
-      borderRightColor="pborder"
+      // v2.3.1：发丝边按主题（紫金黑 = 金发丝）
+      borderRightColor="var(--pbox-edge, rgba(255,255,255,0.16))"
     >
-      <Text px={5} pb={4} fontSize="md" fontWeight="bold" color="ptext" letterSpacing={1}>
+      <Text px={5} pb={4} fontSize="md" fontWeight="bold" color="ptext" letterSpacing={1} className="pbox-logo">
         Pointers-BOX
       </Text>
       {visiblePages(platform).map((p) => {
@@ -71,7 +72,8 @@ export default function Sidebar() {
                   position: 'absolute',
                   inset: 0,
                   borderRadius: '6px',
-                  background: 'var(--chakra-colors-brand-600)'
+                  // v2.3.1：胶囊背景按主题（紫金黑 = 紫金渐变）
+                  background: 'var(--pbox-pill, var(--chakra-colors-brand-600))'
                 }}
               />
             )}

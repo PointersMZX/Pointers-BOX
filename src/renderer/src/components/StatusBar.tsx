@@ -36,9 +36,10 @@ export default function StatusBar() {
       align="center"
       justify="space-between"
       px={3}
-      bg="barbg"
+      bg="var(--pbox-bg-bar)"
       borderTop="1px solid"
-      borderColor="pborder"
+      // v2.3.1：发丝边按主题（紫金黑 = 金发丝）
+      borderColor="var(--pbox-edge, rgba(255,255,255,0.16))"
       fontSize="xs"
       color="ptextmuted"
       className={isGlassOn ? 'pbox-blur-bar' : undefined}
@@ -57,7 +58,7 @@ export default function StatusBar() {
         )}
       </Flex>
       <Text>
-        Pointers-BOX {appVersion ? `v${appVersion}` : 'v2.3.0'}
+        Pointers-BOX {appVersion ? `v${appVersion}` : 'v2.3.1'}
         {platform === 'android' ? ' · Android' : ''}
       </Text>
     </Flex>

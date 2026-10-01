@@ -1,7 +1,7 @@
 {
   "app_name": "Pointers-BOX",
-  "app_introduction": "Pointers-BOX 是一款平台资源领取客户端。用户浏览并领取平台统一发布的资源，软件完全免费，无需注册登录，不收集个人信息。",
-  "general_key": "zycx、Pointers-BOX",
+  "app_introduction": "Pointers资源分享平台",
+  "general_key": "zycx（自研项目默认使用项目名称）",
   "developer": "Pointers",
   "community_qq": "335753296",
   "copyright": "Copyright © 2026 Pointers-BOX All Rights Reserved"

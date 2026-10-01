@@ -166,3 +166,25 @@ export function validateBoxInfo(raw: unknown): BoxInfo | null {
     copyright: asLooseString(raw['copyright'])
   }
 }
+
+/**
+ * v2.3.1：包内嵌入 box.json 字段级兜底——远端/本地 box 缺失或为空的字段
+ * 用嵌入默认值补齐（非空字段以 overlay 优先），保证「关于应用」的
+ * 通用密钥/应用简介等信息项永远有值可显示。
+ */
+export function mergeBoxInfo(
+  base: BoxInfo | null,
+  overlay: BoxInfo | null
+): BoxInfo | null {
+  if (!base && !overlay) return null
+  if (!base) return overlay
+  if (!overlay) return base
+  return {
+    app_name: overlay.app_name || base.app_name,
+    app_introduction: overlay.app_introduction || base.app_introduction,
+    general_key: overlay.general_key || base.general_key,
+    developer: overlay.developer || base.developer,
+    community_qq: overlay.community_qq || base.community_qq,
+    copyright: overlay.copyright || base.copyright
+  }
+}
