@@ -49,4 +49,4 @@ Pointers资源分享平台（[pointers-box.cc.cd](https://pointers-box.cc.cd/)�
 
 Copyright © 2026 Pointers-BOX All Rights Reserved
 
-本仓库为 Pointers-BOX 客户端的源码仓库。软件完全免费，请勿以任何名义向作者索要费用或卡密。
+本仓库为 Pointers-BOX 客户端的源码仓库。软件与资源均完全免费：若有任何人（自称作者、平台客服或第三方渠道）以 Pointers-BOX 的名义向你收费、索要卡密或引导购买，均为冒充诈骗，请勿付款，并可通过下方联系方式向作者核实。
