@@ -64,6 +64,14 @@ jobs:
           set -o pipefail
           chmod +x gradlew
           ./gradlew assembleRelease --stacktrace 2>&1 | tee gradle.log
+      # v2.3.2：Gradle 产物固定叫 app-release.apk，之前被原样挂到 Release（维护者每次手动改名）。
+      # 现按 tag 重命名为 Pointers-BOX_vX.X.X.apk 再上传（job 仅 tag 触发，ref_name 必为版本 tag）
+      - name: Rename APK with version name
+        working-directory: android/app/build/outputs/apk/release
+        run: |
+          set -o pipefail
+          test -f app-release.apk
+          mv app-release.apk "Pointers-BOX_${{ github.ref_name }}.apk"
       - name: Dump failure logs to ci-logs branch
         if: failure()
         shell: bash

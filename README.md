@@ -29,7 +29,7 @@ Pointers资源分享平台（[pointers-box.cc.cd](https://pointers-box.cc.cd/)�
 | --- | --- | --- |
 | Windows 10 / 11 | `Pointers-BOX_Setup_vX.X.X x64.exe` | 标准版安装包 |
 | Windows 7 / 8 | `Pointers-BOX_Setup_vX.X.X_Windows7 x64.exe` | Win7 兼容版安装包 |
-| Android | `app-release.apk` | 安卓安装包 |
+| Android | `Pointers-BOX_vX.X.X.apk` | 安卓安装包（X.X.X 为版本号） |
 
 - Windows：运行安装程序按向导完成安装即可。
 - Android：允许"未知来源"后安装 APK 即可使用。
