@@ -19,6 +19,7 @@ import {
   validateVersionLogs
 } from '../../../shared/validate'
 import { EMBEDDED_BOX } from '../../../shared/embeddedBox'
+import { withCacheBust } from '../../../shared/refresh'
 import { normalizeConfig } from '../../../shared/config'
 import { isNewerVersion } from '../../../shared/semver'
 import { parseReleaseJson } from '../../../shared/updates'
@@ -72,12 +73,13 @@ function buildSnapshot(raw: {
 }
 
 export async function androidGetData(force = false): Promise<DataSnapshot> {
-  void force
+  // v2.3.2：强刷（下拉刷新）带时间戳参数击穿静态托管缓存，保证拿到最新内容
+  const url = (u: string): string => (force ? withCacheBust(u) : u)
   const results = await Promise.allSettled([
-    fetchLooseJson(REMOTE_URLS.resources),
-    fetchLooseJson(REMOTE_URLS.announcement),
-    fetchLooseJson(REMOTE_URLS.box),
-    fetchLooseJson(REMOTE_URLS.versionLogs)
+    fetchLooseJson(url(REMOTE_URLS.resources)),
+    fetchLooseJson(url(REMOTE_URLS.announcement)),
+    fetchLooseJson(url(REMOTE_URLS.box)),
+    fetchLooseJson(url(REMOTE_URLS.versionLogs))
   ])
   const resources = results[0]
   const announcement = results[1]
@@ -241,7 +243,7 @@ export async function androidCheckUpdate(): Promise<UpdateCheckResult> {
 }
 
 /** Android 应用版本（与 android/app/build.gradle versionName 同步维护） */
-export const ANDROID_APP_VERSION = '2.3.1'
+export const ANDROID_APP_VERSION = '2.3.2'
 
 export function isAndroidNative(): boolean {
   return Capacitor.isNativePlatform()

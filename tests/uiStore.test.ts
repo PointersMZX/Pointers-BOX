@@ -3,7 +3,7 @@ import { useUiStore } from '../src/renderer/src/store/uiStore'
 describe('UI 路由仓库（PRD 2.3 + 平台页面集）', () => {
   // 每个用例前重置
   beforeEach(() => {
-    useUiStore.setState({ page: 'home', platform: 'desktop' })
+    useUiStore.setState({ page: 'home', platform: 'desktop', versionLogsDeepLink: false })
   })
 
   it('默认在首页、桌面平台', () => {
@@ -36,5 +36,22 @@ describe('UI 路由仓库（PRD 2.3 + 平台页面集）', () => {
     useUiStore.getState().setPage('browser')
     useUiStore.getState().setPlatform('desktop')
     expect(useUiStore.getState().page).toBe('browser')
+  })
+
+  // v2.3.2：首页「版本日志·全部」深链——置位 + 跳设置页；消费后回落到手动默认态
+  it('goToVersionLogs 置深链并跳设置页，consume 清除', () => {
+    const s = useUiStore.getState()
+    s.goToVersionLogs()
+    expect(useUiStore.getState().page).toBe('settings')
+    expect(useUiStore.getState().versionLogsDeepLink).toBe(true)
+    useUiStore.getState().consumeVersionLogsDeepLink()
+    expect(useUiStore.getState().versionLogsDeepLink).toBe(false)
+  })
+
+  it('Android 平台深链同样生效（settings 两端可见）', () => {
+    useUiStore.getState().setPlatform('android')
+    useUiStore.getState().goToVersionLogs()
+    expect(useUiStore.getState().page).toBe('settings')
+    expect(useUiStore.getState().versionLogsDeepLink).toBe(true)
   })
 })

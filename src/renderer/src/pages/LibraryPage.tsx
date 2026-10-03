@@ -17,7 +17,7 @@ import {
   useDisclosure,
   VStack
 } from '@chakra-ui/react'
-import { FiBookOpen, FiCheck, FiChevronDown, FiChevronUp, FiFilter, FiSearch } from 'react-icons/fi'
+import { FiBookOpen, FiCheck, FiChevronDown, FiChevronUp, FiFilter, FiRefreshCw, FiSearch } from 'react-icons/fi'
 import { useEffect, useMemo, useState } from 'react'
 import type { Resource } from '../../../shared/types'
 import { Skeleton } from '@chakra-ui/react'
@@ -61,6 +61,7 @@ export default function LibraryPage() {
   const [collapsed, setCollapsed] = useState(false)
   const [sort, setSort] = useState<SortMode>(readSort)
   const [selected, setSelected] = useState<Resource | null>(null)
+  const [refreshing, setRefreshing] = useState(false)
   const { isOpen, onOpen, onClose } = useDisclosure()
 
   useEffect(() => {
@@ -92,6 +93,16 @@ export default function LibraryPage() {
   const openDetail = (r: Resource): void => {
     setSelected(r)
     onOpen()
+  }
+
+  // v2.3.2：手动刷新 = 强刷拉取服务器最新资源库（带缓存击穿），与下拉刷新同链路
+  const onRefresh = async (): Promise<void> => {
+    setRefreshing(true)
+    try {
+      await refreshData(true)
+    } finally {
+      setRefreshing(false)
+    }
   }
 
   if (!loaded) {
@@ -268,6 +279,21 @@ export default function LibraryPage() {
                     ))}
                   </MenuList>
                 </Menu>
+
+                {/* v2.3.2：可见刷新按钮（桌面端指针不便下拉时的一键强刷） */}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  leftIcon={<FiRefreshCw />}
+                  borderColor="pborder"
+                  color="ptext"
+                  _hover={{ bg: 'hoverbg' }}
+                  flexShrink={0}
+                  isLoading={refreshing}
+                  onClick={() => void onRefresh()}
+                >
+                  刷新
+                </Button>
             </Flex>
 
             {filtered.length > 0 ? (

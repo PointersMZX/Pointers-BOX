@@ -352,10 +352,18 @@ export default function HomePage() {
   // 随机推荐：紧凑=4 张（密集排），其他=2 张（减少占面积）
   const picksCountFor = (l: HomeLayout) => (l === 'compact' ? 4 : 2)
 
-  // 数据首次到达（或离线恢复）时抽取一次推荐
+  // 数据首次到达（或资源变化令当前推荐失效）时抽取推荐（v2.3.2：
+  // 服务端删换资源后旧推荐对象会失引用 → 检测到失效自动重抽；资源清空则清空推荐）
   useEffect(() => {
     setPicks((prev) => {
-      if (prev.length > 0) return prev
+      if (resources.length === 0) {
+        shownIds.current = new Set()
+        return []
+      }
+      if (prev.length > 0) {
+        const ids = new Set(resources.map((r) => r.id))
+        if (!prev.some((p) => !ids.has(p.id))) return prev
+      }
       const next = sampleUnique(resources, picksCountFor(layout))
       shownIds.current = new Set(next.map((r) => r.id))
       return next
@@ -376,14 +384,14 @@ export default function HomePage() {
     setPicks(next)
   }
 
+  // v2.3.2：下拉刷新 = 全量重载远端数据（公告/版本日志/资源库，强刷带缓存击穿）
+  // + 基于最新数据重新随机一轮推荐（「换一批」仍沿用排除已展示的旧语义）
   const onPullRefresh = async (): Promise<void> => {
     await refreshData(true)
     const latest = useDataStore.getState().resources
-    const next = sampleUniqueExcluding(latest, picksCountFor(layout), shownIds.current)
-    if (next.length > 0) {
-      shownIds.current = new Set(next.map((r) => r.id))
-      setPicks(next)
-    }
+    const next = sampleUnique(latest, picksCountFor(layout))
+    shownIds.current = new Set(next.map((r) => r.id))
+    setPicks(next)
   }
 
   const runCheckUpdate = async (): Promise<void> => {
@@ -404,6 +412,7 @@ export default function HomePage() {
 
   const setPage = useUiStore((s) => s.setPage)
   const platform = useUiStore((s) => s.platform)
+  const goToVersionLogs = useUiStore((s) => s.goToVersionLogs)
 
   if (!loaded && loading) {
     return (
@@ -638,10 +647,30 @@ export default function HomePage() {
     )
   }
 
-  // 5. 版本更新日志
+  // 5. 版本更新日志（首页只显示最近 2 条摘要；完整日志在设置页「版本日志」节，v2.3.2）
   if (versionLogs.length > 0) {
     halfCards.push(
-      <GlassCard minH={DECK_MIN_H} key="versionlogs" icon={<FiList color="var(--pbox-accent)" />} title="版本日志">
+      <GlassCard
+        minH={DECK_MIN_H}
+        key="versionlogs"
+        icon={<FiList color="var(--pbox-accent)" />}
+        title="版本日志"
+        right={
+          <HStack spacing={2}>
+            <Text fontSize="xs" color="ptextmuted">
+              最近 {Math.min(versionLogs.length, 2)} 条
+            </Text>
+            <GlassButton
+              size="sm"
+              variant="ghost"
+              ariaLabel="查看全部版本日志"
+              onClick={() => goToVersionLogs()}
+            >
+              全部
+            </GlassButton>
+          </HStack>
+        }
+      >
         <VStack align="stretch" spacing={2}>
           {versionLogs.slice(0, 2).map((v) => (
             <Flex key={v.version} align="flex-start" gap={2}>

@@ -32,7 +32,7 @@ import {
   FiRefreshCw,
   FiUploadCloud
 } from 'react-icons/fi'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { HomeLayout, UpdateCheckResult } from '../../../shared/types'
 import {
   ACCENT_PRESETS,
@@ -400,7 +400,10 @@ const FEEDBACK_URL =
 // 更新检查 / 下载设置 / 配置管理 / 浏览器设置 / 问题反馈（新增）；删除「数据恢复」
 export default function SettingsPage() {
   const box = useDataStore((s) => s.box)
+  const versionLogs = useDataStore((s) => s.versionLogs)
+  const refreshData = useDataStore((s) => s.refresh)
   const platform = useUiStore((s) => s.platform)
+  const versionLogsDeepLink = useUiStore((s) => s.versionLogsDeepLink)
   const toast = useToast()
 
   const config = useDownloadStore((s) => s.config)
@@ -417,6 +420,17 @@ export default function SettingsPage() {
   useEffect(() => {
     void loadConfig()
   }, [loadConfig])
+
+  // v2.3.2：首页「版本日志·全部」深链——到达设置页时滚动到版本日志节
+  // （节在首帧已按 defaultOpen 展开），并消费标记（之后手动进设置页不再自动展开）
+  const versionLogRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (useUiStore.getState().versionLogsDeepLink) {
+      versionLogRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      useUiStore.getState().consumeVersionLogsDeepLink()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // 更新事件：进度同时汇入下载管理（PRD 7.4：更新包下载也显示在下载管理）
   useEffect(() => {
@@ -547,7 +561,7 @@ export default function SettingsPage() {
       {/* 关于应用（v2.2.0 置顶；简介默认收起） */}
       <CollapsibleSection title="关于应用" defaultOpen>
         <Row label="应用名称" value={box?.app_name ?? 'Pointers-BOX'} />
-        <Row label="应用版本" value={localVersion ? `v${localVersion}` : 'v2.3.1'} />
+        <Row label="应用版本" value={localVersion ? `v${localVersion}` : 'v2.3.2'} />
         <Row label="开发者" value={box?.developer} />
         <Row label="社区 QQ 群" value={box?.community_qq} />
         <Row label="通用密钥" value={box?.general_key} />
@@ -559,6 +573,58 @@ export default function SettingsPage() {
         </Box>
         <Row label="版权声明" value={box?.copyright} />
       </CollapsibleSection>
+
+      {/* 版本日志（v2.3.2 新增）：完整展示远端 boxbbgxrz.json 全部条目
+          （首页版本卡只显示最近 2 条摘要，长日志在这里看全）；深链到达时自动展开 */}
+      <Box ref={versionLogRef}>
+        <CollapsibleSection title="版本日志" defaultOpen={versionLogsDeepLink}>
+          {versionLogs.length === 0 ? (
+            <Flex align="center" justify="space-between" gap={3} wrap="wrap">
+              <Text fontSize="sm" color="ptextmuted">
+                暂无版本日志（离线或服务器尚未配置）
+              </Text>
+              <Button
+                size="sm"
+                variant="outline"
+                leftIcon={<FiRefreshCw />}
+                borderColor="pborder"
+                color="ptext"
+                _hover={{ bg: 'hoverbg' }}
+                onClick={() => void refreshData(true)}
+              >
+                刷新
+              </Button>
+            </Flex>
+          ) : (
+            <>
+              <VStack align="stretch" spacing={3}>
+                {versionLogs.map((v) => (
+                  <Box
+                    key={v.version}
+                    borderWidth="1px"
+                    borderColor="pborder"
+                    borderRadius="md"
+                    bg="pinput"
+                    p={3}
+                  >
+                    <Box mb={2}>
+                      <Badge colorScheme="brand" variant="subtle" borderRadius="full">
+                        {v.version}
+                      </Badge>
+                    </Box>
+                    <Text fontSize="sm" color="ptextmuted" whiteSpace="pre-wrap">
+                      {v.log}
+                    </Text>
+                  </Box>
+                ))}
+              </VStack>
+              <Text fontSize="xs" color="ptextmuted">
+                共 {versionLogs.length} 条版本日志，完整展示
+              </Text>
+            </>
+          )}
+        </CollapsibleSection>
+      </Box>
 
       {/* 主题（v2.2.0 次之；默认收起，点进去才展开主题设置） */}
       <CollapsibleSection title="主题">
@@ -590,7 +656,7 @@ export default function SettingsPage() {
         </Text>
         <Flex align="center" justify="space-between" wrap="wrap" gap={3}>
           <Text fontSize="sm" color="ptextmuted">
-            当前版本：{result?.current ?? (localVersion ? `v${localVersion}` : 'v2.3.1')}
+            当前版本：{result?.current ?? (localVersion ? `v${localVersion}` : 'v2.3.2')}
           </Text>
           <Button
             size="sm"

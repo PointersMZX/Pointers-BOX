@@ -12,6 +12,7 @@ import {
 } from 'fs'
 import { join } from 'path'
 import { REMOTE_URLS } from '../shared/types'
+import { withCacheBust } from '../shared/refresh'
 import type {
   BoxInfo,
   DataSnapshot,
@@ -265,11 +266,14 @@ export async function refreshRemote(force = false): Promise<DataSnapshot> {
   if (!force && !shouldRefetch(s.lastSync, Date.now())) return getSnapshot()
   ensureDirs()
 
+  // v2.3.2：用户主动强刷（下拉刷新/刷新按钮）时带时间戳参数击穿静态托管缓存，
+  // 保证拉到服务器上的最新内容；后台节流刷新不带参数（正常走 CDN 命中）
+  const url = (u: string): string => (force ? withCacheBust(u) : u)
   const results = await Promise.allSettled([
-    fetchJson(REMOTE_URLS.resources),
-    fetchJson(REMOTE_URLS.announcement),
-    fetchJson(REMOTE_URLS.box),
-    fetchJson(REMOTE_URLS.versionLogs)
+    fetchJson(url(REMOTE_URLS.resources)),
+    fetchJson(url(REMOTE_URLS.announcement)),
+    fetchJson(url(REMOTE_URLS.box)),
+    fetchJson(url(REMOTE_URLS.versionLogs))
   ])
 
   const warnings: string[] = []
@@ -348,7 +352,9 @@ export async function refreshRemote(force = false): Promise<DataSnapshot> {
 
   s.warnings = warnings
   s.offline = okCount === 0
-  if (okCount === 3) {
+  // v2.3.2 修复：4 文件协议下全成功 okCount=4，原「=== 3」永不成立导致
+  // lastSync 从不落盘、5 分钟节流彻底失效；改为「≥3 即视为同步成功」
+  if (okCount >= 3) {
     s.lastSync = Date.now()
     atomicWrite(lastSyncPath(), JSON.stringify({ lastSync: s.lastSync }, null, 2))
   }
