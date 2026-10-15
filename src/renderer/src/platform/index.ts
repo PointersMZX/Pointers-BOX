@@ -1,14 +1,16 @@
 // 平台适配层（开发计划 D6）：renderer 只依赖本模块；桌面实现转发 window.api，Android 实现走 Capacitor
 import { Capacitor } from '@capacitor/core'
-import type { PBoxApi } from '../../../shared/types'
+import type { PBoxApi, Resource } from '../../../shared/types'
 import { isPage, type Page } from '../../../shared/routes'
 import type { AppPlatform } from '../../../shared/platformPages'
 import { UPDATE_CHANNEL_INFO } from '../../../shared/updateChannels'
+import { buildShareText } from '../../../shared/share'
 import { useBrowserStore } from '../store/browserStore'
 import { useUiStore } from '../store/uiStore'
 import {
   ANDROID_APP_VERSION,
   androidCheckUpdate,
+  androidCopyText,
   androidGetData,
   androidGetConfig,
   androidGetUserLinks,
@@ -19,6 +21,7 @@ import {
   androidRestoreData,
   androidSetConfig,
   androidSetUserLinks,
+  androidShareText,
   androidExportUserLinks
 } from './capacitor'
 
@@ -31,9 +34,15 @@ export function castPage(v: string): Page | null {
   return isPage(v) ? v : null
 }
 
-// PBoxApi + 领取跳转；桌面端领取=切换到内置浏览器页，Android=系统浏览器拉起（v2.3.0）
+// PBoxApi + 领取跳转 + 平台绑定分享（v2.4.0）；桌面端领取=切换到内置浏览器页，Android=系统浏览器拉起（v2.3.0）
 export interface AppBackend extends PBoxApi {
   openClaim(url: string): Promise<void>
+  /**
+   * v2.4.0 平台绑定分享：生成「平台分享页」链接文本（不含资源真实链接）。
+   * 返回 'shared'=安卓系统分享面板已拉起（无需 toast）；'copied'=已复制剪贴板（桌面恒为此；
+   * 安卓无分享目标/失败时为兜底复制），调用方据此给「已复制」反馈。
+   */
+  shareResource(resource: Resource): Promise<'shared' | 'copied'>
 }
 
 function createDesktopBackend(api: PBoxApi): AppBackend {
@@ -42,6 +51,11 @@ function createDesktopBackend(api: PBoxApi): AppBackend {
     openClaim: async (url) => {
       useBrowserStore.getState().navigateTo(url)
       useUiStore.getState().setPage('browser')
+    },
+    // v2.4.0：桌面端分享=复制平台分享文本到系统剪贴板（主进程 clipboard，clipboard:copy IPC）
+    shareResource: async (resource) => {
+      await api.copyText(buildShareText(resource))
+      return 'copied'
     }
   }
 }
@@ -91,7 +105,10 @@ function createAndroidBackend(): AppBackend {
     onUpdateEvent: (cb) => androidOnUpdateEvent(cb),
     openClaim: async (url) => {
       await androidOpenExternal(url)
-    }
+    },
+    // v2.4.0：分享=原生 Share 插件系统分享面板（回落复制由原生侧决定返回 mode）
+    copyText: (text) => androidCopyText(text),
+    shareResource: (resource) => androidShareText(buildShareText(resource))
   }
 }
 
@@ -104,4 +121,9 @@ export const backend: AppBackend = detectBackend()
 
 export async function openClaim(url: string): Promise<void> {
   await backend.openClaim(url)
+}
+
+/** v2.4.0 平台绑定分享（双端统一入口，弹窗「分享」按钮调用） */
+export function shareResource(resource: Resource): Promise<'shared' | 'copied'> {
+  return backend.shareResource(resource)
 }

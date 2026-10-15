@@ -188,6 +188,43 @@ interface SystemBrowserNativeInterface {
 
 const SystemBrowserNative = registerPlugin<SystemBrowserNativeInterface>('SystemBrowser')
 
+// v2.4.0 分享功能：原生 Share 插件（android/.../SharePlugin.java）——
+// 系统分享面板（ACTION_SEND）；无分享目标/拉起失败时原生侧已回落系统剪贴板
+interface ShareNativeInterface {
+  share(options: { text: string }): Promise<{ mode: 'shared' | 'copied' }>
+  copyText(options: { text: string }): Promise<void>
+}
+
+const ShareNative = registerPlugin<ShareNativeInterface>('Share')
+
+/** v2.4.0：安卓剪贴板复制（走原生系统剪贴板，避免 WebView clipboard API 的权限/secure context 问题） */
+export async function androidCopyText(text: string): Promise<void> {
+  await ShareNative.copyText({ text })
+}
+
+/**
+ * v2.4.0：安卓原生分享。
+ * 返回 'shared'=系统分享面板已拉起；'copied'=无分享目标或异常，已复制系统剪贴板（调用方给「已复制」反馈）。
+ */
+export async function androidShareText(text: string): Promise<'shared' | 'copied'> {
+  try {
+    const res = await ShareNative.share({ text })
+    return res.mode === 'shared' ? 'shared' : 'copied'
+  } catch {
+    try {
+      await ShareNative.copyText({ text })
+    } catch {
+      // 原生插件缺失（纯 web 环境）时的最后兜底
+      try {
+        await navigator.clipboard.writeText(text)
+      } catch {
+        /* 兜底全部失败：静默，UI 侧按已复制处理 */
+      }
+    }
+    return 'copied'
+  }
+}
+
 export function androidOnUpdateEvent(cb: (e: UpdateEvent) => void): () => void {
   void cb
   return () => {}
@@ -243,7 +280,7 @@ export async function androidCheckUpdate(): Promise<UpdateCheckResult> {
 }
 
 /** Android 应用版本（与 android/app/build.gradle versionName 同步维护） */
-export const ANDROID_APP_VERSION = '2.3.2'
+export const ANDROID_APP_VERSION = '2.4.0'
 
 export function isAndroidNative(): boolean {
   return Capacitor.isNativePlatform()

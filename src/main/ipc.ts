@@ -1,4 +1,4 @@
-import { app, dialog, ipcMain, shell } from 'electron'
+import { app, clipboard, dialog, ipcMain, shell } from 'electron'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import type { AppConfig, RestoreTarget } from '../shared/types'
@@ -113,6 +113,11 @@ export function registerIpcHandlers(): void {
 
   // 内置浏览器（M5）：重置会话（清空 Cookie 与登录状态）
   ipcMain.handle('browser:resetSession', () => resetBrowserSession())
+
+  // v2.4.0 分享功能：复制文本到系统剪贴板（平台绑定分享的桌面端出口；Android 走原生 Share 插件）
+  ipcMain.handle('clipboard:copy', (_e, text: unknown) => {
+    if (typeof text === 'string' && text.length > 0) clipboard.writeText(text)
+  })
 
   // 下载管理（M6）：下载中锁定路径（PRD 4.3）
   ipcMain.handle('downloads:chooseDir', async () => {

@@ -6,14 +6,15 @@ import {
   HStack,
   IconButton,
   Text,
+  useToast,
   VStack
 } from '@chakra-ui/react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useRef, useState } from 'react'
-import { FiExternalLink, FiX } from 'react-icons/fi'
+import { FiExternalLink, FiShare2, FiX } from 'react-icons/fi'
 import type { Resource } from '../../../shared/types'
 import { getResourceShares } from '../../../shared/validate'
-import { openClaim } from '../platform'
+import { openClaim, shareResource } from '../platform'
 import GlassButton from './GlassButton'
 
 interface Props {
@@ -26,10 +27,13 @@ interface Props {
  * 资源详情弹窗（v2.1.0 克制版）：
  * 居中液态玻璃弹窗——0.96x 缩放 0.2s 平滑浮现（无过冲、无高光扩散）；
  * 点击遮罩 0.18s 平滑收束消失；内容滚动时弹窗外框不动。
- * 内容：资源序号/名称/介绍/分类/日期 + 每一个分享项的名称与链接。
+ * 内容：资源序号/名称/介绍/分类/日期 + 每一个分享项的名称与「领取」跳转入口。
+ * v2.4.0：分享项不再明文展示链接（只有领取跳转入口）；新增「分享此资源」——
+ * 平台绑定分享（复制/拉起平台分享页链接，接收方回平台领取，拿不到资源真实链接）。
  */
 export default function ResourceDetailModal({ resource, isOpen, onClose }: Props) {
   const [portalEl] = useState(() => (typeof document !== 'undefined' ? document.body : null))
+  const toast = useToast()
 
   // Escape 关闭（标准弹窗行为）
   useEffect(() => {
@@ -169,6 +173,7 @@ export default function ResourceDetailModal({ resource, isOpen, onClose }: Props
                     className="pbox-morph"
                   >
                     <Box minW={0} flex="1">
+                      {/* v2.4.0：分享项不再明文展示链接，仅保留「领取」跳转入口 */}
                       <HStack spacing={2} mb={1}>
                         <Badge borderRadius="full" fontSize="2xs" px={2} colorScheme="purple" variant="subtle">
                           {i + 1}
@@ -177,9 +182,6 @@ export default function ResourceDetailModal({ resource, isOpen, onClose }: Props
                           {share.name}
                         </Text>
                       </HStack>
-                      <Text fontSize="xs" color="ptextmuted" noOfLines={1} title={share.url}>
-                        {share.url}
-                      </Text>
                     </Box>
                     <GlassButton
                       size="sm"
@@ -195,6 +197,40 @@ export default function ResourceDetailModal({ resource, isOpen, onClose }: Props
                   </Flex>
                 ))}
               </VStack>
+
+              {/* v2.4.0 平台绑定分享：对方拿到的是平台分享页链接，回平台领取，拿不到资源真实链接 */}
+              <Divider borderColor="pborder" my={4} />
+              <Box>
+                <GlassButton
+                  variant="ghost"
+                  ariaLabel="分享此资源"
+                  title="复制平台分享链接发给朋友，对方打开后在平台上领取"
+                  onClick={() => {
+                    void shareResource(resource)
+                      .then((mode) => {
+                        if (mode === 'copied') {
+                          toast({
+                            title: '已复制，发给朋友后对方在平台上领取',
+                            status: 'success',
+                            duration: 3000,
+                            position: 'top'
+                          })
+                        }
+                      })
+                      .catch(() => {
+                        toast({
+                          title: '分享失败，请稍后再试',
+                          status: 'error',
+                          duration: 3000,
+                          position: 'top'
+                        })
+                      })
+                  }}
+                >
+                  <FiShare2 />
+                  分享此资源
+                </GlassButton>
+              </Box>
             </Box>
           </motion.div>
         </motion.div>

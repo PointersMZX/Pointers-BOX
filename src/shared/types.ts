@@ -217,4 +217,6 @@ export interface PBoxApi {
   onNavigate(cb: (page: string) => void): () => void
   onDownloadEvent(cb: (e: DownloadEvent) => void): () => void
   onUpdateEvent(cb: (e: UpdateEvent) => void): () => void
+  /** v2.4.0 分享功能：复制文本到系统剪贴板（桌面走主进程 clipboard；Android 走原生 Share 插件系统剪贴板） */
+  copyText(text: string): Promise<void>
 }

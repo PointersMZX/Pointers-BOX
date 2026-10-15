@@ -38,4 +38,13 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- v2.4.0 分享功能：Android 11+ 包可见性——SharePlugin 用 resolveActivity 探测分享面板，
+         不声明则恒为 null（功能退化为仅复制）；ACTION_VIEW 打开 web 链接系统原生豁免无需声明 -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.SEND" />
+            <data android:mimeType="text/plain" />
+        </intent>
+    </queries>
 </manifest>

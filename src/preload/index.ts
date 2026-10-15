@@ -31,6 +31,7 @@ const api: PBoxApi = {
   pauseDownload: (id) => ipcRenderer.invoke('downloads:pause', id),
   resumeDownload: (id) => ipcRenderer.invoke('downloads:resume', id),
   resetBrowserSession: () => ipcRenderer.invoke('browser:resetSession'),
+  copyText: (text) => ipcRenderer.invoke('clipboard:copy', text),
   checkUpdate: () => ipcRenderer.invoke('update:check'),
   downloadUpdate: () => ipcRenderer.invoke('update:download'),
   installUpdate: () => ipcRenderer.invoke('update:install'),
