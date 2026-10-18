@@ -15,8 +15,9 @@ extraResources:
   - from: resources/icons
     to: icons
   # v2.2.0：box.json（应用信息）嵌入包内，远程不可达时兜底
-  - from: resources/box.json
-    to: box.json
+  # v2.4.0 MCX：嵌入文件换加密容器 box.mcx（scripts/build-mcx.mjs 由 resources/box.json 生成）
+  - from: resources/box.mcx
+    to: box.mcx
     filter:
       - "**/*"
 

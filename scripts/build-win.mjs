@@ -45,6 +45,8 @@ function buildVersion(electronVersion, outName) {
   writeFileSync(PKG, JSON.stringify(pkg, null, 2))
   try {
     if (!run('pnpm', ['install', '--no-frozen-lockfile'])) return false
+    // v2.4.0 MCX：打包前把 resources/box.json 加密成嵌入文件 box.mcx（extraResources 引用）
+    if (!run('node', ['scripts/build-mcx.mjs'])) return false
     if (!run('pnpm', ['exec', 'electron-vite', 'build'])) return false
     const outPath = join(tmpBase, outName)
     rmDir(outPath)

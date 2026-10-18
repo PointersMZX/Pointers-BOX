@@ -10,3 +10,5 @@ android/build/
 android/local.properties
 android/.idea/
 android/capacitor-cordova-android-plugins/
+# v2.4.0 MCX：box.mcx 由 scripts/build-mcx.mjs 从 box.json 加密生成（打包前自动产出）
+resources/box.mcx

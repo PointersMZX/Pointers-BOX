@@ -13,6 +13,7 @@ import {
 import { join } from 'path'
 import { REMOTE_URLS } from '../shared/types'
 import { withCacheBust } from '../shared/refresh'
+import { openMuxed } from '../shared/mcx'
 import type {
   BoxInfo,
   DataSnapshot,
@@ -39,18 +40,20 @@ const FETCH_TIMEOUT_MS = 10_000
 // v2.2.0：box.json 应用信息嵌入包内（resources/box.json，随 asar 打包），
 // 远程不可达/未配置时以此默认值兜底——应用信息永远有值，不依赖网络
 // v2.3.1：文件缺失/损坏时最终回落到 shared 常量 EMBEDDED_BOX（双端同源）
+// v2.4.0：打包态嵌入文件换 MCX 加密容器 box.mcx（构建时由 box.json 加密生成），
+// 开发态仍读明文 box.json；两者都走 openMuxed 自动识别
 import { resourcesRoot } from './paths'
 import { EMBEDDED_BOX } from '../shared/embeddedBox'
 
 function loadEmbeddedBox(): BoxInfo {
   try {
-    // 打包态：process.resourcesPath/box.json；开发态：项目根 resources/box.json
+    // 打包态：process.resourcesPath/box.mcx（加密）；开发态：项目根 resources/box.json（明文）
     const embedded = [
-      join(process.resourcesPath || '', 'box.json'),
+      join(process.resourcesPath || '', 'box.mcx'),
       join(resourcesRoot(), 'box.json')
     ].find((p) => p && existsSync(p))
     if (embedded) {
-      const parsed = parseLooseJson(readFileSync(embedded, 'utf-8'))
+      const parsed = parseLooseJson(openMuxed(readFileSync(embedded, 'utf-8')))
       const validated = validateBoxInfo(parsed)
       if (validated) return validated
     }
@@ -166,7 +169,8 @@ function persistWork(key: WorkKey, rawText: string): void {
 async function fetchJson(url: string): Promise<unknown> {
   const { status, text } = await requestText(url, FETCH_TIMEOUT_MS)
   if (status < 200 || status >= 300) throw new Error(`HTTP ${status}`)
-  return parseLooseJson(text)
+  // v2.4.0 MCX：.mcx 加密文件自动解密；服务器过渡期直接给明文 JSON 也认（openMuxed 双格式）
+  return parseLooseJson(openMuxed(text))
 }
 
 function loadFromDisk(): MemoryState {
@@ -293,10 +297,10 @@ export async function refreshRemote(force = false): Promise<DataSnapshot> {
       persistWork('resources', JSON.stringify(resourcesResult.value, null, 2))
       okCount++
     } catch (e) {
-      warnings.push(`resources.json 解析失败（保留本地数据）：${msg(e)}`)
+      warnings.push(`resources.mcx 解析失败（保留本地数据）：${msg(e)}`)
     }
   } else if (resourcesResult && resourcesResult.status === 'rejected') {
-    warnings.push(`resources.json 获取失败：${msg(resourcesResult.reason)}`)
+    warnings.push(`resources.mcx 获取失败：${msg(resourcesResult.reason)}`)
   }
 
   // 2. 公告（独立文件）
@@ -310,11 +314,11 @@ export async function refreshRemote(force = false): Promise<DataSnapshot> {
         okCount++
       }
     } catch (e) {
-      warnings.push(`announcement.json 解析失败（保留本地数据）：${msg(e)}`)
+      warnings.push(`announcement.mcx 解析失败（保留本地数据）：${msg(e)}`)
     }
   } else if (announcementResult && announcementResult.status === 'rejected') {
     // 公告独立失败不影响其他数据；本地缓存/空公告保留
-    warnings.push(`announcement.json 获取失败：${msg(announcementResult.reason)}`)
+    warnings.push(`announcement.mcx 获取失败：${msg(announcementResult.reason)}`)
   }
 
   // 3. 应用信息（嵌入包内兜底；v2.3.1 字段级合并：远端缺的字段用嵌入默认补齐）
@@ -327,13 +331,13 @@ export async function refreshRemote(force = false): Promise<DataSnapshot> {
       persistWork('box', JSON.stringify(boxResult.value, null, 2))
       okCount++
     } catch (e) {
-      warnings.push(`box.json 解析失败（用包内默认）：${msg(e)}`)
+      warnings.push(`box.mcx 解析失败（用包内默认）：${msg(e)}`)
       s.box = s.box ?? loadEmbeddedBox()
     }
   } else if (boxResult && boxResult.status === 'rejected') {
     s.box = s.box ?? loadEmbeddedBox()
     if (s.box) okCount++
-    else warnings.push(`box.json 获取失败且无包内默认：${msg(boxResult.reason)}`)
+    else warnings.push(`box.mcx 获取失败且无包内默认：${msg(boxResult.reason)}`)
   }
 
   // 4. 版本日志（独立文件）
@@ -344,10 +348,10 @@ export async function refreshRemote(force = false): Promise<DataSnapshot> {
       persistWork('versionLogs', JSON.stringify(logsResult.value, null, 2))
       okCount++
     } catch (e) {
-      warnings.push(`boxbbgxrz.json 解析失败（保留本地数据）：${msg(e)}`)
+      warnings.push(`boxbbgxrz.mcx 解析失败（保留本地数据）：${msg(e)}`)
     }
   } else if (logsResult && logsResult.status === 'rejected') {
-    warnings.push(`boxbbgxrz.json 获取失败：${msg(logsResult.reason)}`)
+    warnings.push(`boxbbgxrz.mcx 获取失败：${msg(logsResult.reason)}`)
   }
 
   s.warnings = warnings
@@ -367,9 +371,13 @@ export async function restoreFromFile(target: RestoreTarget): Promise<boolean> {
   const picked = await dialog.showOpenDialog({
     title:
       target === 'resources'
-        ? '选择 resources.json 以恢复资源数据'
-        : '选择 box.json 以恢复应用信息',
-    filters: [{ name: 'JSON', extensions: ['json'] }],
+        ? '选择 resources.mcx 以恢复资源数据（旧版 .json 也支持）'
+        : '选择 box.mcx 以恢复应用信息（旧版 .json 也支持）',
+    // v2.4.0 MCX：.mcx 与旧 .json 都接受，读取时 openMuxed 自动识别格式
+    filters: [
+      { name: 'MCX 数据文件', extensions: ['mcx'] },
+      { name: 'JSON', extensions: ['json'] }
+    ],
     properties: ['openFile']
   })
   if (picked.canceled || picked.filePaths.length === 0) return false
@@ -377,7 +385,8 @@ export async function restoreFromFile(target: RestoreTarget): Promise<boolean> {
   if (!file) return false
 
   try {
-    const raw = parseLooseJson(readFileSync(file, 'utf-8'))
+    // v2.4.0 MCX：.mcx 自动解密，明文 JSON 原样通过（openMuxed 双格式）
+    const raw = parseLooseJson(openMuxed(readFileSync(file, 'utf-8')))
     if (target === 'resources') {
       const clean = validateResources(raw)
       backupWork('resources')
@@ -391,7 +400,7 @@ export async function restoreFromFile(target: RestoreTarget): Promise<boolean> {
       s.offline = true
     } else {
       const info = validateBoxInfo(raw)
-      if (!info) throw new DataFileError('box.json 结构错误：缺少 app_name')
+      if (!info) throw new DataFileError('box 数据文件结构错误：缺少 app_name')
       backupWork('box')
       atomicWrite(workPath('box'), JSON.stringify(raw, null, 2))
       // v2.3.1：与远程同规则——缺字段用包内嵌入值补齐
