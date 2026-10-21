@@ -120,14 +120,31 @@ function CollapsibleSection({
   )
 }
 
-function Row({ label, value }: { label: string; value?: string }) {
+function Row({
+  label,
+  value,
+  onClick
+}: {
+  label: string
+  value?: string
+  onClick?: () => void
+}) {
   if (!value) return null
   return (
-    <Flex gap={4} fontSize="sm">
+    <Flex
+      gap={4}
+      fontSize="sm"
+      cursor={onClick ? 'pointer' : undefined}
+      title={onClick ? '点击打开群邀请页' : undefined}
+    >
       <Text w="88px" flexShrink={0} color="ptextmuted">
         {label}
       </Text>
-      <Text color="ptext" wordBreak="break-all">
+      <Text
+        color="ptext"
+        wordBreak="break-all"
+        textDecoration={onClick ? 'underline dotted' : undefined}
+      >
         {value}
       </Text>
     </Flex>
@@ -396,6 +413,9 @@ function ThemeSectionInner() {
 const FEEDBACK_URL =
   'https://pointers-box.cc.cd/index.php/2026-09-06/pointers-box%e9%97%ae%e9%a2%98%e5%8f%8d%e9%a6%88/'
 
+// 社区 QQ 群邀请页（v2.4.0）：点「社区 QQ 群」行跳转群邀请页，桌面端跳内置浏览器 / Android 系统浏览器
+const QQ_GROUP_LINK = 'https://qm.qq.com/q/Y3C8nWKqME'
+
 // 设置（v2.2.0）：关于应用（置顶，简介默认收起）/ 主题（次之，默认收起点进才展开）/
 // 更新检查 / 下载设置 / 配置管理 / 浏览器设置 / 问题反馈（新增）；删除「数据恢复」
 export default function SettingsPage() {
@@ -563,7 +583,11 @@ export default function SettingsPage() {
         <Row label="应用名称" value={box?.app_name ?? 'Pointers-BOX'} />
         <Row label="应用版本" value={localVersion ? `v${localVersion}` : 'v2.4.0'} />
         <Row label="开发者" value={box?.developer} />
-        <Row label="社区 QQ 群" value={box?.community_qq} />
+        <Row
+          label="社区 QQ 群"
+          value={box?.community_qq}
+          onClick={() => void openClaim(QQ_GROUP_LINK)}
+        />
         <Row label="通用密钥" value={box?.general_key} />
         <Box>
           <Text fontSize="sm" color="ptextmuted" mb={1}>
