@@ -136,6 +136,7 @@ function Row({
       fontSize="sm"
       cursor={onClick ? 'pointer' : undefined}
       title={onClick ? '点击打开群邀请页' : undefined}
+      onClick={onClick}
     >
       <Text w="88px" flexShrink={0} color="ptextmuted">
         {label}
