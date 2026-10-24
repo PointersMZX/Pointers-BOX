@@ -169,14 +169,14 @@ export interface DataSnapshot {
 // v2.4.0 MCX：数据文件换自有加密容器 .mcx（内容仍是 JSON 明文，shared/mcx.ts 自动识别解密，
 // 明文 .json 内容同样兼容）；过渡期服务器旧 .json 继续留给旧版本客户端
 export const REMOTE_URLS = {
-  /** 资源列表（v2.2.0：独立文件，顶层为资源数组） */
-  resources: 'https://pointers-box.cc.cd/box/resources.mcx',
-  /** 公告（v2.2.0：独立文件，顶层为 { date, content }） */
-  announcement: 'https://pointers-box.cc.cd/box/announcement.mcx',
+  /** 资源列表（v2.2.0：独立文件，顶层为资源数组；v2.4.0：迁 api 子域） */
+  resources: 'https://api.pointers-box.cc.cd/box/resources.mcx',
+  /** 公告（v2.2.0：独立文件，顶层为 { date, content }；v2.4.0：迁 api 子域） */
+  announcement: 'https://api.pointers-box.cc.cd/box/announcement.mcx',
   /** 应用信息（v2.2.0：嵌入包内兜底，远程可覆盖） */
   box: 'https://pointers-box.cc.cd/box/box.mcx',
-  /** 版本更新日志（v2.2.0：独立文件） */
-  versionLogs: 'https://pointers-box.cc.cd/box/boxbbgxrz.mcx'
+  /** 版本更新日志（v2.2.0：独立文件；v2.4.0：迁 api 子域） */
+  versionLogs: 'https://api.pointers-box.cc.cd/box/boxbbgxrz.mcx'
 } as const
 
 // ── IPC 契约（开发计划 §5，先行冻结） ─────────────────────────

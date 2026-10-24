@@ -4,8 +4,8 @@
 // 接收方打开分享页 → 回平台领取。纯函数：桌面/Android 双端同源生成，可单测。
 import type { Resource } from './types'
 
-/** 平台分享页（与服务器 3 个 JSON 同目录；参考页见仓库 publish/share.html，由维护者上传） */
-export const SHARE_PAGE_URL = 'https://pointers-box.cc.cd/box/share.html'
+/** 平台分享页（与服务器 3 个 JSON 同目录、同 api 子域部署，相对路径即可取数；参考页见仓库 publish/share.html，由维护者上传） */
+export const SHARE_PAGE_URL = 'https://api.pointers-box.cc.cd/box/share.html'
 
 /** 资源的分享链接：平台分享页 + 资源 id（id 统一转字符串并编码，防特殊字符逃逸） */
 export function resourceShareUrl(resource: Pick<Resource, 'id'>): string {

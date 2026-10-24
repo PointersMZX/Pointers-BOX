@@ -17,7 +17,7 @@ const res: Resource = {
 
 describe('平台绑定分享（v2.4.0：分享文本只带平台分享页链接，不带资源链接本身）', () => {
   it('分享链接 = 平台分享页 + 资源 id', () => {
-    expect(resourceShareUrl(res)).toBe('https://pointers-box.cc.cd/box/share.html?id=7')
+    expect(resourceShareUrl(res)).toBe('https://api.pointers-box.cc.cd/box/share.html?id=7')
   })
 
   it('字符串 id 原样编码，特殊字符不逃逸查询参数', () => {
@@ -31,7 +31,7 @@ describe('平台绑定分享（v2.4.0：分享文本只带平台分享页链接�
         '资源名称：某资源',
         '这是一个资源简介',
         '点击下方链接在平台上领取：',
-        'https://pointers-box.cc.cd/box/share.html?id=7'
+        'https://api.pointers-box.cc.cd/box/share.html?id=7'
       ].join('\n')
     )
   })
