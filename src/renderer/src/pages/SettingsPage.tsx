@@ -26,7 +26,6 @@ import {
   FiChevronDown,
   FiChevronUp,
   FiDownload,
-  FiExternalLink,
   FiFolder,
   FiSave,
   FiRefreshCw,
@@ -410,10 +409,6 @@ function ThemeSectionInner() {
   )
 }
 
-// 问题反馈页（v2.2.0 新增）：桌面端跳内置浏览器 / Android 系统浏览器
-const FEEDBACK_URL =
-  'https://pointers-box.cc.cd/index.php/2026-09-06/pointers-box%e9%97%ae%e9%a2%98%e5%8f%8d%e9%a6%88/'
-
 // 社区 QQ 群邀请页（v2.4.0）：点「社区 QQ 群」行跳转群邀请页，桌面端跳内置浏览器 / Android 系统浏览器
 const QQ_GROUP_LINK = 'https://qm.qq.com/q/Y3C8nWKqME'
 
@@ -568,10 +563,7 @@ export default function SettingsPage() {
     }
   }
 
-  // 问题反馈（v2.2.0）：桌面端跳内置浏览器页 / Android 系统浏览器（v2.3.0）
-  const onFeedback = (): void => {
-    void openClaim(FEEDBACK_URL)
-  }
+  // 问题反馈入口已移除（v2.4.0：官方反馈页关闭），社区联系走「关于应用」的社区 QQ 群邀请页
 
   return (
     <Box p={6} maxW="820px">
@@ -876,24 +868,6 @@ export default function SettingsPage() {
             </RadioGroup>
           </Flex>
         )}
-      </Section>
-
-      {/* 问题反馈（v2.2.0 新增） */}
-      <Section title="问题反馈">
-        <Button
-          size="sm"
-          leftIcon={<FiExternalLink />}
-          variant="outline"
-          borderColor="pborder"
-          color="ptext"
-          _hover={{ bg: 'hoverbg' }}
-          onClick={onFeedback}
-        >
-          前往反馈页
-        </Button>
-        <Text fontSize="xs" color="ptextmuted">
-          通过浏览器打开官方反馈页（Android 端为系统浏览器），描述你遇到的问题即可
-        </Text>
       </Section>
     </Box>
   )
