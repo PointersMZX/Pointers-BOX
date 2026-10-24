@@ -3,6 +3,8 @@
 // 在此原样复用——SDF 圆角面板折射（circleMap 位移场 + 梯度方向）+ 7 色色散（红橙黄绿青蓝紫 7 tap）
 // + SDF 边缘流光（光向随时间摆动）+ 指针径向高光 + caustic 微光。
 // content 采样 = 主题背景栅格纹理（由 index.tsx 把 body 背景堆叠画到离屏 canvas 后上传）。
+// v2.4.0：胶囊轮廓（stadium SDF）——面板半径取短边一半，两端是半圆透镜；
+// 折射环沿胶囊端部弯曲出"真·胶囊液态玻璃"。DOM 面板配 border-radius:9999px（自动钳到短边一半）同形。
 
 export const vertexSrc = `
 attribute vec2 a_pos;
@@ -21,6 +23,8 @@ uniform sampler2D u_content;
 // 面板几何（CSS px）
 uniform vec2 u_panelSize;
 uniform float u_radius;
+// v2.4.0：胶囊形态（stadium SDF）——0 = 固定半径圆角矩形；1 = 胶囊（半径=短边一半，两端半圆透镜）
+uniform float u_shape;
 // 背景纹理（窗口内容区）
 uniform vec2 u_windowSize;
 uniform vec2 u_panelPos;
@@ -68,7 +72,11 @@ void main() {
   vec2 css = v_uv * u_panelSize;
   vec2 centered = css - halfSize;
 
-  float sd = sdRoundedRect(centered, halfSize, u_radius);
+  // v2.4.0：胶囊轮廓——半径在"固定圆角"与"短边一半（stadium）"之间按 u_shape 混合；
+  // u_shape=1 时两端为半圆透镜，折射环沿弧弯，即"真·胶囊液态玻璃"
+  float R = mix(u_radius, min(halfSize.x, halfSize.y), u_shape);
+
+  float sd = sdRoundedRect(centered, halfSize, R);
   float coverage = smoothstep(0.0, 2.0, -sd);
   if (coverage <= 0.0001) {
     gl_FragColor = vec4(0.0);
@@ -80,7 +88,7 @@ void main() {
   if (-sd < u_refractionHeight) {
     sd = min(sd, 0.0);
     float d = circleMap(1.0 - -sd / u_refractionHeight) * u_refractionAmount;
-    float gr = min(u_radius * 1.5, min(halfSize.x, halfSize.y));
+    float gr = min(R * 1.5, min(halfSize.x, halfSize.y));
     vec2 grad = normalize(gradSdRoundedRect(centered, halfSize, gr) + u_depthEffect * normalize(centered + vec2(0.001)));
     dispDir = d * grad;
   }
@@ -136,7 +144,7 @@ void main() {
 
   // ---------- SDF 边缘光（Metric s3）：流光方向随时间摆动 ----------
   float ang = 1.5708 + 0.42 * sin(u_time * 0.21);
-  float gr2 = min(u_radius * 1.5, min(halfSize.x, halfSize.y));
+  float gr2 = min(R * 1.5, min(halfSize.x, halfSize.y));
   vec2 g2 = normalize(gradSdRoundedRect(centered, halfSize, gr2));
   vec2 nrm = vec2(cos(ang), sin(ang));
   float dl = dot(g2, nrm);

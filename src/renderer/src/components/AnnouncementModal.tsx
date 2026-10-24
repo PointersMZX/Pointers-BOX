@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { FiBell, FiX } from 'react-icons/fi'
 import type { Announcement } from '../../../shared/types'
 import GlassButton from './GlassButton'
+import { SPRING } from '../theme/motion'
 
 interface Props {
   announcement: Announcement | null
@@ -63,8 +64,8 @@ export default function AnnouncementModal({ announcement, open, onClose }: Props
               display: 'flex',
               flexDirection: 'column'
             }}
-            initial={{ scale: 0.96, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
+            initial={{ scale: 0.9, opacity: 0, y: 16 }}
+            animate={{ scale: 1, opacity: 1, y: 0, transition: { ...SPRING.settle } }}
             exit={{ scale: 0.96, opacity: 0, transition: { duration: 0.18, ease: 'easeIn' } }}
             onClick={(e) => e.stopPropagation()}
           >

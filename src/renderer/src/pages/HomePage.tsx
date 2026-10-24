@@ -92,6 +92,7 @@ function resourceGridColumns(layout: HomeLayout): GridColumns {
 }
 
 // ── 液态玻璃卡片容器 ─────────────────────────────────────────────
+// v2.4.0：悬停时描边提亮 + 柔和浮起（玻璃卡"浮出"一层）
 function GlassCard({
   icon,
   title,
@@ -117,6 +118,8 @@ function GlassCard({
       p={5}
       minH={minH}
       className="pbox-blur-panel"
+      transition="border-color .2s ease, box-shadow .28s ease"
+      _hover={{ borderColor: 'brand.400', boxShadow: '0 8px 28px rgba(0,0,0,0.22)' }}
     >
       {(title || right) && (
         <Flex align="center" justify="space-between" mb={3} gap={3}>

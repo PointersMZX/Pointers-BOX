@@ -10,27 +10,31 @@ import { fragmentSrc, vertexSrc } from './shaders'
 // 面板变体参数（沿 XingyuMusic 调优值：sidebar=轻（toolbar 参数），bar=强（player 参数））
 // v2.3.1：玻璃效果提强——折射带加宽、折射量/色散翻倍、边缘流光更亮更宽、
 // 指针高光更强、磨砂模糊加深（折射源实体感更足）
+// v2.4.0：胶囊形态（shape=1）——SDF 半径钳到短边一半（stadium 两端半圆透镜）；
+// 折射/色散/高光再提一档，让胶囊端部的透镜折射更明显
 const VARIANT_PARAMS = {
   sidebar: {
     radius: 10,
-    refractionHeight: 34,
-    refractionAmount: 11,
-    depthEffect: 0.28,
-    chromatic: 2.6,
+    shape: 1,
+    refractionHeight: 44,
+    refractionAmount: 15,
+    depthEffect: 0.3,
+    chromatic: 3.2,
     edgeFalloff: 2.2,
-    sheen: 0.95,
-    glow: 1.6,
+    sheen: 1.05,
+    glow: 1.9,
     blur: 2.5
   },
   bar: {
     radius: 14,
-    refractionHeight: 56,
-    refractionAmount: 18,
+    shape: 1,
+    refractionHeight: 64,
+    refractionAmount: 22,
     depthEffect: 0.34,
-    chromatic: 3.4,
+    chromatic: 4.2,
     edgeFalloff: 1.8,
-    sheen: 1.15,
-    glow: 2.1,
+    sheen: 1.3,
+    glow: 2.4,
     blur: 3
   }
 }
@@ -389,6 +393,7 @@ export default function LiquidGlass({ target, variant = 'bar' }: Props) {
         'u_panelPos',
         'u_windowSize',
         'u_radius',
+        'u_shape',
         'u_refractionHeight',
         'u_refractionAmount',
         'u_depthEffect',
@@ -505,6 +510,7 @@ export default function LiquidGlass({ target, variant = 'bar' }: Props) {
       g.bindTexture(g.TEXTURE_2D, contentTex)
       g.uniform2f(uni('u_panelSize'), rect.width, rect.height)
       g.uniform1f(uni('u_radius'), param.radius)
+      g.uniform1f(uni('u_shape'), param.shape)
       g.uniform2f(
         uni('u_windowSize'),
         root.clientWidth || rect.width * 3,

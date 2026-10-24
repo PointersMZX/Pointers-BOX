@@ -249,13 +249,42 @@ function makeStyles(effectiveAccent: string) {
       '.chakra-button, a, [role="button"]': {
         transition: 'color .18s ease, background-color .18s ease, border-color .18s ease, opacity .18s ease'
       },
-      // 形变微动效（悬停轻微上浮，无圆角形变）
+      // 形变微动效（v2.4.0：悬停轻浮 + 玻璃卡内缘高光提亮）
       '.pbox-morph': {
         transition:
-          'transform .22s ease-out, background-color .18s ease, border-color .18s ease'
+          'transform .22s ease-out, box-shadow .28s ease, background-color .18s ease, border-color .18s ease'
       },
       '.pbox-morph:hover': {
-        transform: 'translateY(-1px)'
+        transform: 'translateY(-2px)'
+      },
+      // v2.4.0：胶囊流光（GlassButton 悬停时一道液面高光扫过；层裁圆角、外阴影不受影响）
+      '.pbox-glint-layer': {
+        position: 'absolute',
+        inset: 0,
+        borderRadius: 'inherit',
+        overflow: 'hidden',
+        pointerEvents: 'none'
+      },
+      '.pbox-glint-layer::after': {
+        content: '""',
+        position: 'absolute',
+        inset: 0,
+        borderRadius: 'inherit',
+        background:
+          'linear-gradient(105deg, transparent 34%, rgba(255,255,255,0.30) 48%, transparent 62%)',
+        transform: 'translateX(-130%)',
+        transition: 'transform 0.6s cubic-bezier(0.2, 0, 0, 1)',
+        willChange: 'transform'
+      },
+      '.pbox-glint:hover:not(:disabled) > .pbox-glint-layer::after': {
+        transform: 'translateX(130%)'
+      },
+      // v2.4.0：侧栏导航悬停胶囊（非激活项）——玻璃胶囊内嵌高亮
+      '.pbox-nav-item': {
+        transition: 'background-color .18s ease, color .18s ease'
+      },
+      '.pbox-nav-item:not(.pbox-nav-item-active):hover': {
+        background: 'var(--chakra-colors-hoverbg, rgba(255,255,255,0.08))'
       },
       // 居中液态玻璃弹窗（blur40 + 圆角20 + 细白半透边框）
       '.pbox-modal-overlay': {
@@ -378,11 +407,12 @@ function makeGlassExtra(surface: SurfaceTokens, blob1: string, chrome: ChromeTok
         boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.10)'
       },
       // v2.3.1：chrome 件金色环境辉光（仅紫金黑非空；其余主题 transparent 无观感）
+      // v2.4.0：胶囊化——加悬浮投影（板体离开边缘漂浮），外阴影 + 金辉光 + 内缘发丝
       '#pbox-sidebar': {
-        boxShadow: `0 0 26px var(--pbox-gold-glow, transparent), inset 0 1px 0 rgba(255,255,255,0.07)`
+        boxShadow: `0 10px 34px rgba(0,0,0,0.38), 0 0 26px var(--pbox-gold-glow, transparent), inset 0 1px 0 rgba(255,255,255,0.07)`
       },
       '#pbox-bottomnav': {
-        boxShadow: `0 0 26px var(--pbox-gold-glow, transparent), inset 0 1px 0 rgba(255,255,255,0.07)`
+        boxShadow: `0 -6px 26px rgba(0,0,0,0.30), 0 0 26px var(--pbox-gold-glow, transparent), inset 0 1px 0 rgba(255,255,255,0.07)`
       },
       // v2.3.1：侧栏 Logo 金条（紫金黑：金色渐隐横条；其余主题透明）
       '.pbox-logo': {

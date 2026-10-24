@@ -16,6 +16,7 @@ import type { Resource } from '../../../shared/types'
 import { getResourceShares } from '../../../shared/validate'
 import { openClaim, shareResource } from '../platform'
 import GlassButton from './GlassButton'
+import { SPRING } from '../theme/motion'
 
 interface Props {
   resource: Resource | null
@@ -79,10 +80,9 @@ export default function ResourceDetailModal({ resource, isOpen, onClose }: Props
               display: 'flex',
               flexDirection: 'column'
             }}
-            initial={{ scale: 0.96, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
+            initial={{ scale: 0.9, opacity: 0, y: 16 }}
+            animate={{ scale: 1, opacity: 1, y: 0, transition: { ...SPRING.settle } }}
             exit={{ scale: 0.96, opacity: 0, transition: { duration: 0.18, ease: 'easeIn' } }}
-            transition={{ duration: 0.2, ease: 'easeOut' }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* 头部 */}

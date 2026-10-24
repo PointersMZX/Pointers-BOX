@@ -32,7 +32,13 @@ export default function Sidebar() {
       flexShrink={0}
       bg="var(--pbox-bg-sidebar)"
       color="ptextmuted"
-      py={4}
+      // v2.4.0：玻璃开时侧栏 = 悬浮胶囊板（stadium 两端半圆透镜；SDF 半径钳到短边一半与之同形）
+      // —— 上浮留出空隙 + 顶部加内边距让 Logo 落进胶囊曲线之内
+      py={isGlassOn ? 0 : 4}
+      pt={isGlassOn ? 11 : 4}
+      pb={isGlassOn ? 2 : 4}
+      margin={isGlassOn ? '10px 12px 10px 10px' : 0}
+      borderRadius={isGlassOn ? '9999px' : undefined}
       display="flex"
       flexDirection="column"
       gap={1}
@@ -56,28 +62,39 @@ export default function Sidebar() {
             px={5}
             py={2.5}
             mx={2}
-            rounded="md"
+            rounded="full"
             fontSize="sm"
             fontWeight={active ? 'semibold' : 'normal'}
             color={active ? 'white' : 'ptextmuted'}
             _hover={{ color: active ? 'white' : 'ptext' }}
             onClick={() => setPage(p)}
             position="relative"
+            className={active ? 'pbox-nav-item pbox-nav-item-active' : 'pbox-nav-item'}
           >
             {active && (
               <motion.span
                 layoutId="sidebar-active-pill"
-                transition={{ type: 'spring', stiffness: 420, damping: 36 }}
+                transition={{ type: 'spring', stiffness: 480, damping: 34 }}
                 style={{
                   position: 'absolute',
                   inset: 0,
-                  borderRadius: '6px',
-                  // v2.3.1：胶囊背景按主题（紫金黑 = 紫金渐变）
-                  background: 'var(--pbox-pill, var(--chakra-colors-brand-600))'
+                  borderRadius: '9999px',
+                  // v2.3.1：胶囊背景按主题（紫金黑 = 紫金渐变）；v2.4.0：加同色辉光
+                  background: 'var(--pbox-pill, var(--chakra-colors-brand-600))',
+                  boxShadow: '0 0 18px var(--pbox-accent-soft, rgba(124,92,255,0.35))'
                 }}
               />
             )}
-            <item.icon size={16} style={{ position: 'relative', zIndex: 1 }} />
+            <item.icon
+              size={16}
+              style={{
+                position: 'relative',
+                zIndex: 1,
+                // v2.4.0：激活项图标微放大（弹簧归位）
+                transform: active ? 'scale(1.12)' : 'scale(1)',
+                transition: 'transform .22s cubic-bezier(.34,1.56,.64,1)'
+              }}
+            />
             <span style={{ position: 'relative', zIndex: 1 }}>{item.label}</span>
           </Flex>
         )
