@@ -51,6 +51,6 @@ describe('会话重置存储清单（PRD 4.2/7.3）', () => {
   })
 
   it('起始页指向平台站点', () => {
-    expect(DEFAULT_START_URL).toMatch(/^https:\/\/pointers-box\.cc\.cd/)
+    expect(DEFAULT_START_URL).toMatch(/^https:\/\/www\.pointers-box\.cc\.cd/)
   })
 })

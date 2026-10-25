@@ -1,5 +1,5 @@
 // 内置浏览器共享常量与地址栏归一化（PRD 4.2）
-export const DEFAULT_START_URL = 'https://pointers-box.cc.cd/'
+export const DEFAULT_START_URL = 'https://www.pointers-box.cc.cd/'
 
 // 会话重置清除的存储类型（PRD 4.2 重置触发条件）
 export const RESET_STORAGES = [
