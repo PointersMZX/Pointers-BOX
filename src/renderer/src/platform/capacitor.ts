@@ -44,7 +44,7 @@ async function fetchLooseJson(url: string): Promise<unknown> {
   })
   if (res.status < 200 || res.status >= 300) throw new Error(`HTTP ${res.status}`)
   // CapacitorHttp 可能已自动解析 JSON，也可能返回文本
-  // v2.4.0 MCX：.mcx 以纯文本（base64）回来时先 openMuxed 自动识别/解密，明文 JSON 原样通过
+  // v2.4.0 MCX：.mcx 以纯文本（base64）回来时 openMuxed 自动识别/解密；服务器数据面只走 .mcx
   if (typeof res.data === 'string') return parseLooseJson(openMuxed(res.data))
   return res.data
 }

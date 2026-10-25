@@ -13,7 +13,7 @@
 // 用法：
 //   encryptMuxed(jsonText)  → .mcx 文件内容（base64 单行）
 //   openMuxed(fileContent)  → 统一读取入口：自动识别，.mcx 解密、明文 JSON 原样返回
-//                              （过渡期服务器新旧文件可混用，旧 .json 直接喂进来也认）
+//                              （数据面只走 .mcx；明文直通仅为本地缓存/dev/恢复的防御兜底）
 //   isMuxed / decryptMuxed  → 显式判断/解密
 //
 // 安全等级（设计定位）：挡住「把后缀改成 txt 就能看/改文件」的大多数情况——
@@ -178,7 +178,7 @@ export function isMuxed(raw: string): boolean {
   return decryptMuxed(raw) !== null
 }
 
-/** 统一读取入口：mcx 返回解密后的 JSON 文本；明文（旧 .json）原样返回——过渡期双格式并存 */
+/** 统一读取入口：mcx 返回解密后的 JSON 文本；非 mcx 内容原样直通（本地缓存/dev 嵌入/恢复文件的防御兜底，服务器数据面只走 .mcx） */
 export function openMuxed(raw: string): string {
   const decrypted = decryptMuxed(raw)
   return decrypted ?? raw

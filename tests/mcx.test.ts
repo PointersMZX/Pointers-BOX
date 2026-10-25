@@ -73,10 +73,10 @@ describe('v2.4.0 MCX 数据文件（品牌自有加密容器）', () => {
     expect(decryptMuxed(mcx)).toBe(json)
   })
 
-  it('REMOTE_URLS 已切换为 .mcx（数据 3 件 + 分享页迁 api 子域；box 嵌入兜底保持旧域）', () => {
+  it('REMOTE_URLS 已切换为 .mcx（4 个数据源全部迁 api 子域，不再兼容 .json）', () => {
     expect(REMOTE_URLS.resources).toBe('https://api.pointers-box.cc.cd/box/resources.mcx')
     expect(REMOTE_URLS.announcement).toBe('https://api.pointers-box.cc.cd/box/announcement.mcx')
-    expect(REMOTE_URLS.box).toBe('https://pointers-box.cc.cd/box/box.mcx')
+    expect(REMOTE_URLS.box).toBe('https://api.pointers-box.cc.cd/box/box.mcx')
     expect(REMOTE_URLS.versionLogs).toBe('https://api.pointers-box.cc.cd/box/boxbbgxrz.mcx')
   })
 })

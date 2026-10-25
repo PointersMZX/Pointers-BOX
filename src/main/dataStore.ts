@@ -169,7 +169,7 @@ function persistWork(key: WorkKey, rawText: string): void {
 async function fetchJson(url: string): Promise<unknown> {
   const { status, text } = await requestText(url, FETCH_TIMEOUT_MS)
   if (status < 200 || status >= 300) throw new Error(`HTTP ${status}`)
-  // v2.4.0 MCX：.mcx 加密文件自动解密；服务器过渡期直接给明文 JSON 也认（openMuxed 双格式）
+  // v2.4.0 MCX：.mcx 加密文件自动解密；服务器数据面只走 .mcx（openMuxed 明文直通仅为防御兜底，正常不会命中）
   return parseLooseJson(openMuxed(text))
 }
 
@@ -373,7 +373,7 @@ export async function restoreFromFile(target: RestoreTarget): Promise<boolean> {
       target === 'resources'
         ? '选择 resources.mcx 以恢复资源数据（旧版 .json 也支持）'
         : '选择 box.mcx 以恢复应用信息（旧版 .json 也支持）',
-    // v2.4.0 MCX：.mcx 与旧 .json 都接受，读取时 openMuxed 自动识别格式
+    // v2.4.0 MCX：.mcx 自动解密；本地 .json 备份文件同样可恢复（openMuxed 明文直通）
     filters: [
       { name: 'MCX 数据文件', extensions: ['mcx'] },
       { name: 'JSON', extensions: ['json'] }
@@ -385,7 +385,7 @@ export async function restoreFromFile(target: RestoreTarget): Promise<boolean> {
   if (!file) return false
 
   try {
-    // v2.4.0 MCX：.mcx 自动解密，明文 JSON 原样通过（openMuxed 双格式）
+    // v2.4.0 MCX：.mcx 自动解密，明文 .json 备份原样通过
     const raw = parseLooseJson(openMuxed(readFileSync(file, 'utf-8')))
     if (target === 'resources') {
       const clean = validateResources(raw)
