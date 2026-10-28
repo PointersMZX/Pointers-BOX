@@ -282,7 +282,7 @@ export async function androidCheckUpdate(): Promise<UpdateCheckResult> {
 }
 
 /** Android 应用版本（与 android/app/build.gradle versionName 同步维护） */
-export const ANDROID_APP_VERSION = '2.4.0'
+export const ANDROID_APP_VERSION = '2.5.0'
 
 export function isAndroidNative(): boolean {
   return Capacitor.isNativePlatform()
