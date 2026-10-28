@@ -45,11 +45,21 @@ uniform float u_pointerA;   // 指针在场强度 0..1
 uniform float u_sheen;      // 顶部镜面光强度
 uniform float u_glow;       // 指针高光强度
 uniform float u_time;
+// v2.5.0：六层模型的表面/光照补齐
+uniform float u_grain;      // 磨砂颗粒（打散纯 blur 的塑料感；静态噪声不闪）
+uniform float u_innerGlow;  // 内泛光（SDF 内部雾状提亮 = 体积感）
 
 // SDF：圆角矩形（Metric s2 同款）
 float sdRoundedRect(vec2 p, vec2 b, float r) {
   vec2 q = abs(p) - b + r;
   return min(max(q.x, q.y), 0.0) + length(max(q, 0.0)) - r;
+}
+
+// 标量噪声（静态颗粒用；输出 0..1）
+float hash21(vec2 p) {
+  p = fract(p * vec2(234.34, 435.345));
+  p += dot(p, p + 34.23);
+  return fract(p.x * p.y);
 }
 
 vec2 gradSdRoundedRect(vec2 p, vec2 b, float r) {
@@ -161,6 +171,14 @@ void main() {
   float gd = distance(css, u_pointer);
   float glow = (1.0 - smoothstep(45.0, 130.0, gd)) * u_pointerA * u_glow;
   rgb += u_glowColor.rgb * glow;
+
+  // ---------- v2.5.0：内泛光 + 磨砂颗粒（表面/光照层补齐） ----------
+  // 内泛光：距边缘越深越亮的雾状提亮（glass 体感）
+  float inner = u_innerGlow * smoothstep(0.0, 0.45, -sd);
+  rgb += vec3(inner);
+  // 磨砂颗粒：静态噪声微抖（±grain/2），打散大面积 blur 的塑料感
+  float grain = (hash21(css) - 0.5) * u_grain;
+  rgb += grain;
 
   // ---------- 合成（v2.3.1：边缘/镜面/高光权重提强，玻璃体更"亮"） ----------
   float alpha = coverage * clamp(u_base.a + u_tint.a * 0.9 + rim * 0.9 + sheen * 0.8 + glow * 0.8, 0.0, 0.99);

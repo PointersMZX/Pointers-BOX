@@ -51,15 +51,7 @@ import { backend, openClaim } from '../platform'
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <Box
-      bg="panel"
-      borderWidth="1px"
-      borderColor="pborder"
-      rounded="lg"
-      p={5}
-      mb={4}
-      className="pbox-blur-panel"
-    >
+    <Box rounded="lg" p={5} mb={4} className="pbox-glass">
       <Heading size="sm" mb={3} color="ptext">
         {title}
       </Heading>
@@ -83,14 +75,11 @@ function CollapsibleSection({
   const [open, setOpen] = useState(defaultOpen)
   return (
     <Box
-      bg="panel"
-      borderWidth="1px"
-      borderColor="pborder"
       rounded="lg"
       mb={4}
       px={5}
       py={0}
-      className="pbox-blur-panel"
+      className="pbox-glass"
       overflow="hidden"
     >
       <Flex

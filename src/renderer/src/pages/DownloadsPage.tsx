@@ -29,14 +29,7 @@ function TaskRow({ task }: { task: DownloadTask }) {
   const resume = useDownloadStore((s) => s.resume)
   const cancel = useDownloadStore((s) => s.cancel)
   return (
-    <Box
-      bg="panel"
-      borderWidth="1px"
-      borderColor="pborder"
-      rounded="lg"
-      p={3}
-      className="pbox-blur-panel"
-    >
+    <Box rounded="lg" p={3} className="pbox-glass">
       <HStack justify="space-between" mb={2}>
         <HStack minW={0} spacing={2}>
           {task.source === 'update' && (
@@ -144,15 +137,7 @@ export default function DownloadsPage() {
       </Heading>
 
       {/* 下载路径（PRD 4.3：显示当前路径 + 更改 + 下载中锁定 + 打开文件夹） */}
-      <Box
-        bg="panel"
-        borderWidth="1px"
-        borderColor="pborder"
-        rounded="lg"
-        p={4}
-        mb={6}
-        className="pbox-blur-panel"
-      >
+      <Box rounded="lg" p={4} mb={6} className="pbox-glass">
         <Flex align="center" justify="space-between" gap={3} wrap="wrap">
           <HStack minW={0}>
             <Icon as={FiFolder} color="brand.400" />
@@ -198,15 +183,7 @@ export default function DownloadsPage() {
 
       {/* 下载历史（v2.0.0：设置内“保留下载历史”开启时展示） */}
       {config?.keepDownloadHistory && (
-        <Box
-          bg="panel"
-          borderWidth="1px"
-          borderColor="pborder"
-          borderRadius="lg"
-          p={4}
-          mb={4}
-          className="pbox-blur-panel"
-        >
+        <Box borderRadius="lg" p={4} mb={4} className="pbox-glass">
           <Flex align="center" justify="space-between" mb={3}>
             <HStack>
               <Text fontWeight="bold" color="ptext" fontSize="sm">

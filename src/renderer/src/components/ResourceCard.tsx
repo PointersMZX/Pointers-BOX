@@ -48,18 +48,15 @@ export default function ResourceCard({ resource, onOpen, minH = '170px' }: Props
         aria-label={`查看资源详情：${resource.name}`}
       >
         <Box
-          bg="panel"
-          shadow="sm"
-          borderWidth="1px"
-          borderColor="pborder"
           borderRadius="lg"
           p={4}
           display="flex"
           flexDirection="column"
           gap={2}
           minH={minH}
-          className="pbox-morph"
-          _hover={{ shadow: 'md', borderColor: 'brand.400', bg: 'panelstrong' }}
+          className="pbox-glass pbox-morph"
+          transition="border-color .2s ease"
+          _hover={{ borderColor: 'brand.400' }}
         >
           <HStack justify="space-between" align="flex-start">
             <Text fontWeight="bold" noOfLines={1} title={resource.name} color="ptext" flex="1">

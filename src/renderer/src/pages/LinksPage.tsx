@@ -209,14 +209,12 @@ export default function LinksPage() {
           {links.map((link) => (
             <Box
               key={link.id}
-              bg="panel"
-              borderWidth="1px"
-              borderColor="pborder"
               borderRadius="lg"
               p={4}
               display="flex"
               flexDirection="column"
               gap={2}
+              className="pbox-glass"
             >
               <Flex align="flex-start" justify="space-between" gap={3}>
                 <Box minW={0} flex="1">
@@ -284,8 +282,8 @@ export default function LinksPage() {
         isCentered
         closeOnEsc={!formOpen}
       >
-        <ModalOverlay />
-        <ModalContent bg="panelstrong" borderRadius="lg" mx={4}>
+        <ModalOverlay className="pbox-modal-overlay" />
+        <ModalContent className="pbox-modal-panel" mx={4}>
           <ModalHeader color="ptext" fontSize="md">
             {editingId ? '编辑链接' : '新建链接'}
           </ModalHeader>
@@ -356,8 +354,8 @@ export default function LinksPage() {
         onClose={() => setDeleteTarget(null)}
         isCentered
       >
-        <AlertDialogOverlay>
-          <AlertDialogContent bg="panelstrong" mx={4}>
+        <AlertDialogOverlay className="pbox-modal-overlay">
+          <AlertDialogContent className="pbox-modal-panel" mx={4}>
             <AlertDialogHeader fontSize="md" color="ptext">
               删除链接
             </AlertDialogHeader>

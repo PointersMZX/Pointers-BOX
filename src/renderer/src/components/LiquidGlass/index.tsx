@@ -23,7 +23,10 @@ const VARIANT_PARAMS = {
     edgeFalloff: 2.2,
     sheen: 1.05,
     glow: 1.9,
-    blur: 2.5
+    blur: 2.5,
+    // v2.5.0：磨砂颗粒（打散塑料感）+ 内泛光（体积感）
+    grain: 0.05,
+    innerGlow: 0.10
   },
   bar: {
     radius: 14,
@@ -35,7 +38,9 @@ const VARIANT_PARAMS = {
     edgeFalloff: 1.8,
     sheen: 1.3,
     glow: 2.4,
-    blur: 3
+    blur: 3,
+    grain: 0.06,
+    innerGlow: 0.12
   }
 }
 
@@ -407,7 +412,9 @@ export default function LiquidGlass({ target, variant = 'bar' }: Props) {
         'u_pointerA',
         'u_sheen',
         'u_glow',
-        'u_time'
+        'u_time',
+        'u_grain',
+        'u_innerGlow'
       ]) {
         uniforms[name] = g.getUniformLocation(p, name)
       }
@@ -531,6 +538,9 @@ export default function LiquidGlass({ target, variant = 'bar' }: Props) {
       g.uniform1f(uni('u_sheen'), param.sheen)
       g.uniform1f(uni('u_glow'), param.glow)
       g.uniform1f(uni('u_time'), performance.now() / 1000)
+      // v2.5.0：磨砂颗粒 + 内泛光
+      g.uniform1f(uni('u_grain'), param.grain)
+      g.uniform1f(uni('u_innerGlow'), param.innerGlow)
       g.drawArrays(g.TRIANGLE_STRIP, 0, 4)
     }
 

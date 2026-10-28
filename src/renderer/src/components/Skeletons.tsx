@@ -9,9 +9,7 @@ export function CardGridSkeleton({ count = 3 }: { count?: number }) {
       {Array.from({ length: count }, (_, i) => (
         <Box
           key={i}
-          bg="panel"
-          borderWidth="1px"
-          borderColor="pborder"
+          className="pbox-glass"
           borderRadius="lg"
           p={4}
           minH="170px"
@@ -33,7 +31,7 @@ export function RowSkeleton({ count = 4 }: { count?: number }) {
   return (
     <VStack align="stretch" spacing={3}>
       {Array.from({ length: count }, (_, i) => (
-        <Box key={i} bg="panel" borderWidth="1px" borderColor="pborder" borderRadius="lg" p={4}>
+        <Box key={i} className="pbox-glass" borderRadius="lg" p={4}>
           <Skeleton height="14px" width="45%" mb={2} />
           <Skeleton height="10px" width="80%" />
         </Box>

@@ -76,16 +76,8 @@ export default function UpdateChannelModal({ onChosen }: Props) {
       isCentered
       size="md"
     >
-      <ModalOverlay bg="rgba(2,6,18,0.55)" />
-      <ModalContent
-        bg="panelstrong"
-        borderRadius="18px"
-        border="1px solid"
-        borderColor="pborder"
-        boxShadow="0 24px 64px rgba(2,6,18,0.4)"
-        p={6}
-        userSelect="none"
-      >
+      <ModalOverlay className="pbox-modal-overlay" />
+      <ModalContent className="pbox-modal-panel" p={6} userSelect="none">
         <Text fontSize="lg" fontWeight="700">
           选择更新渠道
         </Text>

@@ -21,12 +21,9 @@ export default function EmptyState({ icon, title, description, action }: Props) 
           w="64px"
           h="64px"
           borderRadius="full"
-          bg="panel"
-          borderWidth="1px"
-          borderColor="pborder"
           color="var(--pbox-accent)"
           fontSize="24px"
-          className="pbox-blur-panel"
+          className="pbox-glass"
         >
           {icon}
         </Box>

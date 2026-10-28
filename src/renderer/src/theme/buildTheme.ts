@@ -280,6 +280,27 @@ const SURFACES: Record<ThemeKey, SurfaceTokens> = {
   }
 }
 
+// v2.5.0：玻璃关时的朴素面板值（.pbox-glass 变量退化）——半透配方换成实色面板，
+// backdrop 直接给 none（不产生无谓的合成开销），棱线/泛光/光泽/光斑全关
+function flatMaterial(s: SurfaceTokens): SurfaceMaterial {
+  return {
+    blur: 0,
+    saturate: 100,
+    brightness: 1,
+    glassHi: s.panelStrong,
+    glassLo: s.panel,
+    border: s.border,
+    rimTop: 'transparent',
+    rimBottom: 'transparent',
+    innerGlow: 'transparent',
+    sheenColor: 'transparent',
+    spot: 'transparent',
+    shadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.06)',
+    conic: 'none',
+    grainOpacity: 0
+  }
+}
+
 // 玻璃 CSS 变量（按主题定死；v2.3.1：整体提一档——边缘发丝/染色/底板更明显；
 // WebGL 玻璃不可用时仅 CSS 玻璃，变量不参与）
 function glassVarsOf(themeKey: ThemeKey, accent: string): GlassCssVars {
@@ -353,6 +374,43 @@ function makeStyles(effectiveAccent: string) {
       // v2.3.0：统一平滑过渡（替代过冲贝塞尔，观感更沉稳）
       '.chakra-button, a, [role="button"]': {
         transition: 'color .18s ease, background-color .18s ease, border-color .18s ease, opacity .18s ease'
+      },
+      // ── v2.5.0 内容区玻璃材质类（六层模型的表面/光照/颜色层 CSS 落地）──
+      // 全主题注册：玻璃开时消费 --pbox-g-* 玻璃配方；玻璃关时变量退化为朴素面板值
+      // （flatMaterial），组件无条件挂用、无需感知玻璃开关。
+      // 玻璃底对角渐变 + backdrop 磨砂/提饱和/提亮 + 双棱线 + 内泛光 + 外投影
+      '.pbox-glass': {
+        position: 'relative',
+        isolation: 'isolate',
+        overflow: 'hidden',
+        background: 'linear-gradient(135deg, var(--pbox-g-hi) 0%, var(--pbox-g-lo) 100%)',
+        backdropFilter: 'var(--pbox-g-backdrop, none)',
+        WebkitBackdropFilter: 'var(--pbox-g-backdrop, none)',
+        border: '1px solid var(--pbox-g-border)',
+        boxShadow:
+          'inset 0 1px 0 var(--pbox-g-rim-top), inset 0 -1px 0 var(--pbox-g-rim-bottom), inset 0 0 28px var(--pbox-g-inner-glow), var(--pbox-g-shadow)'
+      },
+      // 指针光斑：跟全局 --mx/--my（液体阻尼 lerp）在玻璃表面游走，hover 时浮现；
+      // 玻璃关时 --pbox-g-spot 为透明 → 永不显现
+      '.pbox-glass::after': {
+        content: '""',
+        position: 'absolute',
+        inset: 0,
+        zIndex: -1,
+        pointerEvents: 'none',
+        background:
+          'radial-gradient(280px circle at calc(50% + var(--mx, 0) * 46%) calc(50% + var(--my, 0) * 46%), var(--pbox-g-spot), transparent 62%)',
+        opacity: 0,
+        transition: 'opacity .45s ease'
+      },
+      '.pbox-glass:hover::after': {
+        opacity: 1
+      },
+      // 减少动效：指针光斑不做淡入过渡
+      '@media (prefers-reduced-motion: reduce)': {
+        '.pbox-glass::after': {
+          transition: 'none'
+        }
       },
       // 形变微动效（v2.4.0：悬停轻浮 + 玻璃卡内缘高光提亮）
       '.pbox-morph': {
@@ -514,22 +572,8 @@ function makeGlassExtra(surface: SurfaceTokens, blob1: string, chrome: ChromeTok
         backgroundImage:
           "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>\")"
       },
-      // ── v2.5.0 内容区玻璃材质类（六层模型的表面/光照/颜色层 CSS 落地）──
-      // 玻璃底对角渐变 + backdrop 磨砂/提饱和/提亮 + 双棱线 + 内泛光 + 外投影
-      '.pbox-glass': {
-        position: 'relative',
-        isolation: 'isolate',
-        overflow: 'hidden',
-        background: 'linear-gradient(135deg, var(--pbox-g-hi) 0%, var(--pbox-g-lo) 100%)',
-        backdropFilter:
-          'blur(var(--pbox-g-blur)) saturate(var(--pbox-g-saturate)) brightness(var(--pbox-g-brightness))',
-        WebkitBackdropFilter:
-          'blur(var(--pbox-g-blur)) saturate(var(--pbox-g-saturate)) brightness(var(--pbox-g-brightness))',
-        border: '1px solid var(--pbox-g-border)',
-        boxShadow:
-          'inset 0 1px 0 var(--pbox-g-rim-top), inset 0 -1px 0 var(--pbox-g-rim-bottom), inset 0 0 28px var(--pbox-g-inner-glow), var(--pbox-g-shadow)'
-      },
-      // 流动光泽带：斜向高光带周期扫过（划完停半拍再循环）；--pbox-sheen-delay 供错相
+      // ── v2.5.0 流动光泽带（玻璃开独占）：斜向高光带周期扫过（划完停半拍再循环）；
+      // --pbox-sheen-delay 供卡片错相；玻璃关时类不存在于样式表，零成本
       '.pbox-sheen::before': {
         content: '""',
         position: 'absolute',
@@ -547,21 +591,6 @@ function makeGlassExtra(surface: SurfaceTokens, blob1: string, chrome: ChromeTok
         '0%': { transform: 'translateX(-60%) skewX(-14deg)' },
         '55%': { transform: 'translateX(60%) skewX(-14deg)' },
         '100%': { transform: 'translateX(60%) skewX(-14deg)' }
-      },
-      // 指针光斑：跟全局 --mx/--my（液体阻尼 lerp）在玻璃表面游走，hover 时浮现
-      '.pbox-glass::after': {
-        content: '""',
-        position: 'absolute',
-        inset: 0,
-        zIndex: -1,
-        pointerEvents: 'none',
-        background:
-          'radial-gradient(280px circle at calc(50% + var(--mx, 0) * 46%) calc(50% + var(--my, 0) * 46%), var(--pbox-g-spot), transparent 62%)',
-        opacity: 0,
-        transition: 'opacity .45s ease'
-      },
-      '.pbox-glass:hover::after': {
-        opacity: 1
       },
       // v2.1.0：窗口隐藏到托盘时暂停漂移动画（后台 0 GPU 占用）——v2.5.0 扩到锥转/光泽带
       'body.pbox-bg-paused .pbox-blob': {
@@ -584,9 +613,6 @@ function makeGlassExtra(surface: SurfaceTokens, blob1: string, chrome: ChromeTok
         '.pbox-sheen::before': {
           animation: 'none',
           transform: 'translateX(0) skewX(-14deg)'
-        },
-        '.pbox-glass::after': {
-          transition: 'none'
         }
       },
       // v2.3.1：磨砂加深 + 内缘高光发丝（玻璃体轮廓感）
@@ -673,7 +699,8 @@ function makeGlassExtra(surface: SurfaceTokens, blob1: string, chrome: ChromeTok
 export function buildTheme(themeKey: ThemeKey, accent: string, glassOn: boolean): Theme {
   const s = SURFACES[themeKey]
   const chrome = CHROME[themeKey]
-  const m = s.material
+  // v2.5.0：玻璃开 = 主题材质配方；关 = 朴素面板值（.pbox-glass 变量退化，组件无需感知开关）
+  const m = glassOn ? s.material : flatMaterial(s)
   const effectiveAccent =
     themeKey === 'custom' ? accent : themeKey === 'zj' ? ZJ_ACCENT : DEFAULT_ACCENT
   const gvars = glassVarsOf(themeKey, effectiveAccent)
@@ -728,9 +755,9 @@ export function buildTheme(themeKey: ThemeKey, accent: string, glassOn: boolean)
           '--pbox-logo-bar': chrome.logoBar,
           '--pbox-gold-glow': chrome.goldGlow,
           // v2.5.0：表面材质配方变量（.pbox-glass/.pbox-sheen/.pbox-conic/.pbox-grain 消费）
-          '--pbox-g-blur': `${m.blur}px`,
-          '--pbox-g-saturate': `${m.saturate}%`,
-          '--pbox-g-brightness': String(m.brightness),
+          '--pbox-g-backdrop': glassOn
+            ? `blur(${m.blur}px) saturate(${m.saturate}%) brightness(${m.brightness})`
+            : 'none',
           '--pbox-g-hi': m.glassHi,
           '--pbox-g-lo': m.glassLo,
           '--pbox-g-border': m.border,

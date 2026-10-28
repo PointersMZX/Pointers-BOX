@@ -92,14 +92,19 @@ function resourceGridColumns(layout: HomeLayout): GridColumns {
 }
 
 // ── 液态玻璃卡片容器 ─────────────────────────────────────────────
-// v2.4.0：悬停时描边提亮 + 柔和浮起（玻璃卡"浮出"一层）
+// v2.5.0：材质统一走 .pbox-glass（六层配方，玻璃关时自动退化为朴素面板）+
+// .pbox-sheen 流动光泽带（模块级序号自动错相，14s 周期互不重叠）；
+// 悬停反馈 = 描边提亮 + 指针光斑浮现（不再整块换底色，保住玻璃渐变）。
+// tilt：重点卡 3D 微倾（跟随全局 --mx/--my，±2.4°，触屏变量恒 0 天然关闭）
+let sheenSeq = 0
 function GlassCard({
   icon,
   title,
   right,
   children,
   noPtr,
-  minH
+  minH,
+  tilt
 }: {
   icon?: React.ReactNode
   title?: string
@@ -107,19 +112,29 @@ function GlassCard({
   children?: React.ReactNode
   noPtr?: boolean
   minH?: string
+  tilt?: boolean
 }) {
+  const sheenDelay = useMemo(() => (sheenSeq++ * 1.75) % 14, [])
   return (
     <Box
       data-no-ptr={noPtr ? true : undefined}
-      bg="panel"
-      borderWidth="1px"
-      borderColor="pborder"
       borderRadius="lg"
       p={5}
       minH={minH}
-      className="pbox-blur-panel"
-      transition="border-color .2s ease, box-shadow .28s ease"
-      _hover={{ borderColor: 'brand.400', boxShadow: '0 8px 28px rgba(0,0,0,0.22)' }}
+      className="pbox-glass pbox-sheen"
+      transition="border-color .2s ease"
+      _hover={{ borderColor: 'brand.400' }}
+      style={
+        {
+          ...(tilt
+            ? {
+                transform:
+                  'perspective(900px) rotateX(calc(var(--my, 0) * -2.4deg)) rotateY(calc(var(--mx, 0) * 3.2deg))'
+              }
+            : {}),
+          '--pbox-sheen-delay': `-${sheenDelay.toFixed(2)}s`
+        } as React.CSSProperties
+      }
     >
       {(title || right) && (
         <Flex align="center" justify="space-between" mb={3} gap={3}>
@@ -268,7 +283,7 @@ function LayoutSwitcher({
           top: 2,
           bottom: 2,
           borderRadius: 999,
-          background: 'var(--pbox-brand)',
+          background: 'var(--pbox-accent)',
           opacity: 0.18
         }}
         transition={{ type: 'spring', stiffness: 500, damping: 38 }}
@@ -432,11 +447,12 @@ export default function HomePage() {
   // 半宽/网格卡：可并排的信息卡
   const halfCards: React.ReactNode[] = []
 
-  // 1. 今日日期及时间（置顶）
+  // 1. 今日日期及时间（置顶；v2.5.0：重点卡 3D 微倾——跟随指针 ±2.4°）
   halfCards.push(
     <GlassCard
       minH={DECK_MIN_H}
       key="date"
+      tilt
       icon={<FiClock color="var(--pbox-accent)" />}
       title="今日"
      
@@ -711,13 +727,11 @@ export default function HomePage() {
               key={String(r.id)}
               flexShrink={0}
               w="190px"
-              bg="panelstrong"
-              borderWidth="1px"
-              borderColor="pborder"
               borderRadius="md"
               p={3}
               cursor="pointer"
-              className="pbox-morph"
+              className="pbox-glass"
+              transition="border-color .2s ease"
               _hover={{ borderColor: 'brand.400' }}
               onClick={() => setFavDetail(r)}
             >

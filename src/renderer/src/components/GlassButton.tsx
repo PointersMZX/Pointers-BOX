@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion'
 import type { ReactNode } from 'react'
 import { SPRING } from '../theme/motion'
+import { useMagnetic } from '../utils/useMagnetic'
 
 interface Props {
   children: ReactNode
@@ -11,12 +12,15 @@ interface Props {
   isDisabled?: boolean
   ariaLabel?: string
   title?: string
+  /** 关闭克制磁吸（个别密集场景） */
+  noMagnet?: boolean
 }
 
 /**
- * 液态玻璃按钮（v2.1.0 克制版 → v2.4.0 胶囊提档）：
+ * 液态玻璃按钮（v2.1.0 克制版 → v2.4.0 胶囊提档 → v2.5.0 磁吸）：
  * 按压弹簧内缩回弹；悬停时胶囊内一道流光扫过（.pbox-glint-layer::after，buildTheme 全局 CSS），
- * 玻璃"液面"观感。overflow 收在内部 glint 层，外阴影不被裁。
+ * 玻璃"液面"观感；v2.5.0 指针靠近时克制磁吸（≤5px，触屏/减少动效自动关闭）。
+ * overflow 收在内部 glint 层，外阴影不被裁。
  */
 export default function GlassButton({
   children,
@@ -25,7 +29,8 @@ export default function GlassButton({
   size = 'md',
   isDisabled = false,
   ariaLabel,
-  title
+  title,
+  noMagnet = false
 }: Props) {
   const pad = size === 'sm' ? '0.4rem 0.95rem' : '0.55rem 1.25rem'
   const fontSize = size === 'sm' ? '0.8rem' : '0.88rem'
@@ -35,6 +40,9 @@ export default function GlassButton({
     variant === 'primary'
       ? '1px solid transparent'
       : '1px solid var(--chakra-colors-pborder, rgba(255,255,255,0.16))'
+  // v2.5.0：克制磁吸（禁用态不吸）
+  const magnet = useMagnetic<HTMLButtonElement>(isDisabled ? 0 : 4, 96)
+  const magnetStyle = noMagnet || isDisabled ? {} : magnet.style
 
   return (
     <motion.button
@@ -44,6 +52,7 @@ export default function GlassButton({
       disabled={isDisabled}
       whileTap={isDisabled ? undefined : { scale: 0.94 }}
       transition={{ ...SPRING.press }}
+      ref={noMagnet || isDisabled ? undefined : (magnet.ref as unknown as React.Ref<HTMLButtonElement>)}
       onClick={() => {
         if (isDisabled) return
         onClick?.()
@@ -71,7 +80,8 @@ export default function GlassButton({
         boxShadow:
           variant === 'primary'
             ? '0 4px 18px var(--pbox-accent-soft, rgba(124,92,255,0.35)), inset 0 1px 0 rgba(255,255,255,0.22)'
-            : 'inset 0 1px 0 rgba(255,255,255,0.14)'
+            : 'inset 0 1px 0 rgba(255,255,255,0.14)',
+        ...magnetStyle
       }}
     >
       <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
