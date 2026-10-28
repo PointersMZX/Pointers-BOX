@@ -41,6 +41,7 @@ function renderPage(page: Page) {
 }
 
 // 液态玻璃背景：三团缓慢漂移的模糊色斑（波浪氛围，纯装饰）
+// v2.5.0：周期改互质（26/34/19s）+ 异路径，与锥形色相缓转、细噪点共同构成流动背景层
 function GlassBlobs() {
   return (
     <>
@@ -49,6 +50,50 @@ function GlassBlobs() {
       <Box className="pbox-blob b3" aria-hidden />
     </>
   )
+}
+
+// v2.5.0 全局指针液体跟随：rAF 每帧把指针目标值以 lerp 平滑写入 --mx/--my
+// （.pbox-glass 指针光斑与卡片微倾消费；桌面精确指针才启用，触屏/减少动效不启动）
+function usePointerFlow(enabled: boolean): void {
+  useEffect(() => {
+    if (!enabled) return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return
+    const root = document.documentElement
+    const cur = { x: 0, y: 0 }
+    const target = { x: 0, y: 0 }
+    let raf = 0
+    const onMove = (e: PointerEvent): void => {
+      target.x = (e.clientX / window.innerWidth) * 2 - 1
+      target.y = (e.clientY / window.innerHeight) * 2 - 1
+    }
+    const loop = (): void => {
+      // lerp 0.08：光斑永远慢半拍——这就是"液体阻尼感"的来源
+      cur.x += (target.x - cur.x) * 0.08
+      cur.y += (target.y - cur.y) * 0.08
+      root.style.setProperty('--mx', cur.x.toFixed(4))
+      root.style.setProperty('--my', cur.y.toFixed(4))
+      raf = requestAnimationFrame(loop)
+    }
+    const onVisibility = (): void => {
+      if (document.hidden) {
+        if (raf) cancelAnimationFrame(raf)
+        raf = 0
+      } else if (!raf) {
+        raf = requestAnimationFrame(loop)
+      }
+    }
+    window.addEventListener('pointermove', onMove, { passive: true })
+    document.addEventListener('visibilitychange', onVisibility)
+    raf = requestAnimationFrame(loop)
+    return () => {
+      window.removeEventListener('pointermove', onMove)
+      document.removeEventListener('visibilitychange', onVisibility)
+      if (raf) cancelAnimationFrame(raf)
+      root.style.removeProperty('--mx')
+      root.style.removeProperty('--my')
+    }
+  }, [enabled])
 }
 
 function ThemedShell() {
@@ -222,10 +267,20 @@ export default function App() {
   const accent = useThemeStore((s) => s.accent)
   const glassOn = useThemeStore((s) => s.isGlassOn)
 
+  // v2.5.0：全局指针液体跟随（玻璃开启时才启用，随玻璃开关挂/摘）
+  usePointerFlow(glassOn)
+
   return (
     <ChakraProvider theme={buildTheme(themeKey, accent, glassOn)}>
-      {/* 液态玻璃开时：CSS 光斑（漂移氛围）+ WebGL 叠层（侧栏/Android 底栏 GPU 折射，不可用自动 CSS 兜底） */}
-      {glassOn && <GlassBlobs />}
+      {/* 液态玻璃开时：锥形色相缓转 + CSS 光斑（互质周期漂移）+ 细噪点防色带 +
+          WebGL 叠层（侧栏/Android 底栏 GPU 折射，不可用自动 CSS 兜底） */}
+      {glassOn && (
+        <>
+          <Box className="pbox-conic" aria-hidden />
+          <GlassBlobs />
+          <Box className="pbox-grain" aria-hidden />
+        </>
+      )}
       {glassOn && (
         <>
           <LiquidGlass target="#pbox-sidebar" variant="sidebar" />
