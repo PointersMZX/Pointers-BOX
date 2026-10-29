@@ -24,6 +24,13 @@
 
         </activity>
 
+        <!-- v2.5.0 恢复：内嵌浏览器（singleTask 复用不重复压栈；转屏/锁屏不重建 WebView 保下载与表单状态） -->
+        <activity
+            android:name=".InAppBrowserActivity"
+            android:launchMode="singleTask"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:exported="false" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -38,6 +45,11 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- v2.5.0 内置下载：API 28 及以下 DownloadManager 写公共 Downloads 目录需要；
+         API 29+ 走 MediaStore 无需此权限 -->
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
 
     <!-- v2.4.0 分享功能：Android 11+ 包可见性——SharePlugin 用 resolveActivity 探测分享面板，
          不声明则恒为 null（功能退化为仅复制）；ACTION_VIEW 打开 web 链接系统原生豁免无需声明 -->
