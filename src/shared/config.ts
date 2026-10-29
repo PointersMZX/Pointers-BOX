@@ -24,8 +24,9 @@ export function normalizeConfig(raw: unknown, defaultDownloadDir: string): AppCo
     typeof downloadDirRaw === 'string' && downloadDirRaw.trim() !== ''
       ? downloadDirRaw
       : defaultDownloadDir
-  // v2.3.0：内嵌浏览器已删除，Android 固定系统浏览器；旧 'builtin' 存档无感知迁移
-  const androidBrowser: AndroidBrowserChoice = 'system'
+  // v2.5.0：恢复内嵌浏览器——默认内置；仅存档显式 'system' 保留系统浏览器（v2.3.0~v2.4.x
+  // 被迫收敛写入的 'system' 也按用户选择尊重，可在设置里切回内置）
+  const androidBrowser: AndroidBrowserChoice = r['androidBrowser'] === 'system' ? 'system' : 'builtin'
   // 收藏：接受 string/number 数组，统一字符串化去重（v2.0.0）
   const favorites = Array.isArray(r['favorites'])
     ? [...new Set((r['favorites'] as unknown[]).map((v) => String(v)))]

@@ -826,13 +826,35 @@ export default function SettingsPage() {
         </Text>
       </Section>
 
-      {/* 浏览器设置（v2.3.0：Android 内嵌浏览器已删除，固定系统浏览器；桌面端后台标签休眠保留） */}
+      {/* 浏览器设置（v2.5.0：Android 恢复内嵌浏览器，内置/系统可选；桌面端后台标签休眠保留） */}
       <Section title="浏览器设置">
-        <Text fontSize="sm" color="ptext">
-          {platform === 'android'
-            ? 'Android 端资源链接与页面统一通过系统浏览器打开（v2.3.0 起不再内置浏览器）；下载请在系统浏览器内进行。'
-            : '桌面端使用内置浏览器；后台标签闲置可自动休眠以释放内存。'}
-        </Text>
+        {platform === 'android' ? (
+          <>
+            <Text fontSize="sm" color="ptext">
+              Android 端打开链接的方式
+            </Text>
+            <RadioGroup
+              value={config?.androidBrowser === 'system' ? 'system' : 'builtin'}
+              onChange={(v) =>
+                void useDownloadStore
+                  .getState()
+                  .saveConfig({ androidBrowser: v === 'system' ? 'system' : 'builtin' })
+              }
+            >
+              <Stack direction="row" spacing={4}>
+                <Radio value="builtin">内置浏览器（可直接下载）</Radio>
+                <Radio value="system">系统浏览器</Radio>
+              </Stack>
+            </RadioGroup>
+            <Text fontSize="xs" color="ptextmuted">
+              内置浏览器支持资源领取与文件下载（下载进度在「下载」页显示）；系统浏览器适合交给更成熟的浏览器处理
+            </Text>
+          </>
+        ) : (
+          <Text fontSize="sm" color="ptext">
+            桌面端使用内置浏览器；后台标签闲置可自动休眠以释放内存。
+          </Text>
+        )}
         {/* v2.1.0：后台标签闲置休眠（0 = 永不），降低内存占用；仅桌面端有后台标签 */}
         {platform !== 'android' && (
           <Flex align="center" justify="space-between" gap={3} wrap="wrap" mt={2}>

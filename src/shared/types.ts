@@ -66,13 +66,13 @@ export type UpdateChannel = 'gitee' | 'github'
 /** 主页卡片布局（v2.2.0）：堆叠（全部叠起不分层）/ 紧凑（每行2个）/ 宽展（每行1个全展开） */
 export type HomeLayout = 'stacked' | 'compact' | 'wide'
 
-// v2.3.0：Android 内嵌浏览器已删除，打开方式固定为系统浏览器；
-// 类型收敛为 'system'，仅作配置迁移锚点（旧 'builtin' 存档由 normalizeConfig 迁移）
-export type AndroidBrowserChoice = 'system'
+// v2.5.0：恢复内嵌浏览器——'builtin'（原生 InAppBrowserActivity）/ 'system'（系统浏览器），
+// 设置页可选；默认 builtin（v2.3.0~v2.4.x 存档中的 'system' 保留）
+export type AndroidBrowserChoice = 'builtin' | 'system'
 
 export interface AppConfig {
   downloadDir: string
-  /** v2.3.0：固定 'system'（内嵌浏览器已删除；旧 'builtin' 存档自动迁移） */
+  /** Android 链接打开方式（v2.5.0）：内置浏览器 / 系统浏览器，默认内置 */
   androidBrowser: AndroidBrowserChoice
   /** 外观主题（v2.3.0 四主题）：紫金黑（玻璃锁死开）/ 自定义（玻璃可关）/ 纯黑 / 纯白（玻璃默认关） */
   theme: import('./theme').ThemeKey

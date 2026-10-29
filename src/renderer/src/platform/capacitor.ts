@@ -1,10 +1,12 @@
 // 安卓平台实现（开发计划 D6）：Capacitor 插件承载原生能力
 import { Capacitor, CapacitorHttp, registerPlugin } from '@capacitor/core'
+import type { PluginListenerHandle } from '@capacitor/core'
 import { Preferences } from '@capacitor/preferences'
 import { REMOTE_URLS } from '../../../shared/types'
 import type {
   AppConfig,
   DataSnapshot,
+  DownloadEvent,
   RestoreTarget,
   UpdateCheckResult,
   UpdateEvent,
@@ -177,10 +179,110 @@ export async function androidExportUserLinks(): Promise<string | null> {
   return null
 }
 
-// 系统浏览器打开（v2.3.0：内嵌 WebView 浏览器已删除，全部链接自动跳转系统浏览器；
-// 下载功能同步取消——如需下载请在系统浏览器内进行）
+// 系统浏览器打开（逃生门：设置选系统模式 / 内置浏览器内"用系统打开"）
 export async function androidOpenExternal(url: string): Promise<void> {
   await SystemBrowserNative.openExternal({ url })
+}
+
+// ── v2.5.0：内嵌浏览器恢复（android/.../InAppBrowserActivity.java + InAppBrowserPlugin.java）──
+interface AndroidDownloadEventPayload {
+  event: {
+    type: 'started' | 'progress' | 'done'
+    id: number
+    filename: string
+    received: number
+    total: number
+    state: '' | 'completed' | 'interrupted' | 'cancelled'
+    path: string
+  }
+}
+
+interface InAppBrowserNativeInterface {
+  open(options: { url: string; resetSession?: boolean }): Promise<void>
+  resetSession(): Promise<void>
+  openSystemDownloads(): Promise<void>
+  openExternal(options: { url: string }): Promise<void>
+  startDownloadWatch(): Promise<void>
+  stopDownloadWatch(): Promise<void>
+  cancelDownload(options: { id: number }): Promise<{ ok: boolean }>
+  addListener(
+    eventName: 'downloadEvent',
+    listenerFunc: (payload: AndroidDownloadEventPayload) => void
+  ): Promise<PluginListenerHandle> & PluginListenerHandle
+}
+
+const InAppBrowserNative = registerPlugin<InAppBrowserNativeInterface>('InAppBrowser')
+
+/**
+ * 按配置分流打开链接：内置 → 原生 InAppBrowserActivity（WebView+下载接管）；
+ * 系统 → ACTION_VIEW。读取最新配置（不信任调用方传快照）。
+ */
+export async function androidOpenClaim(url: string, androidBrowser: string): Promise<void> {
+  if (androidBrowser === 'system') {
+    await SystemBrowserNative.openExternal({ url })
+  } else {
+    await InAppBrowserNative.open({ url })
+  }
+}
+
+export async function androidResetSession(): Promise<void> {
+  await InAppBrowserNative.resetSession()
+}
+
+export async function androidOpenSystemDownloads(): Promise<void> {
+  await InAppBrowserNative.openSystemDownloads()
+}
+
+export async function androidCancelDownload(id: number): Promise<boolean> {
+  try {
+    const res = await InAppBrowserNative.cancelDownload({ id })
+    return res.ok
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Android 下载事件桥：原生 DownloadTracker（started/progress/done+state，全带系统 id）
+ * → 映射为与桌面 Electron 'download:event' 同构的 DownloadEvent，渲染层 store 无感。
+ * DownloadManager 无暂停/恢复能力 → paused 恒 false，pause/resume 由 backend 层拒绝。
+ */
+export function androidOnDownloadEvent(cb: (e: DownloadEvent) => void): () => void {
+  let handle: PluginListenerHandle | null = null
+  let active = true
+  InAppBrowserNative.startDownloadWatch().catch(() => {})
+  InAppBrowserNative.addListener('downloadEvent', (payload) => {
+    if (!active) return
+    const data = payload?.event
+    if (!data) return
+    const total = data.total >= 0 ? data.total : 0
+    const base = {
+      id: String(data.id),
+      filename: data.filename,
+      path: data.path ?? '',
+      received: data.received ?? 0,
+      total,
+      percent: total > 0 ? Math.min((data.received ?? 0) / total * 100, 100) : 0,
+      bytesPerSecond: 0,
+      paused: false,
+      source: 'browser' as const
+    }
+    if (data.type === 'started') cb({ type: 'started', task: base })
+    else if (data.type === 'progress') cb({ type: 'progress', task: base })
+    else if (data.type === 'done' && data.state) {
+      cb({ type: 'done', id: String(data.id), state: data.state })
+    }
+  })
+    .then((h) => {
+      if (active) handle = h
+      else void h.remove()
+    })
+    .catch(() => {})
+  return () => {
+    active = false
+    if (handle) void handle.remove()
+    InAppBrowserNative.stopDownloadWatch().catch(() => {})
+  }
 }
 
 // 安卓原生插件桥（android/app/src/main/java/cc/pointers/box/SystemBrowserPlugin.java）

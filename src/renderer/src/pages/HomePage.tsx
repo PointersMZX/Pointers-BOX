@@ -748,14 +748,14 @@ export default function HomePage() {
     )
   }
 
-  // 7. 快捷功能入口（v2.3.0：Android 无下载功能，隐藏下载入口）
+  // 7. 快捷功能入口（v2.5.0：Android 恢复下载管理，入口重新全量展示）
   const quickAll: { label: string; page: Page; Icon: React.ComponentType<{ size?: number }> }[] = [
     { label: '资源库', page: 'library', Icon: FiGlobe },
     { label: '链接', page: 'links', Icon: FiLink },
     { label: '浏览器', page: 'browser', Icon: FiExternalLink },
     { label: '下载', page: 'downloads', Icon: FiDownload }
   ]
-  const quickEntries = quickAll.filter((q) => !(platform === 'android' && q.page === 'downloads'))
+  const quickEntries = quickAll
   halfCards.push(
     <GlassCard minH={DECK_MIN_H} key="quick" icon={<FiExternalLink color="var(--pbox-accent)" />} title="快捷入口">
       <Flex gap={3} flexWrap="wrap">

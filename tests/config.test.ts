@@ -4,7 +4,8 @@ describe('配置归一化（PRD 4.4 下载路径/Android 浏览器选项 + 主�
   const defDir = 'C:\\Users\\u\\Downloads'
   const defaults = {
     downloadDir: defDir,
-    androidBrowser: 'system' as const,
+    // v2.5.0：恢复内嵌浏览器，默认内置
+    androidBrowser: 'builtin' as const,
     // v2.3.0：默认主题紫金黑
     theme: 'zj' as const,
     accent: '#7c5cff',
@@ -51,13 +52,18 @@ describe('配置归一化（PRD 4.4 下载路径/Android 浏览器选项 + 主�
     })
   })
 
-  it('非法值被纠正：空路径回退、浏览器固定 system（v2.3.0 无内置）、主题/颜色非法回退默认', () => {
+  it('非法值被纠正：空路径回退、浏览器非法回 builtin、主题/颜色非法回退默认', () => {
     expect(normalizeConfig({ downloadDir: '   ' }, defDir).downloadDir).toBe(defDir)
-    expect(normalizeConfig({ androidBrowser: 'ie' }, defDir).androidBrowser).toBe('system')
-    expect(normalizeConfig({ androidBrowser: 'builtin' }, defDir).androidBrowser).toBe('system')
+    expect(normalizeConfig({ androidBrowser: 'ie' }, defDir).androidBrowser).toBe('builtin')
     expect(normalizeConfig({ theme: 'neon' }, defDir).theme).toBe('zj')
     expect(normalizeConfig({ theme: 'glass' }, defDir).theme).toBe('custom') // v2.2.0 旧键迁移
     expect(normalizeConfig({ accent: 'not-a-color' }, defDir).accent).toBe('#7c5cff')
+  })
+
+  it('v2.5.0：浏览器选择恢复双值——默认 builtin、显式 system 保留（v2.3.0~v2.4.x 存档尊重）', () => {
+    expect(normalizeConfig({}, defDir).androidBrowser).toBe('builtin')
+    expect(normalizeConfig({ androidBrowser: 'system' }, defDir).androidBrowser).toBe('system')
+    expect(normalizeConfig({ androidBrowser: 'builtin' }, defDir).androidBrowser).toBe('builtin')
   })
 
   it('v2.3.0：液态玻璃按主题开关——合法布尔保留，zj 键剔除，非对象回退缺省', () => {

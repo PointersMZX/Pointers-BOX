@@ -18,11 +18,12 @@ import { FiDownload, FiFolder, FiEdit, FiPause, FiPlay, FiX } from 'react-icons/
 import { useEffect, useState } from 'react'
 import type { DownloadTask } from '../../../shared/types'
 import { useDownloadStore } from '../store/downloadStore'
+import { useUiStore } from '../store/uiStore'
 import { backend } from '../platform'
 import type { DownloadHistoryEntry } from '../../../shared/types'
 import { formatBytes, percentOf } from '../utils/format'
 
-function TaskRow({ task }: { task: DownloadTask }) {
+function TaskRow({ task, isAndroid }: { task: DownloadTask; isAndroid: boolean }) {
   const percent = percentOf(task.received, task.total)
   const known = task.total > 0
   const pause = useDownloadStore((s) => s.pause)
@@ -50,19 +51,21 @@ function TaskRow({ task }: { task: DownloadTask }) {
               ? ` · ${formatBytes(task.bytesPerSecond)}/s`
               : ''}
           </Text>
-          {/* 更新包由 updater 管理，不提供暂停/取消 */}
+          {/* 更新包由 updater 管理，不提供暂停/取消；Android 走系统 DownloadManager 无暂停/恢复，仅可取消 */}
           {task.source === 'browser' && (
             <>
-              <Tooltip label={task.paused ? '继续下载' : '暂停下载'}>
-                <IconButton
-                  aria-label={task.paused ? '继续下载' : '暂停下载'}
-                  icon={task.paused ? <FiPlay /> : <FiPause />}
-                  size="xs"
-                  variant="ghost"
-                  color="ptext"
-                  onClick={() => void (task.paused ? resume(task.id) : pause(task.id))}
-                />
-              </Tooltip>
+              {!isAndroid && (
+                <Tooltip label={task.paused ? '继续下载' : '暂停下载'}>
+                  <IconButton
+                    aria-label={task.paused ? '继续下载' : '暂停下载'}
+                    icon={task.paused ? <FiPlay /> : <FiPause />}
+                    size="xs"
+                    variant="ghost"
+                    color="ptext"
+                    onClick={() => void (task.paused ? resume(task.id) : pause(task.id))}
+                  />
+                </Tooltip>
+              )}
               <Tooltip label="取消下载">
                 <IconButton
                   aria-label="取消下载"
@@ -96,12 +99,15 @@ function TaskRow({ task }: { task: DownloadTask }) {
 }
 
 // 下载管理（PRD 4.3）：路径显示/更改/锁定 + 进行中任务 + 打开文件夹
+// v2.5.0：Android 恢复下载管理——系统 DownloadManager 固定 Downloads 目录（不可更改）、
+// "打开文件夹"=系统下载记录、无暂停/恢复（TaskRow 内隐藏）、无 App 内历史卡
 export default function DownloadsPage() {
   const tasks = useDownloadStore((s) => s.tasks)
   const config = useDownloadStore((s) => s.config)
   const loadConfig = useDownloadStore((s) => s.loadConfig)
   const chooseDir = useDownloadStore((s) => s.chooseDir)
   const openFolder = useDownloadStore((s) => s.openFolder)
+  const isAndroid = useUiStore((s) => s.platform) === 'android'
   const toast = useToast()
 
   // 事件订阅已提升至 App 全局（ThemedShell），此处仅加载本地配置
@@ -149,18 +155,20 @@ export default function DownloadsPage() {
             </Text>
           </HStack>
           <HStack>
-            <Button
-              size="sm"
-              variant="outline"
-              leftIcon={<FiEdit />}
-              isDisabled={hasActive}
-              borderColor="pborder"
-              color="ptext"
-              _hover={{ bg: 'hoverbg' }}
-              onClick={() => void onChangeDir()}
-            >
-              更改
-            </Button>
+            {!isAndroid && (
+              <Button
+                size="sm"
+                variant="outline"
+                leftIcon={<FiEdit />}
+                isDisabled={hasActive}
+                borderColor="pborder"
+                color="ptext"
+                _hover={{ bg: 'hoverbg' }}
+                onClick={() => void onChangeDir()}
+              >
+                更改
+              </Button>
+            )}
             <Button
               size="sm"
               variant="outline"
@@ -170,19 +178,19 @@ export default function DownloadsPage() {
               _hover={{ bg: 'hoverbg' }}
               onClick={() => void openFolder()}
             >
-              打开文件夹
+              {isAndroid ? '打开系统下载记录' : '打开文件夹'}
             </Button>
           </HStack>
         </Flex>
-        {hasActive && (
+        {!isAndroid && hasActive && (
           <Text fontSize="xs" color="orange.300" mt={2}>
             有任务正在下载，路径更改已锁定
           </Text>
         )}
       </Box>
 
-      {/* 下载历史（v2.0.0：设置内“保留下载历史”开启时展示） */}
-      {config?.keepDownloadHistory && (
+      {/* 下载历史（v2.0.0：设置内"保留下载历史"开启时展示；App 内历史仅桌面，Android 记录在系统 DownloadManager） */}
+      {!isAndroid && config?.keepDownloadHistory && (
         <Box borderRadius="lg" p={4} mb={4} className="pbox-glass">
           <Flex align="center" justify="space-between" mb={3}>
             <HStack>
@@ -250,14 +258,16 @@ export default function DownloadsPage() {
       {/* 进行中任务（完成后自动从列表消失） */}
       <Stack spacing={3}>
         {tasks.length > 0 ? (
-          tasks.map((t) => <TaskRow key={t.id} task={t} />)
+          tasks.map((t) => <TaskRow key={t.id} task={t} isAndroid={isAndroid} />)
         ) : (
           <VStack py={16} spacing={2} color="ptextmuted">
             <FiDownload size={40} />
             <Text fontSize="lg" fontWeight="semibold">
               暂无进行中的下载
             </Text>
-            <Text fontSize="sm">在浏览器中触发下载后，任务将显示在这里</Text>
+            <Text fontSize="sm">
+              {isAndroid ? '在内置浏览器中触发下载后，任务与进度将显示在这里' : '在浏览器中触发下载后，任务将显示在这里'}
+            </Text>
           </VStack>
         )}
       </Stack>
