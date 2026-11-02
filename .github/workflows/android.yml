@@ -64,14 +64,25 @@ jobs:
           set -o pipefail
           chmod +x gradlew
           ./gradlew assembleRelease --stacktrace 2>&1 | tee gradle.log
-      # v2.3.2：Gradle 产物固定叫 app-release.apk，之前被原样挂到 Release（维护者每次手动改名）。
-      # 现按 tag 重命名为 Pointers-BOX_vX.X.X.apk 再上传（job 仅 tag 触发，ref_name 必为版本 tag）
-      - name: Rename APK with version name
+      # v2.3.2：产物按 tag 重命名再上传（job 仅 tag 触发，ref_name 必为版本 tag）
+      # v2.6.0：splits 分包后产物为 5 件（universal + 4 ABI），逐一映射为 Pointers-BOX_版本_{变体}.apk
+      - name: Rename APKs with version name
         working-directory: android/app/build/outputs/apk/release
         run: |
           set -o pipefail
-          test -f app-release.apk
-          mv app-release.apk "Pointers-BOX_${{ github.ref_name }}.apk"
+          TAG="${GITHUB_REF_NAME}"
+          for f in app-*.apk; do
+            case "$f" in
+              app-universal-release.apk)   out="Pointers-BOX_${TAG}_universal.apk" ;;
+              app-armeabi-v7a-release.apk) out="Pointers-BOX_${TAG}_armeabi-v7a.apk" ;;
+              app-arm64-v8a-release.apk)   out="Pointers-BOX_${TAG}_arm64-v8a.apk" ;;
+              app-x86-release.apk)         out="Pointers-BOX_${TAG}_x86.apk" ;;
+              app-x86_64-release.apk)      out="Pointers-BOX_${TAG}_x86_64.apk" ;;
+              *) echo "未识别的产物: $f"; exit 1 ;;
+            esac
+            mv "$f" "$out"
+          done
+          ls -la
       - name: Dump failure logs to ci-logs branch
         if: failure()
         shell: bash

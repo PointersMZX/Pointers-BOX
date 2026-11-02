@@ -16,6 +16,17 @@ android {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    // v2.6.0：按 ABI 分包（甘露音乐同规格 5 件 = universal + armeabi-v7a/arm64-v8a/x86/x86_64）。
+    // 注意：Capacitor 无按架构的原生库（插件纯 Java、WebView 用系统组件），
+    // 各 APK 体积几乎相同——分包是产物规格的形式性满足，见 Pointers-BOX-v26-pre 研究报告 §2。
+    splits {
+        abi {
+            enable true
+            reset()
+            include 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'
+            universalApk true
+        }
+    }
     signingConfigs {
         release {
             // 已提交的自签名密钥（Beta 阶段便利方案；正式发布建议改用 Secrets 注入并轮换密钥）
