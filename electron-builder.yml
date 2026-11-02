@@ -30,6 +30,21 @@ nsis:
   perMachine: false
   allowToChangeInstallationDirectory: true
 
+# v2.6.0：恢复 Linux/macOS 打包（4e38088 实验配置还原；产物未签名，分发说明见 README）
+linux:
+  icon: resources/icons/linux
+  category: Utility
+  maintainer: Pointers <PointersMZX@users.noreply.github.com>
+  target:
+    - AppImage
+    - deb
+
+mac:
+  icon: resources/icons/icon.icns
+  category: public.app-category.utilities
+  target:
+    - dmg
+
 publish:
   provider: github
   owner: PointersMZX

@@ -1,0 +1,94 @@
+# v2.6.0：Linux/macOS 桌面产物构建（4e38088 实验复活版）
+# - push main：跑构建，产物挂 Actions artifact 供验证
+# - tag（v* / 2*）：产物改名挂到对应 Release（与 android.yml 的发布节奏一致，发布动作归维护者）
+# 说明：macOS 产物未签名（用户已拍板不走公证），README 附"首次打开"绕过说明
+name: Desktop Build (Linux / macOS)
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*', '2*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  linux:
+    name: Linux (AppImage + deb)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: node scripts/build-mcx.mjs
+      - run: pnpm exec electron-builder --config electron-builder.yml --linux --x64 --publish never
+      - name: 按版本重命名产物
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          mkdir -p renamed
+          cp release/*.AppImage "renamed/Pointers-BOX_${TAG}.AppImage"
+          cp release/*.deb "renamed/Pointers-BOX_${TAG}_amd64.deb"
+      - name: 挂到 tag Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            renamed/*.AppImage
+            renamed/*.deb
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-packages
+          path: |
+            release/*.AppImage
+            release/*.deb
+          if-no-files-found: error
+
+  mac:
+    name: macOS (dmg, x64 + arm64)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: node scripts/build-mcx.mjs
+      # 双架构各出一份 dmg（未签名，electron-builder 默认 ad-hoc 签名）
+      - run: pnpm exec electron-builder --config electron-builder.yml --mac --arm64 --publish never
+      - run: pnpm exec electron-builder --config electron-builder.yml --mac --x64 --publish never
+      - name: 按版本重命名产物
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          mkdir -p renamed
+          shopt -s nullglob
+          for f in release/*-arm64.dmg; do cp "$f" "renamed/Pointers-BOX_${TAG}_arm64.dmg"; done
+          for f in release/*.dmg; do
+            case "$f" in *-arm64.dmg) ;; *) cp "$f" "renamed/Pointers-BOX_${TAG}_x64.dmg" ;; esac
+          done
+      - name: 挂到 tag Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            renamed/*.dmg
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-packages
+          path: |
+            release/*.dmg
+          if-no-files-found: error

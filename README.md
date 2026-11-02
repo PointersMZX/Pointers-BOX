@@ -1,6 +1,6 @@
 # Pointers-BOX
 
-Pointers-BOX 是「Pointers资源分享平台」的官方资源领取客户端，支持 Windows 电脑与 Android 手机。打开应用即可浏览平台统一发布的资源，一键领取资源链接，全程免费。
+Pointers-BOX 是「Pointers资源分享平台」的官方资源领取客户端，支持 Windows、Linux、macOS 电脑与 Android 手机。打开应用即可浏览平台统一发布的资源，一键领取资源链接，全程免费。
 
 ## 关于平台
 
@@ -30,14 +30,25 @@ Pointers资源分享平台（[pointers-box.cc.cd](https://pointers-box.cc.cd/)�
 | Windows 10 / 11 | `Pointers-BOX_Setup_vX.X.X x64.exe` | 标准版安装包 |
 | Windows 7 / 8 | `Pointers-BOX_Setup_vX.X.X_Windows7 x64.exe` | Win7 兼容版安装包 |
 | Android | `Pointers-BOX_vX.X.X.apk` | 安卓安装包（X.X.X 为版本号） |
+| Linux | `Pointers-BOX_vX.X.X.AppImage` / `Pointers-BOX_vX.X.X_amd64.deb` | AppImage 免安装通用版 / deb 安装包（Ubuntu 20.04 / Debian 11 等现代发行版） |
+| macOS | `Pointers-BOX_vX.X.X_{arm64,x64}.dmg` | 苹果芯片 / Intel 芯片安装包 |
 
 - Windows：运行安装程序按向导完成安装即可。
 - Android：允许"未知来源"后安装 APK 即可使用。
+- Linux（AppImage）：下载后执行 `chmod +x Pointers-BOX_vX.X.X.AppImage` 赋予执行权限，再双击或命令行运行即可。Linux（deb）：`sudo dpkg -i Pointers-BOX_vX.X.X_amd64.deb` 安装。
+- macOS：打开 dmg 将应用拖入"应用程序"后——**首次打开会被安全提示拦截**：Intel 芯片在应用图标上**右键 → 打开**，再点"打开"即可；**Apple 芯片（M 系列）会提示"已损坏"**，需在终端执行一次：
+
+  ```
+  xattr -cr /Applications/Pointers-BOX.app
+  ```
+
+  之后即可正常打开使用。
 
 ## 更新
 
 - **Windows**：设置页「更新检查」（或首页检查更新卡片），选择渠道后一键下载并安装。国内网络建议选择 Gitee 渠道。
 - **Android**：应用内检查到新版本后，按提示打开 Release 页面，下载新 APK 覆盖安装即可。
+- **Linux / macOS**：应用内可检查新版本，请到 Release 页面下载新安装包替换（macOS 替换后若再遇"已损坏"提示，重新执行一次上述 `xattr` 命令即可）。
 
 ## 社区与反馈
 

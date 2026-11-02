@@ -10,6 +10,8 @@ function subscribe<T>(channel: string, cb: (payload: T) => void): () => void {
 }
 
 const api: PBoxApi = {
+  // v2.6.0：宿主操作系统（preload 仅桌面 Electron 注入；process.platform 运行时必为三值之一）
+  platform: process.platform as PBoxApi['platform'],
   getAppVersion: () => ipcRenderer.invoke('app:version'),
   exportConfig: () => ipcRenderer.invoke('config:export'),
   importConfig: () => ipcRenderer.invoke('config:import'),

@@ -67,6 +67,8 @@ function createDesktopBackend(api: PBoxApi): AppBackend {
 
 function createAndroidBackend(): AppBackend {
   return {
+    // v2.6.0：宿主 OS 标识（Android 无桌面 OS 概念，恒 'android'；消费点按 === 'win32' 分支）
+    platform: 'android',
     getAppVersion: () => Promise.resolve(ANDROID_APP_VERSION),
     // 导出/导入为桌面端功能；下载历史记录在系统 DownloadManager（App 内历史卡 Android 隐藏）
     exportConfig: () => Promise.resolve(null),

@@ -183,7 +183,12 @@ export const REMOTE_URLS = {
 
 export type RestoreTarget = 'resources' | 'box'
 
+/** 桌面端宿主操作系统（v2.6.0）：渲染层平台化 UI/文案用；Android 后端恒 'android' */
+export type DesktopPlatform = 'win32' | 'darwin' | 'linux' | 'android'
+
 export interface PBoxApi {
+  /** 宿主操作系统（v2.6.0）：桌面 = process.platform；Android = 'android'。用于更新渠道等平台化 UI */
+  platform: DesktopPlatform
   /** 本地应用版本（package.json version，如 2.0.0）；与远程 box.json 的 app_version 无关 */
   getAppVersion(): Promise<string>
   /** 导出配置到用户选择的文件（主题/路径/收藏等）；返回文件路径，取消返回 null */

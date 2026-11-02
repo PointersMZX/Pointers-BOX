@@ -408,6 +408,8 @@ export default function SettingsPage() {
   const versionLogs = useDataStore((s) => s.versionLogs)
   const refreshData = useDataStore((s) => s.refresh)
   const platform = useUiStore((s) => s.platform)
+  // v2.6.0：宿主操作系统（更新渠道 UI 平台化；Android 后端恒 'android'）
+  const osPlatform = backend.platform
   const versionLogsDeepLink = useUiStore((s) => s.versionLogsDeepLink)
   const toast = useToast()
 
@@ -639,26 +641,35 @@ export default function SettingsPage() {
 
       {/* 检查更新（PRD 4.4：Release 对比；v2.1.0 双渠道 Gitee/GitHub） */}
       <Section title="更新检查">
-        {/* v2.1.0：更新渠道（首启未选时此处也可选） */}
+        {/* v2.1.0：更新渠道（首启未选时此处也可选）；
+            v2.6.0：非 Windows 平台 Gitee 渠道不适用（其资产只含 .exe），固定走 GitHub */}
         <Flex align="center" justify="space-between" gap={3} wrap="wrap">
           <Text fontSize="sm" color="ptext">
             更新渠道
           </Text>
-          <RadioGroup
-            value={config?.updateChannel ?? 'gitee'}
-            onChange={(v) => {
-              setResult(null)
-              void onChannelChange(v as 'gitee' | 'github')
-            }}
-          >
-            <Stack direction="row" spacing={5}>
-              <Radio value="gitee">国内镜像（Gitee）</Radio>
-              <Radio value="github">全球官方（GitHub）</Radio>
-            </Stack>
-          </RadioGroup>
+          {osPlatform === 'win32' ? (
+            <RadioGroup
+              value={config?.updateChannel ?? 'gitee'}
+              onChange={(v) => {
+                setResult(null)
+                void onChannelChange(v as 'gitee' | 'github')
+              }}
+            >
+              <Stack direction="row" spacing={5}>
+                <Radio value="gitee">国内镜像（Gitee）</Radio>
+                <Radio value="github">全球官方（GitHub）</Radio>
+              </Stack>
+            </RadioGroup>
+          ) : (
+            <Text fontSize="sm" color="ptextmuted">
+              全球官方（GitHub）
+            </Text>
+          )}
         </Flex>
         <Text fontSize="xs" color="ptextmuted">
-          国内网络建议选 Gitee（不受 GitHub 限流影响）；切换后下次检查立即生效
+          {osPlatform === 'win32'
+            ? '国内网络建议选 Gitee（不受 GitHub 限流影响）；切换后下次检查立即生效'
+            : '当前平台通过 GitHub Release 获取更新（安装包随版本发布）'}
         </Text>
         <Flex align="center" justify="space-between" wrap="wrap" gap={3}>
           <Text fontSize="sm" color="ptextmuted">

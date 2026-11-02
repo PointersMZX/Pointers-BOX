@@ -430,6 +430,8 @@ export default function HomePage() {
 
   const setPage = useUiStore((s) => s.setPage)
   const platform = useUiStore((s) => s.platform)
+  // v2.6.0：宿主操作系统（更新渠道展示平台化；Android 后端恒 'android'）
+  const osPlatform = backend.platform
   const goToVersionLogs = useUiStore((s) => s.goToVersionLogs)
 
   if (!loaded && loading) {
@@ -796,7 +798,9 @@ export default function HomePage() {
       <Text fontSize="sm" color="ptextmuted">
         更新渠道：
         <Text as="span" color="ptext">
-          {config?.updateChannel === 'github' ? '全球官方（GitHub）' : '国内镜像（Gitee）'}
+          {osPlatform !== 'win32'
+            ? 'GitHub'
+            : config?.updateChannel === 'github' ? '全球官方（GitHub）' : '国内镜像（Gitee）'}
         </Text>
         {offline && '（远程暂不可达，展示本地缓存）'}
       </Text>
