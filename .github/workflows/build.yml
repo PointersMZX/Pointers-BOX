@@ -21,6 +21,9 @@ jobs:
           node-version: 20
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # v2.6.0 修复：mcx.test 的构建链一致性用例读取 resources/box.mcx（生成物，不入 git）
+      # —— 先由明文 box.json 生成，否则 CI 上 ENOENT（本地因构建产物存在而一直绿，自 MCX 轮起 CI 即挂）
+      - run: node scripts/build-mcx.mjs
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
