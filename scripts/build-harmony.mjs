@@ -47,6 +47,7 @@ execFileSync(nodeExe, [
   '--mode', 'module',
   '-p', 'module=entry@default',
   '-p', 'product=default',
+  '-p', 'buildMode=release',
   'assembleHap',
   '--no-daemon'
 ], { cwd: harmonyDir, env, stdio: 'inherit' })
