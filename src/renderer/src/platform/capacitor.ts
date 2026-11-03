@@ -38,6 +38,9 @@ function emptyResourceData(): { resources: never[]; version_logs: never[]; annou
   return { resources: [], version_logs: [], announcement: null }
 }
 
+// v2.6.0：导出供 harmony 后端复用（鸿蒙壳为纯 Web 环境，数据构建逻辑与 Android 同构）
+export { buildSnapshot, emptyResourceData }
+
 async function fetchLooseJson(url: string): Promise<unknown> {
   const res = await CapacitorHttp.get({
     url,

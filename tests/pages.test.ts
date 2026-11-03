@@ -39,4 +39,11 @@ describe('平台可见页面（v2.5.0：Android 恢复内嵌浏览器与下载�
     pages.push('home')
     expect(visiblePages('desktop')).toHaveLength(6)
   })
+
+  it('v2.6.0：鸿蒙壳与 Android 同构（6 页对齐）', () => {
+    expect(visiblePages('harmony')).toEqual(visiblePages('android'))
+    for (const page of ['home', 'library', 'links', 'browser', 'downloads', 'settings'] as const) {
+      expect(isPageVisible(page, 'harmony')).toBe(true)
+    }
+  })
 })

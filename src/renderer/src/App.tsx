@@ -100,7 +100,8 @@ function ThemedShell() {
   const page = useUiStore((s) => s.page)
   const themeKey = useThemeStore((s) => s.themeKey)
   const accent = useThemeStore((s) => s.accent)
-  const isAndroid = useUiStore((s) => s.platform) === 'android'
+  // v2.6.0：鸿蒙壳与 Android 同构移动布局（底栏导航、无侧栏）
+  const isAndroid = useUiStore((s) => s.platform === 'android' || s.platform === 'harmony')
   const toast = useToast()
   const shownWarnings = useRef('')
   const shellRef = useRef<HTMLDivElement>(null)

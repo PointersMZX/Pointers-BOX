@@ -43,10 +43,14 @@ import { backend } from '../platform'
 import EmptyState from '../components/EmptyState'
 import AndroidBrowserPage from './AndroidBrowserPage'
 
-// 内置浏览器（PRD 4.2）：按平台分发——桌面用 webview，安卓用原生浏览器窗口
+// 内置浏览器（PRD 4.2）：按平台分发——桌面用 webview，安卓/鸿蒙用浏览器面板（v2.6.0 鸿蒙复用）
 export default function BrowserPage() {
   const platform = useUiStore((s) => s.platform)
-  return platform === 'android' ? <AndroidBrowserPage /> : <ElectronBrowserPage />
+  return platform === 'android' || platform === 'harmony' ? (
+    <AndroidBrowserPage />
+  ) : (
+    <ElectronBrowserPage />
+  )
 }
 
 // 桌面多标签浏览器（v2.0.0）：新建/关闭/拖拽排序；全部 webview 常驻挂载保留各标签会话

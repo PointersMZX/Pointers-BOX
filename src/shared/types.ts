@@ -183,8 +183,8 @@ export const REMOTE_URLS = {
 
 export type RestoreTarget = 'resources' | 'box'
 
-/** 桌面端宿主操作系统（v2.6.0）：渲染层平台化 UI/文案用；Android 后端恒 'android' */
-export type DesktopPlatform = 'win32' | 'darwin' | 'linux' | 'android'
+/** 桌面端宿主操作系统（v2.6.0）：渲染层平台化 UI/文案用；Android 后端恒 'android'，鸿蒙壳恒 'harmony' */
+export type DesktopPlatform = 'win32' | 'darwin' | 'linux' | 'android' | 'harmony'
 
 export interface PBoxApi {
   /** 宿主操作系统（v2.6.0）：桌面 = process.platform；Android = 'android'。用于更新渠道等平台化 UI */

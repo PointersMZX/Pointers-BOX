@@ -12,4 +12,10 @@ describe('资源打开方式决策（v2.5.0：Android 恢复内嵌浏览器，�
     // 未配置（异常存档）回默认内置
     expect(resolveOpenMode(undefined, 'android')).toBe('builtin-browser')
   })
+
+  it('v2.6.0：鸿蒙壳固定壳内浏览器（builtin-browser，纯 Web 模式）', () => {
+    expect(resolveOpenMode('builtin', 'harmony')).toBe('builtin-browser')
+    expect(resolveOpenMode('system', 'harmony')).toBe('builtin-browser')
+    expect(resolveOpenMode(undefined, 'harmony')).toBe('builtin-browser')
+  })
 })

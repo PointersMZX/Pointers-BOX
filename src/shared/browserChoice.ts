@@ -13,5 +13,6 @@ export function resolveOpenMode(
   platform: AppPlatform
 ): OpenMode {
   if (platform === 'desktop') return 'in-app-webview'
+  if (platform === 'harmony') return 'builtin-browser'
   return androidBrowser === 'system' ? 'system-browser' : 'builtin-browser'
 }

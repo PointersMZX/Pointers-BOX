@@ -17,6 +17,7 @@ import { backend } from '../platform'
 import { androidOpenExternal } from '../platform/capacitor'
 import { useBrowserStore, getActiveTab } from '../store/browserStore'
 import { useDownloadStore } from '../store/downloadStore'
+import { useUiStore } from '../store/uiStore'
 
 /**
  * 安卓端浏览器（v2.5.0 恢复双模式）：
@@ -28,6 +29,7 @@ export default function AndroidBrowserPage() {
   const setStoreUrl = useBrowserStore((s) => s.navigateTo)
   const config = useDownloadStore((s) => s.config)
   const toast = useToast()
+  const uiPlatform = useUiStore((s) => s.platform)
   const builtin = (config?.androidBrowser ?? 'builtin') !== 'system'
   const [address, setAddress] = useState(storeUrl)
   const [opening, setOpening] = useState(false)
@@ -52,6 +54,12 @@ export default function AndroidBrowserPage() {
     if (mode === 'current') setAddress(url)
     setStoreUrl(url)
     setOpening(true)
+    // v2.6.0：鸿蒙壳的外跳 = window.open（壳 onWindowOpen 引导系统浏览器）
+    if (uiPlatform === 'harmony') {
+      window.open(url, '_blank')
+      setOpening(false)
+      return
+    }
     await androidOpenExternal(url).finally(() => setOpening(false))
   }
 

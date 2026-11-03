@@ -29,9 +29,28 @@ import {
   androidShareText,
   androidExportUserLinks
 } from './capacitor'
+import {
+  HARMONY_APP_VERSION,
+  harmonyCheckUpdate,
+  harmonyCopyText,
+  harmonyGetData,
+  harmonyGetConfig,
+  harmonyGetUserLinks,
+  harmonyOnDownloadEvent,
+  harmonyOnNavigate,
+  harmonyOnUpdateEvent,
+  harmonyRestoreData,
+  harmonySetConfig,
+  harmonySetUserLinks
+} from './harmony'
 
 export function currentPlatform(): AppPlatform {
+  // v2.6.0：桌面 Electron preload 注入 window.api 优先
   if (typeof window !== 'undefined' && window.api) return 'desktop'
+  // v2.6.0：鸿蒙壳在页面加载前注入 window.__pboxHarmony（ArkWeb javaScriptOnDocumentStart）
+  if (typeof window !== 'undefined' && (window as { __pboxHarmony?: boolean }).__pboxHarmony) {
+    return 'harmony'
+  }
   return Capacitor.isNativePlatform() ? 'android' : 'desktop'
 }
 
@@ -123,8 +142,71 @@ function createAndroidBackend(): AppBackend {
   }
 }
 
+/**
+ * 鸿蒙壳后端（v2.6.0 Phase 3，纯 Web 模式）：
+ * ArkWeb 承载渲染层，数据 = 原生 fetch 直连服务器 .mcx；配置/链接 = localStorage。
+ * 原生桥（Preferences/系统分享/下载接管）为后续增量，本版以 Web API 全量兜底。
+ * openClaim = window.open（壳的 onWindowOpen 将其引导回当前 ArkWeb 导航）。
+ */
+function createHarmonyBackend(): AppBackend {
+  return {
+    platform: 'harmony',
+    getAppVersion: () => Promise.resolve(HARMONY_APP_VERSION),
+    // 导出/导入与下载历史为桌面端功能；鸿蒙端暂返回空实现
+    exportConfig: () => Promise.resolve(null),
+    importConfig: () => Promise.resolve(null),
+    listDownloadHistory: () => Promise.resolve([]),
+    clearDownloadHistory: () => Promise.resolve(),
+    getData: () => harmonyGetData(false),
+    refreshData: (force?: boolean) => harmonyGetData(Boolean(force)),
+    restoreData: (target) => harmonyRestoreData(target),
+    getUserLinks: () => harmonyGetUserLinks(),
+    setUserLinks: (links) => harmonySetUserLinks(links),
+    importUserLinks: () => Promise.resolve(null),
+    exportUserLinks: () => Promise.resolve(null),
+    getConfig: () => harmonyGetConfig(),
+    setConfig: (patch) => harmonySetConfig(patch),
+    chooseDownloadDir: () => Promise.resolve(null),
+    hasActiveDownloads: () => Promise.resolve(false),
+    openPath: () => Promise.resolve(false),
+    cancelDownload: () => Promise.resolve(false),
+    pauseDownload: () => Promise.resolve(false),
+    resumeDownload: () => Promise.resolve(false),
+    resetBrowserSession: () => Promise.resolve(),
+    checkUpdate: () => harmonyCheckUpdate(),
+    // 鸿蒙端更新 = 打开 Release 页（壳 onWindowOpen 引导系统浏览器）
+    downloadUpdate: async () => {
+      const cfg = await harmonyGetConfig()
+      const page =
+        cfg.updateChannel === 'github'
+          ? UPDATE_CHANNEL_INFO.github.releasePage
+          : UPDATE_CHANNEL_INFO.gitee.releasePage
+      window.open(page, '_blank')
+    },
+    installUpdate: () => Promise.resolve(),
+    onNavigate: (cb) => harmonyOnNavigate(cb),
+    onDownloadEvent: (cb) => harmonyOnDownloadEvent(cb),
+    onUpdateEvent: (cb) => harmonyOnUpdateEvent(cb),
+    // 壳内纯 Web 模式：window.open 外跳（壳侧负责引导系统浏览器）
+    openClaim: async (url) => {
+      window.open(url, '_blank')
+    },
+    copyText: (text) => harmonyCopyText(text),
+    shareResource: async (resource) => {
+      await harmonyCopyText(buildShareText(resource))
+      return 'copied'
+    }
+  }
+}
+
 function detectBackend(): AppBackend {
   if (typeof window !== 'undefined' && window.api) return createDesktopBackend(window.api)
+  if (
+    typeof window !== 'undefined' &&
+    (window as { __pboxHarmony?: boolean }).__pboxHarmony
+  ) {
+    return createHarmonyBackend()
+  }
   return createAndroidBackend()
 }
 

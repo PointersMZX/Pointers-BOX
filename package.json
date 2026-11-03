@@ -24,6 +24,7 @@
     "gen:icons": "node scripts/gen-icons.mjs",
     "build:mcx": "node scripts/build-mcx.mjs",
     "build:win": "node scripts/build-win.mjs",
+    "build:harmony": "node scripts/build-harmony.mjs",
     "package": "node scripts/build-mcx.mjs && electron-vite build && electron-builder --config electron-builder.yml",
     "package:dir": "node scripts/build-mcx.mjs && electron-vite build && electron-builder --config electron-builder.yml --dir",
     "package:win:x64": "pnpm run package:dir --x64 -c.directories.output=release/win-64",
