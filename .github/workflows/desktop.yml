@@ -67,9 +67,20 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - run: node scripts/build-mcx.mjs
-      # 双架构各出一份 dmg（未签名，electron-builder 默认 ad-hoc 签名）
-      - run: pnpm exec electron-builder --config electron-builder.yml --mac --arm64 --publish never
-      - run: pnpm exec electron-builder --config electron-builder.yml --mac --x64 --publish never
+      # v2.6.0：双架构各出 .app 目录（electron-builder 打 dmg 无法插入签名步骤，
+      # 故拆为 dir 构建 → ad-hoc codesign → hdiutil 打 dmg 三步）
+      - run: pnpm exec electron-builder --config electron-builder.yml --mac --dir --arm64 --publish never
+      - run: pnpm exec electron-builder --config electron-builder.yml --mac --dir --x64 --publish never
+      - name: Ad-hoc 签名（Apple Silicon 防"已损坏"；无需开发者账号）
+        run: |
+          codesign --force --deep --sign - "release/mac-arm64/Pointers-BOX.app"
+          codesign --force --deep --sign - "release/mac-x64/Pointers-BOX.app"
+          codesign --verify --deep "release/mac-arm64/Pointers-BOX.app"
+          codesign --verify --deep "release/mac-x64/Pointers-BOX.app"
+      - name: 打 dmg
+        run: |
+          hdiutil create -volname "Pointers-BOX" -srcfolder "release/mac-arm64/Pointers-BOX.app" -format UDZO -ov "release/Pointers-BOX-arm64.dmg"
+          hdiutil create -volname "Pointers-BOX" -srcfolder "release/mac-x64/Pointers-BOX.app" -format UDZO -ov "release/Pointers-BOX-x64.dmg"
       - name: 按版本重命名产物
         if: startsWith(github.ref, 'refs/tags/')
         run: |
