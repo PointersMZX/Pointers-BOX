@@ -44,6 +44,9 @@ mac:
   category: public.app-category.utilities
   target:
     - dmg
+  # v2.6.0：ad-hoc 签名（identity "-"）——无开发者账号下的最优解：
+  # 二进制带有效签名，Apple Silicon 不再报"已损坏"（首次打开仍需右键→打开，见 README）
+  identity: "-"
 
 publish:
   provider: github
