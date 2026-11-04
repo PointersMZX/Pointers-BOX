@@ -30,7 +30,6 @@
     "package:win:x64": "pnpm run package:dir --x64 -c.directories.output=release/win-64",
     "package:win:win7": "pnpm run package:dir --x64 -c.directories.output=release/win7-x64"
   },
-  "dependencies": {},
   "devDependencies": {
     "@capacitor/android": "^6.2.0",
     "@capacitor/app": "^6.0.2",
@@ -55,6 +54,7 @@
     "react-icons": "^5.4.0",
     "typescript": "^5.7.2",
     "vite": "^5.4.11",
+    "vite-plugin-singlefile": "^2.3.4",
     "vitest": "^1.6.0",
     "zustand": "^4.5.5"
   }

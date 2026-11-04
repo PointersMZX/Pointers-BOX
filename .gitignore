@@ -19,3 +19,6 @@ harmony/.hvigor/
 harmony/oh_modules/
 harmony/entry/oh_modules/
 harmony/entry/src/main/resources/rawfile/
+
+# 鸿蒙签名材料（本机 DevEco 生成，不入库；备份在 harmony/.signing-backup/）
+harmony/.signing-backup/
