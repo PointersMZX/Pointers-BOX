@@ -1,5 +1,6 @@
 import { webview } from '@kit.ArkWeb';
 import { http } from '@kit.NetworkKit';
+import { BusinessError } from '@kit.BasicServicesKit';
 
 /**
  * Pointers-BOX 鸿蒙壳：ArkWeb 加载打包进 rawfile 的渲染层产物（out/renderer）。
@@ -24,8 +25,8 @@ class PboxBridge {
     const client = http.createHttp();
     let options: http.HttpRequestOptions = {
       method: http.RequestMethod.GET,
-      readTimeout: 15000,
-      connectTimeout: 15000
+      readTimeout: 60000,
+      connectTimeout: 60000
     } as http.HttpRequestOptions;
     if (headersJson && headersJson.length > 0) {
       try {
@@ -43,6 +44,11 @@ class PboxBridge {
         throw new Error(`HTTP ${res.responseCode}`);
       }
       return typeof res.result === 'string' ? res.result : '';
+    } catch (err) {
+      // 错误对象跨 proxy 传给 JS 会丢类型，先在原生侧打日志再展开成字符串
+      const e = err as BusinessError;
+      console.error(`PBOX_NATIVE_ERR code=${e?.code} msg=${e?.message ?? String(err)}`);
+      throw new Error(`net_code=${e?.code} msg=${e?.message ?? String(err)}`);
     } finally {
       client.destroy();
     }
@@ -56,7 +62,7 @@ struct Index {
   private bridge: PboxBridge = new PboxBridge(this.controller);
   @State injectScript: ScriptItem[] = [
     {
-      script: 'window.__pboxHarmony = true;',
+      script: 'window.__pboxHarmony = true; ',
       // scriptRules：匹配所有页面（空规则数组 = 全局注入）
       scriptRules: ['*']
     }
@@ -67,11 +73,10 @@ struct Index {
       Web({ src: $rawfile('www/index.html'), controller: this.controller })
         .javaScriptAccess(true)
         .javaScriptOnDocumentStart(this.injectScript)
-        .javaScriptProxy({
-          object: this.bridge,
-          name: '__pboxNative',
-          methodList: ['fetchText'],
-          controller: this.controller
+        .onControllerAttached(() => {
+          // proxy 注册后必须 refresh 才生效（否则 JS 侧报 non-injected object）
+          this.controller.registerJavaScriptProxy(this.bridge, '__pboxNative', ['fetchText']);
+          this.controller.refresh();
         })
         .domStorageAccess(true)
         .databaseAccess(true)

@@ -66,16 +66,24 @@ async function fetchLooseWeb(url: string): Promise<unknown> {
   const bridge = getNativeBridge()
   let text: string
   if (bridge) {
+    console.log(`[pbox-harmony] 桥拉取 ${url}`)
     const t = await bridge(url, '')
-    if (typeof t !== 'string') throw new Error('原生数据桥不可用')
+    if (typeof t !== 'string') {
+      console.warn(`[pbox-harmony] 桥返回非字符串（Promise 透传可能不支持）: ${typeof t}`)
+      throw new Error('原生数据桥不可用')
+    }
     text = t
+    console.log(`[pbox-harmony] 桥返回 ${text.length} 字节`)
   } else {
+    console.warn('[pbox-harmony] window.__pboxNative 不存在，回退 fetch（将受 CORS 限制）')
     const res = await fetch(url, { cache: 'no-cache' })
     if (res.status < 200 || res.status >= 300) throw new Error(`HTTP ${res.status}`)
     text = await res.text()
   }
   // .mcx 以纯文本（base64）回来时 openMuxed 自动识别/解密
-  return parseLooseJson(openMuxed(text))
+  const parsed = parseLooseJson(openMuxed(text))
+  console.log(`[pbox-harmony] 解析完成 ${url} → ${parsed instanceof Array ? `${parsed.length} 条` : typeof parsed}`)
+  return parsed
 }
 
 export async function harmonyGetData(force = false): Promise<DataSnapshot> {
