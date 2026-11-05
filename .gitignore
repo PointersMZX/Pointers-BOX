@@ -28,3 +28,6 @@ harmony/entry-pc/src/main/resources/rawfile/
 # 鸿蒙签名材料（本机 DevEco 生成，不入库；备份在 harmony/.signing-backup/）
 harmony/.signing-backup/
 harmony/.idea/
+
+# Android WebView 资产（cap copy 生成物，CI/本地构建时自动生成）
+android/app/src/main/assets/public/
