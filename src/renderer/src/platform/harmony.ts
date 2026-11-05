@@ -67,7 +67,13 @@ async function fetchLooseWeb(url: string): Promise<unknown> {
   let text: string
   if (bridge) {
     console.log(`[pbox-harmony] 桥拉取 ${url}`)
-    const t = await bridge(url, '')
+    // 硬超时兜底：NetworkKit 自身超时在个别环境（模拟器 NAT）不可靠，防 UI 永久挂起
+    const t = await Promise.race([
+      bridge(url, ''),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('原生桥 90s 超时')), 90_000)
+      )
+    ])
     if (typeof t !== 'string') {
       console.warn(`[pbox-harmony] 桥返回非字符串（Promise 透传可能不支持）: ${typeof t}`)
       throw new Error('原生数据桥不可用')
