@@ -1,0 +1,10 @@
+{
+  "name": "entrypc",
+  "version": "1.0.0",
+  "description": "Pointers-BOX 鸿蒙 PC 模块",
+  "main": "",
+  "author": "",
+  "license": "",
+  "dependencies": {
+  }
+}

@@ -53,10 +53,27 @@ function lsSet(key: string, value: string): void {
   }
 }
 
+// ArkWeb 壳注入的原生数据桥（Index.ets javaScriptProxy）：resource:// 页面
+// origin 为 null，直接 fetch 远程数据会被 CORS 拦截，桥走原生 http 无此限制。
+type BridgeFetch = (url: string, headersJson: string) => Promise<unknown>
+
+function getNativeBridge(): BridgeFetch | null {
+  const w = window as unknown as { __pboxNative?: { fetchText?: BridgeFetch } }
+  return w.__pboxNative?.fetchText ?? null
+}
+
 async function fetchLooseWeb(url: string): Promise<unknown> {
-  const res = await fetch(url, { cache: 'no-cache' })
-  if (res.status < 200 || res.status >= 300) throw new Error(`HTTP ${res.status}`)
-  const text = await res.text()
+  const bridge = getNativeBridge()
+  let text: string
+  if (bridge) {
+    const t = await bridge(url, '')
+    if (typeof t !== 'string') throw new Error('原生数据桥不可用')
+    text = t
+  } else {
+    const res = await fetch(url, { cache: 'no-cache' })
+    if (res.status < 200 || res.status >= 300) throw new Error(`HTTP ${res.status}`)
+    text = await res.text()
+  }
   // .mcx 以纯文本（base64）回来时 openMuxed 自动识别/解密
   return parseLooseJson(openMuxed(text))
 }
@@ -169,15 +186,24 @@ export async function harmonyCheckUpdate(): Promise<UpdateCheckResult> {
       return { current, latest: null, hasUpdate: false, error: '尚未选择更新渠道，请先在设置中选择' }
     }
     const info = UPDATE_CHANNEL_INFO[channel]
-    const res = await fetch(info.releaseApi, { headers: info.headers, signal: AbortSignal.timeout(10_000) })
-    const status = res.status
-    if (status === 403 || status === 401) {
-      return { current, latest: null, hasUpdate: false, error: '接口访问受限（限流），请稍后再试' }
+    const bridge = getNativeBridge()
+    let status: number
+    let text: string
+    if (bridge) {
+      // 原生数据桥：无 CORS 限制；桥内非 2xx 直接抛错
+      text = await bridge(info.releaseApi, JSON.stringify(info.headers)) as string
+      status = 200
+    } else {
+      const res = await fetch(info.releaseApi, { headers: info.headers, signal: AbortSignal.timeout(10_000) })
+      status = res.status
+      if (status === 403 || status === 401) {
+        return { current, latest: null, hasUpdate: false, error: '接口访问受限（限流），请稍后再试' }
+      }
+      if (status < 200 || status >= 300) {
+        return { current, latest: null, hasUpdate: false, error: `HTTP ${status}` }
+      }
+      text = await res.text()
     }
-    if (status < 200 || status >= 300) {
-      return { current, latest: null, hasUpdate: false, error: `HTTP ${status}` }
-    }
-    const text = await res.text()
     const release = parseReleaseJson(text)
     if (!release) {
       return { current, latest: null, hasUpdate: false, error: 'Release 数据缺少 tag_name' }

@@ -4,6 +4,20 @@
     "products": [
       {
         "name": "default",
+        "signingConfig": "default",
+        "targetSdkVersion": "6.1.1(24)",
+        "compatibleSdkVersion": "5.0.0(12)",
+        "runtimeOS": "HarmonyOS",
+        "buildOption": {
+          "strictMode": {
+            "caseSensitiveCheck": true,
+            "useNormalizedOHMUrl": true
+          }
+        }
+      },
+      {
+        "name": "pc",
+        "signingConfig": "default",
         "targetSdkVersion": "6.1.1(24)",
         "compatibleSdkVersion": "5.0.0(12)",
         "runtimeOS": "HarmonyOS",
@@ -33,6 +47,18 @@
           "name": "default",
           "applyToProducts": [
             "default"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "entrypc",
+      "srcPath": "./entry-pc",
+      "targets": [
+        {
+          "name": "pc",
+          "applyToProducts": [
+            "pc"
           ]
         }
       ]

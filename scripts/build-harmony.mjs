@@ -37,13 +37,17 @@ execFileSync(process.execPath, [electronViteJs, 'build'], {
 const rendererSrc = join(root, 'out', 'renderer')
 if (!existsSync(rendererSrc)) fail('渲染层构建失败：out/renderer 不存在')
 
-// 1. 渲染层产物 → rawfile/www（整目录同步）
-rmSync(rawfileWww, { force: true, recursive: true })
-mkdirSync(dirname(rawfileWww), { recursive: true })
-cpSync(rendererSrc, rawfileWww, { recursive: true })
-console.log(`[build-harmony] 渲染层已同步 → rawfile/www`)
+// 1. 渲染层产物 → 两个模块的 rawfile/www（整目录同步；手机/PC 双包各带一份渲染层）
+const rawfileWwwPc = join(harmonyDir, 'entry-pc', 'src', 'main', 'resources', 'rawfile', 'www')
+for (const www of [rawfileWww, rawfileWwwPc]) {
+  rmSync(www, { force: true, recursive: true })
+  mkdirSync(dirname(www), { recursive: true })
+  cpSync(rendererSrc, www, { recursive: true })
+}
+console.log(`[build-harmony] 渲染层已同步 → entry + entry-pc 的 rawfile/www`)
 
 // 2. hvigor 构建（内嵌 node + wrapper；PATH 补 System32 供 es2abc spawn cmd.exe）
+// 双 product：phone（entry 模块，phone/tablet）+ pc（entry-pc 模块，2in1 鸿蒙 PC）
 const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
 const version = pkg.version
 const env = {
@@ -51,32 +55,64 @@ const env = {
   DEVECO_SDK_HOME: sdkHome,
   PATH: `${process.env.SystemRoot ?? 'C:\\Windows'}\\System32;${process.env.PATH ?? ''}`
 }
-console.log(`[build-harmony] hvigor 构建中（SDK=${sdkHome}）…`)
-execFileSync(nodeExe, [
-  hvigorwJs,
-  '--mode', 'module',
-  '-p', 'module=entry@default',
-  '-p', 'product=default',
-  '-p', 'buildMode=release',
-  'assembleHap',
-  '--no-daemon'
-], { cwd: harmonyDir, env, stdio: 'inherit' })
-
-// 3. 产物 → release/（签名版优先）
-const outputs = join(harmonyDir, 'entry', 'build', 'default', 'outputs', 'default')
-const signedHap = join(outputs, 'entry-default-signed.hap')
-const unsignedHap = join(outputs, 'entry-default-unsigned.hap')
-const hapSrc = existsSync(signedHap) ? signedHap : unsignedHap
-if (!existsSync(hapSrc)) fail('未找到构建产物 entry-default-*.hap')
-const suffix = hapSrc === signedHap ? 'signed' : 'unsigned'
 const outDir = join(root, 'release')
 mkdirSync(outDir, { recursive: true })
-const outPath = join(outDir, `Pointers-BOX_v${version}_harmony-${suffix}.hap`)
-rmSync(join(outDir, `Pointers-BOX_v${version}_harmony-signed.hap`), { force: true })
-rmSync(join(outDir, `Pointers-BOX_v${version}_harmony-unsigned.hap`), { force: true })
-cpSync(hapSrc, outPath)
-const mb = Math.round((statSync(outPath).size / 1024 / 1024) * 10) / 10
-console.log(`[build-harmony] 完成 → release/Pointers-BOX_v${version}_harmony-${suffix}.hap（${mb} MB）`)
-if (suffix === 'unsigned') {
-  console.log('[build-harmony] 未签名：侧载前用 HOKIT/hapsigntool 重签名（见 v2.6.0 研究报告 §5.4）')
+// 清理旧命名产物（单包时代 harmony-signed/unsigned）
+for (const old of ['signed', 'unsigned']) {
+  rmSync(join(outDir, `Pointers-BOX_v${pkg.version}_harmony-${old}.hap`), { force: true })
+}
+
+const products = [
+  // 手机/平板：entry 模块 + default product（hvigor 要求 default product 存在，
+  // 自定义 product 名会出现 "Unable to find or load the default product"）
+  { product: 'default', target: 'default', moduleDir: 'entry', moduleName: 'entry', suffix: 'phone' },
+  // 鸿蒙 PC（2in1）：entry-pc 模块 + pc product；模块 target 必须改名 pc（与 entry 的 target 同名会互相干扰）
+  { product: 'pc', target: 'pc', moduleDir: 'entry-pc', moduleName: 'entrypc', suffix: 'pc' }
+]
+
+for (const { product, target, moduleDir, moduleName, suffix } of products) {
+  console.log(`[build-harmony] hvigor 构建中 product=${product}（SDK=${sdkHome}）…`)
+  execFileSync(nodeExe, [
+    hvigorwJs,
+    '--mode', 'module',
+    '-p', `module=${moduleName}@${target}`,
+    '-p', `product=${product}`,
+    '-p', 'buildMode=release',
+    'assembleHap',
+    '--no-daemon'
+  ], { cwd: harmonyDir, env, stdio: 'inherit' })
+
+  // 3. 产物 → release/（签名版优先）
+  const outputs = join(harmonyDir, moduleDir, 'build', target, 'outputs', target)
+  let hapSrc = join(outputs, `${moduleName}-${target}-signed.hap`)
+  if (!existsSync(hapSrc)) hapSrc = join(outputs, `${moduleName}-${target}-unsigned.hap`)
+  if (!existsSync(hapSrc)) {
+    // 兜底：不同 hvigor 版本目录结构差异，扫模块 build 下任意 hap
+    const { readdirSync } = await import('node:fs')
+    hapSrc = findHap(readdirSync, join(harmonyDir, moduleDir, 'build')) ?? ''
+  }
+  if (!existsSync(hapSrc)) fail(`product=${product} 未找到构建产物 hap`)
+  const isSigned = hapSrc.includes('signed')
+  const tag = isSigned ? 'signed' : 'unsigned'
+  const outPath = join(outDir, `Pointers-BOX_v${version}_harmony-${suffix}-${tag}.hap`)
+  rmSync(join(outDir, `Pointers-BOX_v${version}_harmony-${suffix}-signed.hap`), { force: true })
+  rmSync(join(outDir, `Pointers-BOX_v${version}_harmony-${suffix}-unsigned.hap`), { force: true })
+  cpSync(hapSrc, outPath)
+  const mb = Math.round((statSync(outPath).size / 1024 / 1024) * 10) / 10
+  console.log(`[build-harmony] 完成 → release/Pointers-BOX_v${version}_harmony-${suffix}-${tag}.hap（${mb} MB）`)
+}
+
+function findHap(readdirSync, dir) {
+  try {
+    for (const name of readdirSync(dir, { withFileTypes: true })) {
+      const full = join(dir, name.name)
+      if (name.isDirectory()) {
+        const hit = findHap(readdirSync, full)
+        if (hit) return hit
+      } else if (/\.hap$/.test(name.name)) {
+        return full
+      }
+    }
+  } catch { /* 无权限忽略 */ }
+  return null
 }
