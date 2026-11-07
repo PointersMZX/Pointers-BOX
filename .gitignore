@@ -31,3 +31,13 @@ harmony/.idea/
 
 # Android WebView 资产（cap copy 生成物，CI/本地构建时自动生成）
 android/app/src/main/assets/public/
+
+# v2.6.0 全原生重做（desktop-cs / android-kt / harmony-arkts）
+desktop-cs/**/bin/
+desktop-cs/**/obj/
+android-kt/**/build/
+android-kt/.gradle/
+android-kt/local.properties
+harmony-arkts/**/build/
+harmony-arkts/.hvigor/
+harmony-arkts/oh_modules/
