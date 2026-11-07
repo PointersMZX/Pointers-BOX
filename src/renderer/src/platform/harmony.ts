@@ -35,7 +35,7 @@ const LINKS_KEY = 'pbox-harmony-user-links'
 // 鸿蒙侧下载目录为展示值（下载能力为后续原生桥增量）
 const DEFAULT_HARMONY_DOWNLOAD_DIR = '/storage/emulated/0/Download'
 /** 鸿蒙壳版本（与 harmony/AppScope/app.json5 versionName 同步维护） */
-export const HARMONY_APP_VERSION = '2.6.0'
+export const HARMONY_APP_VERSION = '2.5.0'
 
 function lsGet(key: string): string | null {
   try {
