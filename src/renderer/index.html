@@ -4,6 +4,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Pointers-BOX</title>
+    <style>
+      /* Android WebView 触摸反馈清理：默认半透明蓝块 + 点击后残留的方框 outline
+         （iOS 不显现，Android 上盖在液态玻璃上很难看；触摸为主的 App 不留键盘 focus 圈） */
+      * {
+        -webkit-tap-highlight-color: transparent;
+      }
+      *:focus {
+        outline: none !important;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
