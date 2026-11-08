@@ -1,6 +1,7 @@
 // .mcx 三语言测试向量互验（C# 侧）
 // 向量：docs/mcx/vectors/<name>/{plain.txt, cipher.txt}（复制进输出目录 vectors/）
 
+using System;
 using System.IO;
 using Pointers.Box.Core;
 using Xunit;

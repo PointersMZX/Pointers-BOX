@@ -3,6 +3,7 @@
 
 using System.Net.Http;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Pointers.Box.Core;
 
@@ -33,12 +34,26 @@ public class DataStore
         _embeddedBox = embeddedBox;
     }
 
-    private static async Task<string?> FetchTextAsync(string url, bool force)
+    // 服务器线路质量差（海外裸 IP，实测单次成功率 ~1/8）——每路 5 次重试 + 退避
+    private static async Task<string> FetchTextAsync(string url, bool force)
     {
-        var target = force ? $"{url}?t={DateTimeOffset.Now.ToUnixTimeMilliseconds()}" : url;
-        using var resp = await Http.GetAsync(target);
-        if (!resp.IsSuccessStatusCode) throw new HttpRequestException($"HTTP {(int)resp.StatusCode}");
-        return await resp.Content.ReadAsStringAsync();
+        Exception? last = null;
+        for (var attempt = 1; attempt <= 5; attempt++)
+        {
+            try
+            {
+                var target = force ? $"{url}?t={DateTimeOffset.Now.ToUnixTimeMilliseconds()}" : url;
+                using var resp = await Http.GetAsync(target);
+                if (!resp.IsSuccessStatusCode) throw new HttpRequestException($"HTTP {(int)resp.StatusCode}");
+                return await resp.Content.ReadAsStringAsync();
+            }
+            catch (Exception e)
+            {
+                last = e;
+                if (attempt < 5) await Task.Delay(attempt * 2000);
+            }
+        }
+        throw last!;
     }
 
     private static T? ParseLoose<T>(string raw) where T : class

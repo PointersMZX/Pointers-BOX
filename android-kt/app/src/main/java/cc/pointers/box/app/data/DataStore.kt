@@ -31,18 +31,28 @@ class DataStore(
         isLenient = true
     }
 
+    // 服务器线路质量差（海外裸 IP，单次成功率低）——每路 5 次重试 + 退避
     private fun fetchText(url: String, force: Boolean): String {
-        val target = if (force) "$url?t=${System.currentTimeMillis()}" else url
-        val conn = URL(target).openConnection() as HttpURLConnection
-        conn.connectTimeout = 30_000
-        conn.readTimeout = 30_000
-        try {
-            val code = conn.responseCode
-            if (code !in 200..299) throw IllegalStateException("HTTP $code")
-            return conn.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
-        } finally {
-            conn.disconnect()
+        var last: Exception? = null
+        for (attempt in 1..5) {
+            try {
+                val target = if (force) "$url?t=${System.currentTimeMillis()}" else url
+                val conn = URL(target).openConnection() as HttpURLConnection
+                conn.connectTimeout = 30_000
+                conn.readTimeout = 30_000
+                try {
+                    val code = conn.responseCode
+                    if (code !in 200..299) throw IllegalStateException("HTTP $code")
+                    return conn.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+                } finally {
+                    conn.disconnect()
+                }
+            } catch (e: Exception) {
+                last = e
+                if (attempt < 5) Thread.sleep(attempt * 2000L)
+            }
         }
+        throw last!!
     }
 
     private inline fun <reified T> parseLoose(raw: String): T? =

@@ -1,58 +1,35 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:vm="using:Pointers.Box.Desktop.ViewModels"
         x:Class="Pointers.Box.Desktop.MainWindow"
-        Title="Pointers-BOX"
-        Width="1280" Height="800"
-        MinWidth="960" MinHeight="640"
-        Background="#0d0817">
-
-  <Design.DataContext>
-    <vm:MainWindowViewModel />
-  </Design.DataContext>
-
+        Title="Pointers-BOX" Width="1280" Height="800"
+        MinWidth="960" MinHeight="640" Background="#0d0817">
   <Grid ColumnDefinitions="220,*">
-    <!-- 侧栏（v2.5.0 同构：首页/资源/链接/浏览器/下载/设置） -->
     <StackPanel Grid.Column="0" Margin="16,24,16,16" Spacing="6">
-      <Text Text="Pointers-BOX" FontSize="22" FontWeight="Bold" Foreground="#e8e0f5" Margin="8,0,0,18" />
-      <Button Content="首页" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Classes="nav" />
-      <Button Content="资源" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Classes="nav" />
-      <Button Content="链接" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Classes="nav" />
-      <Button Content="浏览器" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Classes="nav" />
-      <Button Content="下载" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Classes="nav" />
-      <Button Content="设置" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Classes="nav" />
+      <TextBlock Text="Pointers-BOX" FontSize="22" FontWeight="Bold" Foreground="#e8e0f5" Margin="8,0,0,18" />
+      <Button Content="首页" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+      <Button Content="资源" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+      <Button Content="链接" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+      <Button Content="浏览器" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+      <Button Content="下载" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+      <Button Content="设置" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
     </StackPanel>
 
-    <!-- 主内容区 -->
-    <ScrollViewer Grid.Column="1" Margin="0,24,24,16">
-      <StackPanel Spacing="16" MaxWidth="980">
-        <Text Text="主页" FontSize="30" FontWeight="Bold" Foreground="#f0eaf8" />
-        <Text Text="今日推荐" FontSize="18" FontWeight="SemiBold" Foreground="#c9bfe0" />
-
-        <!-- 资源卡（ItemsControl 绑定 DataStore 快照，M1 迭代接真数据） -->
+    <StackPanel Grid.Column="1" Margin="0,24,24,16" Spacing="16" MaxWidth="980">
+        <TextBlock Text="主页" FontSize="30" FontWeight="Bold" Foreground="#f0eaf8" />
+        <TextBlock Text="今日推荐" FontSize="18" FontWeight="SemiBold" Foreground="#c9bfe0" />
         <ItemsControl x:Name="RecommendList">
           <ItemsControl.ItemTemplate>
             <DataTemplate>
-              <Border CornerRadius="18" Padding="20" Margin="0,0,0,14"
-                      Background="#2a2135" BorderBrush="#4a3f5c" BorderThickness="1">
-                <StackPanel>
-                  <Text Text="{Binding Name}" FontSize="18" FontWeight="SemiBold" Foreground="#f0eaf8" />
-                  <Text Text="{Binding Introduction}" FontSize="13" Foreground="#a99cc4"
-                        TextWrapping="Wrap" Margin="0,6,0,0" />
-                </StackPanel>
-              </Border>
+              <TextBlock Text="static" />
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>
-
-        <!-- 公告卡 -->
         <Border CornerRadius="18" Padding="20" Background="#241c2e" BorderBrush="#4a3f5c" BorderThickness="1">
           <StackPanel>
-            <Text Text="公告" FontSize="16" FontWeight="SemiBold" Foreground="#f0eaf8" />
-            <Text x:Name="AnnouncementText" FontSize="13" Foreground="#a99cc4" TextWrapping="Wrap" Margin="0,8,0,0" />
+            <TextBlock Text="公告" FontSize="16" FontWeight="SemiBold" Foreground="#f0eaf8" />
+            <TextBlock x:Name="AnnouncementText" Text="（加载中）" FontSize="13" Foreground="#a99cc4" TextWrapping="Wrap" Margin="0,8,0,0" />
           </StackPanel>
         </Border>
       </StackPanel>
-    </ScrollViewer>
   </Grid>
 </Window>
