@@ -6,30 +6,14 @@
   <Grid ColumnDefinitions="220,*">
     <StackPanel Grid.Column="0" Margin="16,24,16,16" Spacing="6">
       <TextBlock Text="Pointers-BOX" FontSize="22" FontWeight="Bold" Foreground="#e8e0f5" Margin="8,0,0,18" />
-      <Button Content="首页" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
-      <Button Content="资源" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
-      <Button Content="链接" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
-      <Button Content="浏览器" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
-      <Button Content="下载" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
-      <Button Content="设置" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+      <Button x:Name="NavHome" Content="首页" Click="NavClick" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+      <Button x:Name="NavResources" Content="资源" Click="NavClick" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+      <Button x:Name="NavLinks" Content="链接" Click="NavClick" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+      <Button x:Name="NavBrowser" Content="浏览器" Click="NavClick" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+      <Button x:Name="NavDownloads" Content="下载" Click="NavClick" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+      <Button x:Name="NavSettings" Content="设置" Click="NavClick" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
     </StackPanel>
 
-    <StackPanel Grid.Column="1" Margin="0,24,24,16" Spacing="16" MaxWidth="980">
-        <TextBlock Text="主页" FontSize="30" FontWeight="Bold" Foreground="#f0eaf8" />
-        <TextBlock Text="今日推荐" FontSize="18" FontWeight="SemiBold" Foreground="#c9bfe0" />
-        <ItemsControl x:Name="RecommendList">
-          <ItemsControl.ItemTemplate>
-            <DataTemplate>
-              <TextBlock Text="static" />
-            </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
-        <Border CornerRadius="18" Padding="20" Background="#241c2e" BorderBrush="#4a3f5c" BorderThickness="1">
-          <StackPanel>
-            <TextBlock Text="公告" FontSize="16" FontWeight="SemiBold" Foreground="#f0eaf8" />
-            <TextBlock x:Name="AnnouncementText" Text="（加载中）" FontSize="13" Foreground="#a99cc4" TextWrapping="Wrap" Margin="0,8,0,0" />
-          </StackPanel>
-        </Border>
-      </StackPanel>
+    <ContentControl x:Name="PageHost" Grid.Column="1" Margin="0,24,24,16" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
   </Grid>
 </Window>

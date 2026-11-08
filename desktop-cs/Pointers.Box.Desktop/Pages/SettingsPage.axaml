@@ -1,0 +1,27 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Pointers.Box.Desktop.Pages.SettingsPage">
+  <ScrollViewer>
+    <StackPanel Spacing="14" MaxWidth="980">
+      <TextBlock Text="设置" FontSize="30" FontWeight="Bold" Foreground="#f0eaf8" />
+      <Border CornerRadius="18" Padding="20" Background="#241c2e" BorderBrush="#4a3f5c" BorderThickness="1">
+        <StackPanel Spacing="10">
+          <TextBlock Text="更新渠道" FontWeight="SemiBold" Foreground="#f0eaf8" />
+          <StackPanel Orientation="Horizontal" Spacing="20">
+            <RadioButton x:Name="ChannelGitee" Content="国内镜像（Gitee）" GroupName="channel" Click="ChannelChanged" />
+            <RadioButton x:Name="ChannelGithub" Content="全球官方（GitHub）" GroupName="channel" Click="ChannelChanged" />
+          </StackPanel>
+          <TextBlock Text="国内网络建议选 Gitee（不受 GitHub 限流影响）；切换后下次检查立即生效" FontSize="12" Foreground="#a99cc4" />
+        </StackPanel>
+      </Border>
+      <Border CornerRadius="18" Padding="20" Background="#241c2e" BorderBrush="#4a3f5c" BorderThickness="1">
+        <StackPanel Spacing="6">
+          <TextBlock Text="关于应用" FontWeight="SemiBold" Foreground="#f0eaf8" />
+          <TextBlock Text="Pointers-BOX v2.6.0" Foreground="#a99cc4" />
+          <TextBlock Text="开发者：Pointers" FontSize="12" Foreground="#a99cc4" />
+          <TextBlock Text="Copyright © 2026 Pointers-BOX All Rights Reserved" FontSize="12" Foreground="#a99cc4" />
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

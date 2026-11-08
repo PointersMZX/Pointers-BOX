@@ -1,46 +1,119 @@
 using System;
 using System.Linq;
 using Avalonia.Controls;
+using Avalonia.Interactivity;
+using Avalonia.Media;
 using Pointers.Box.Core;
+using Pointers.Box.Desktop.Pages;
 
 namespace Pointers.Box.Desktop;
 
 public partial class MainWindow : Window
 {
     private readonly DataStore _store;
+    private readonly string _linksPath;
+    private readonly string _configPath;
+    private DataSnapshot? _snapshot;
+    private AppConfig _config = new();
+    private System.Collections.Generic.List<UserLink> _userLinks = new();
 
     public MainWindow()
     {
         InitializeComponent();
         var appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        var baseDir = System.IO.Path.Combine(appData, "Pointers-BOX");
         _store = new DataStore(
-            System.IO.Path.Combine(appData, "Pointers-BOX", "cache", "snapshot.json"),
+            System.IO.Path.Combine(baseDir, "cache", "snapshot.json"),
             System.IO.Path.Combine(AppContext.BaseDirectory, "box.mcx"));
-        Loaded += async (_, _) => await LoadDataAsync();
+        _linksPath = System.IO.Path.Combine(baseDir, "user-links.json");
+        _configPath = System.IO.Path.Combine(baseDir, "config.json");
+        _userLinks = BoxLogic.LoadUserLinks(_linksPath);
+        _config = LoadConfig();
+        HighlightNav("NavHome");
+        _ = LoadDataAsync();
+    }
+
+    private AppConfig LoadConfig()
+    {
+        try
+        {
+            if (System.IO.File.Exists(_configPath))
+                return System.Text.Json.JsonSerializer.Deserialize<AppConfig>(
+                    System.IO.File.ReadAllText(_configPath),
+                    new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new AppConfig();
+        }
+        catch { }
+        return new AppConfig();
+    }
+
+    public void SaveConfig()
+    {
+        try
+        {
+            System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(_configPath)!);
+            System.IO.File.WriteAllText(_configPath,
+                System.Text.Json.JsonSerializer.Serialize(_config,
+                    new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+        }
+        catch { }
     }
 
     private async System.Threading.Tasks.Task LoadDataAsync()
     {
         try
         {
-            var snap = await _store.GetDataAsync();
-            if (snap.Resources != null)
-            {
-                // 推荐：随机抽 4 张（v2.5.0 同构；后续迭代补换一批/密度切换）
-                var rnd = new Random();
-                RecommendList.ItemsSource = snap.Resources
-                    .OrderBy(_ => rnd.Next())
-                    .Take(4)
-                    .ToList();
-            }
-            if (snap.Announcement != null)
-            {
-                AnnouncementText.Text = snap.Announcement.Content;
-            }
+            _snapshot = await _store.GetDataAsync();
+            if (PageHost.Content is HomePage home) home.UpdateSnapshot(_snapshot, _config);
+            if (PageHost.Content is ResourcesPage res) res.UpdateSnapshot(_snapshot);
         }
-        catch
+        catch { }
+    }
+
+    private void HighlightNav(string activeName)
+    {
+        foreach (var name in new[] { "NavHome", "NavResources", "NavLinks", "NavBrowser", "NavDownloads", "NavSettings" })
         {
-            // 离线兜底已在 DataStore 内处理；UI 侧失败静默（M1 迭代补状态栏）
+            if (this.FindControl<Button>(name) is { } btn)
+            {
+                btn.Background = name == activeName ? new SolidColorBrush(Color.Parse("#2a2135")) : null;
+                btn.Foreground = name == activeName ? new SolidColorBrush(Color.Parse("#f0eaf8")) : new SolidColorBrush(Color.Parse("#a99cc4"));
+            }
         }
+    }
+
+    private void NavClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button btn || btn.Name == null) return;
+        HighlightNav(btn.Name);
+        switch (btn.Name)
+        {
+            case "NavHome":
+                var home = new HomePage();
+                home.UpdateSnapshot(_snapshot, _config);
+                PageHost.Content = home;
+                break;
+            case "NavResources":
+                var res = new ResourcesPage();
+                res.UpdateSnapshot(_snapshot);
+                PageHost.Content = res;
+                break;
+            case "NavLinks":
+                PageHost.Content = new LinksPage(_linksPath, _userLinks);
+                break;
+            case "NavSettings":
+                PageHost.Content = new SettingsPage(_config, this);
+                break;
+            case "NavBrowser":
+                PageHost.Content = new PlaceholderPage("浏览器", "内嵌浏览器开发中（M4）");
+                break;
+            case "NavDownloads":
+                PageHost.Content = new PlaceholderPage("下载", "下载管理开发中（M4）");
+                break;
+        }
+    }
+
+    public void SaveLinks()
+    {
+        BoxLogic.SaveUserLinks(_linksPath, _userLinks);
     }
 }
