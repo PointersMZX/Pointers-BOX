@@ -13,6 +13,7 @@ public partial class MainWindow : Window
     private readonly DataStore _store;
     private readonly string _linksPath;
     private readonly string _configPath;
+    private readonly string _historyPath;
     private DataSnapshot? _snapshot;
     private AppConfig _config = new();
     private System.Collections.Generic.List<UserLink> _userLinks = new();
@@ -27,6 +28,7 @@ public partial class MainWindow : Window
             System.IO.Path.Combine(AppContext.BaseDirectory, "box.mcx"));
         _linksPath = System.IO.Path.Combine(baseDir, "user-links.json");
         _configPath = System.IO.Path.Combine(baseDir, "config.json");
+        _historyPath = System.IO.Path.Combine(baseDir, "downloads.json");
         _userLinks = BoxLogic.LoadUserLinks(_linksPath);
         _config = LoadConfig();
         HighlightNav("NavHome");
@@ -104,10 +106,10 @@ public partial class MainWindow : Window
                 PageHost.Content = new SettingsPage(_config, this);
                 break;
             case "NavBrowser":
-                PageHost.Content = new PlaceholderPage("浏览器", "内嵌浏览器开发中（M4）");
+                PageHost.Content = new BrowserPage(_snapshot);
                 break;
             case "NavDownloads":
-                PageHost.Content = new PlaceholderPage("下载", "下载管理开发中（M4）");
+                PageHost.Content = new DownloadsPage(_config, this, _historyPath);
                 break;
         }
     }
