@@ -1,0 +1,7 @@
+{
+  "string": [
+    { "name": "EntryAbility_desc", "value": "Pointers-BOX 鸿蒙原生版" },
+    { "name": "EntryAbility_label", "value": "Pointers-BOX" },
+    { "name": "module_desc", "value": "entry 模块" }
+  ]
+}

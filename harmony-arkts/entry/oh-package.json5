@@ -1,0 +1,8 @@
+{
+  "modelVersion": "5.0.5",
+  "name": "entry",
+  "version": "1.0.0",
+  "description": "Pointers-BOX 鸿蒙原生 entry 模块",
+  "main": "",
+  "dependencies": {}
+}
