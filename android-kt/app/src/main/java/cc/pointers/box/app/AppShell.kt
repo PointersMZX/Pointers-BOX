@@ -1,8 +1,15 @@
-// Pointers-BOX Android（v2.6.0 全原生）：主导航 + 主页完整 + 资源库 + 链接 + 设置
+// Pointers-BOX Android（v2.6.0 全原生）：主导航 + 主页完整 + 资源库 + 链接 + 浏览器 + 下载 + 设置
 
 package cc.pointers.box.app
 
+import android.app.DownloadManager
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.webkit.WebResourceRequest
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -34,11 +41,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import cc.pointers.box.app.data.DataSnapshot
+import androidx.compose.ui.viewinterop.AndroidView
 import cc.pointers.box.app.data.AppConfig
+import cc.pointers.box.app.data.DataSnapshot
 import cc.pointers.box.app.data.DataStore
 import cc.pointers.box.app.data.Resource
 import cc.pointers.box.app.data.UserLink
@@ -54,7 +63,7 @@ private val Accent = Color(0xFF7c5cff)
 private val Green = Color(0xFF7ee787)
 private val Amber = Color(0xFFd29922)
 
-enum class Page { Home, Resources, Links, Settings }
+enum class Page { Home, Resources, Links, Browser, Downloads, Settings }
 
 object ConfigStore {
     private val json = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
@@ -113,14 +122,16 @@ fun AppShell(store: DataStore, linksFile: File, configFile: File) {
 
     Column(modifier = Modifier.fillMaxSize()) {
         Box(modifier = Modifier.weight(1f)) {
-            when (page) {
-                Page.Home -> HomeContent(snapshot, recommends) {
-                    recommends = snapshot?.resources.orEmpty().shuffled().take(4)
-                }
-                Page.Resources -> ResourcesContent(snapshot)
-                Page.Links -> LinksContent(linksFile, links) { links = it }
-                Page.Settings -> SettingsContent(config) { config = it; ConfigStore.save(configFile, config) }
+        when (page) {
+            Page.Home -> HomeContent(snapshot, recommends) {
+                recommends = snapshot?.resources.orEmpty().shuffled().take(4)
             }
+            Page.Resources -> ResourcesContent(snapshot)
+            Page.Links -> LinksContent(linksFile, links) { links = it }
+            Page.Browser -> BrowserContent(snapshot, config)
+            Page.Downloads -> DownloadsContent(snapshot)
+            Page.Settings -> SettingsContent(config) { config = it; ConfigStore.save(configFile, config) }
+        }
         }
         BottomNav(page) { page = it }
     }
@@ -136,15 +147,15 @@ fun BottomNav(current: Page, onSelect: (Page) -> Unit) {
             .padding(vertical = 10.dp),
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
-        for ((label, p) in listOf("首页" to Page.Home, "资源" to Page.Resources, "链接" to Page.Links, "设置" to Page.Settings)) {
+        for ((label, p) in listOf("首页" to Page.Home, "资源" to Page.Resources, "链接" to Page.Links, "浏览器" to Page.Browser, "下载" to Page.Downloads, "设置" to Page.Settings)) {
             Text(
                 text = label,
-                fontSize = 14.sp,
+                fontSize = 13.sp,
                 fontWeight = if (current == p) FontWeight.Bold else FontWeight.Normal,
                 color = if (current == p) Accent else TextSecondary,
                 modifier = Modifier
                     .clickable { onSelect(p) }
-                    .padding(horizontal = 12.dp, vertical = 4.dp)
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
             )
         }
     }
@@ -311,6 +322,157 @@ fun LinksContent(linksFile: File, links: List<UserLink>, onUpdate: (List<UserLin
                                 onUpdate(updated)
                             }
                         )
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun normalizeHttp(raw: String): String {
+    var u = raw.trim()
+    if (u.isEmpty()) return u
+    if (!u.startsWith("http://") && !u.startsWith("https://")) u = "https://" + u
+    return u
+}
+
+private fun Context.openExternally(url: String) {
+    runCatching {
+        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+    }
+}
+
+@Composable
+fun BrowserContent(snapshot: DataSnapshot?, config: AppConfig) {
+    val ctx = LocalContext.current
+    var url by remember { mutableStateOf("") }
+    var target by remember { mutableStateOf<String?>(null) }
+    val quickLinks = remember(snapshot) {
+        snapshot?.resources.orEmpty().flatMap { res -> res.links.map { l -> res.name to l } }
+    }
+
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        Text("浏览器", fontSize = 30.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+        Spacer(Modifier.height(10.dp))
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            TextField(
+                value = url, onValueChange = { url = it }, modifier = Modifier.weight(1f),
+                placeholder = { Text("https://…", color = TextSecondary) },
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = CardBg, unfocusedContainerColor = CardBg,
+                    focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary
+                ), singleLine = true
+            )
+            Button(onClick = { target = normalizeHttp(url) }) { Text("打开") }
+        }
+        if (target != null) {
+            Spacer(Modifier.height(10.dp))
+            AndroidView(
+                factory = { c ->
+                    WebView(c).apply {
+                        settings.javaScriptEnabled = true
+                        settings.domStorageEnabled = true
+                        webViewClient = object : WebViewClient() {
+                            override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
+                                val scheme = request.url?.scheme
+                                if (scheme == "http" || scheme == "https") {
+                                    view.loadUrl(request.url.toString())
+                                    return false
+                                }
+                                return true // 其它 scheme 交系统
+                            }
+                        }
+                        loadUrl(target!!)
+                    }
+                },
+                modifier = Modifier.fillMaxWidth().weight(1f).background(CardBg, RoundedCornerShape(18.dp))
+            )
+            Spacer(Modifier.height(8.dp))
+            Button(onClick = { ctx.openExternally(target!!) }, modifier = Modifier.fillMaxWidth()) {
+                Text("用外部浏览器打开")
+            }
+        }
+        if (quickLinks.isNotEmpty()) {
+            Spacer(Modifier.height(12.dp))
+            Text("资源快捷链接", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = TextPrimary)
+            Spacer(Modifier.height(8.dp))
+            LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                items(quickLinks) { (resName, linkUrl) ->
+                    Box(modifier = Modifier.fillMaxWidth().background(CardBgAlt, RoundedCornerShape(14.dp)).padding(14.dp)) {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(resName, fontSize = 13.sp, color = TextPrimary, maxLines = 1)
+                                Text(linkUrl, fontSize = 12.sp, color = Accent, maxLines = 1)
+                            }
+                            Button(onClick = { target = linkUrl }) { Text("打开") }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DownloadsContent(snapshot: DataSnapshot?) {
+    val ctx = LocalContext.current
+    var url by remember { mutableStateOf("") }
+    var queued by remember { mutableStateOf<List<String>>(emptyList()) }
+    val quickLinks = remember(snapshot) {
+        snapshot?.resources.orEmpty().flatMap { res -> res.links.map { l -> res.name to l } }
+    }
+
+    fun enqueue(u: String) {
+        runCatching {
+            val dm = ctx.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+            val file = u.substringAfterLast('/').ifEmpty { "download" }
+            val req = DownloadManager.Request(Uri.parse(u))
+                .setTitle(file) // 通知默认可见，落到系统「下载」目录
+            dm.enqueue(req)
+        }
+        queued = queued + u
+        url = ""
+    }
+
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        Text("下载", fontSize = 30.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+        Spacer(Modifier.height(10.dp))
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            TextField(
+                value = url, onValueChange = { url = it }, modifier = Modifier.weight(1f),
+                placeholder = { Text("粘贴下载链接（.mcx 等直链）", color = TextSecondary) },
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = CardBg, unfocusedContainerColor = CardBg,
+                    focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary
+                ), singleLine = true
+            )
+            Button(onClick = { if (url.isNotBlank()) enqueue(normalizeHttp(url)) }) { Text("下载") }
+        }
+        Spacer(Modifier.height(10.dp))
+        Box(modifier = Modifier.fillMaxWidth().background(CardBgAlt, RoundedCornerShape(18.dp)).padding(18.dp)) {
+            Column {
+                Text("本次会话", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = TextPrimary)
+                Spacer(Modifier.height(6.dp))
+                if (queued.isEmpty()) Text("暂无任务", fontSize = 12.sp, color = TextSecondary)
+                else queued.forEach { Text(it, fontSize = 12.sp, color = TextPrimary) }
+                Spacer(Modifier.height(6.dp))
+                Text("文件保存到系统「下载」目录，完成后有通知", fontSize = 12.sp, color = TextSecondary)
+            }
+        }
+        if (quickLinks.isNotEmpty()) {
+            Spacer(Modifier.height(12.dp))
+            Text("从资源链接下载", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = TextPrimary)
+            Spacer(Modifier.height(8.dp))
+            LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                items(quickLinks) { (resName, linkUrl) ->
+                    Box(modifier = Modifier.fillMaxWidth().background(CardBg, RoundedCornerShape(14.dp)).padding(14.dp)) {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(resName, fontSize = 13.sp, color = TextPrimary, maxLines = 1)
+                                Text(linkUrl, fontSize = 12.sp, color = Accent, maxLines = 1)
+                            }
+                            Button(onClick = { enqueue(linkUrl) }) { Text("下载") }
+                        }
                     }
                 }
             }
