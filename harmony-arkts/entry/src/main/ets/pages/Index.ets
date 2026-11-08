@@ -1,4 +1,5 @@
-// Pointers-BOX 鸿蒙原生版（v2.6.0）：主页完整 + 导航（首页/资源/设置）
+// Pointers-BOX 鸿蒙原生版（v2.6.0）：主页完整 + 导航（首页/资源/浏览器/下载/设置）
+import { router } from '@kit.ArkUI';
 import { DataStore } from '../data/DataStore';
 import { DataSnapshot, Resource } from '../data/Models';
 
@@ -11,7 +12,7 @@ const Accent = '#7c5cff';
 const Green = '#7ee787';
 const Amber = '#d29922';
 
-enum Page { Home, Resources, Settings }
+enum Page { Home, Resources, Browser, Downloads, Settings }
 
 @Entry
 @Component
@@ -51,6 +52,8 @@ struct Index {
       Row() {
         this.NavItem('首页', Page.Home)
         this.NavItem('资源', Page.Resources)
+        this.NavItem('浏览器', Page.Browser)
+        this.NavItem('下载', Page.Downloads)
         this.NavItem('设置', Page.Settings)
       }
       .width('100%')
@@ -71,7 +74,14 @@ struct Index {
       .fontSize(14)
       .fontWeight(this.page === page ? FontWeight.Bold : FontWeight.Normal)
       .fontColor(this.page === page ? Accent : TextSecondary)
-      .onClick(() => { this.page = page; })
+      .onClick(() => {
+        // 浏览器/下载是独立子页，走 router；首页/资源/设置原地切换
+        if (page === Page.Browser || page === Page.Downloads) {
+          router.pushUrl({ url: page === Page.Browser ? 'pages/BrowserPage' : 'pages/DownloadsPage' });
+        } else {
+          this.page = page;
+        }
+      })
   }
 
   @Builder
