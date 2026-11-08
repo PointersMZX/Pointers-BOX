@@ -4,5 +4,31 @@
              RequestedThemeVariant="Dark">
   <Application.Styles>
     <FluentTheme />
+    <!-- 液态玻璃样式（参考 06-liquid-glass-spec dark 预设）：
+         半透明深底 + 顶棱线 + 底缘光 + 内泛光 + 高亮边框 -->
+    <Style Selector="Border.glass">
+      <Setter Property="CornerRadius" Value="18" />
+      <Setter Property="Padding" Value="20" />
+      <Setter Property="Background" Value="#6B2A2135" />
+      <Setter Property="BorderBrush" Value="#29FFFFFF" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="BoxShadow" Value="inset 0 1 0 0 #59FFFFFF, inset 0 -1 0 0 #1AFFFFFF, inset 0 0 22 0 #0DFFFFFF, 0 10 32 0 #59030014" />
+    </Style>
+    <!-- 次级玻璃卡（更暗一档，公告/状态用） -->
+    <Style Selector="Border.glass-alt">
+      <Setter Property="CornerRadius" Value="18" />
+      <Setter Property="Padding" Value="20" />
+      <Setter Property="Background" Value="#66241C2E" />
+      <Setter Property="BorderBrush" Value="#22FFFFFF" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="BoxShadow" Value="inset 0 1 0 0 #4DFFFFFF, inset 0 -1 0 0 #14FFFFFF, inset 0 0 22 0 #0DFFFFFF, 0 10 32 0 #59030014" />
+    </Style>
+    <!-- 导航胶囊按钮 -->
+    <Style Selector="Button.glass-nav">
+      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="Padding" Value="12,8" />
+      <Setter Property="Background" Value="#14FFFFFF" />
+      <Setter Property="HorizontalContentAlignment" Value="Left" />
+    </Style>
   </Application.Styles>
 </Application>

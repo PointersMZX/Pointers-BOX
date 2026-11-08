@@ -3,17 +3,47 @@
         x:Class="Pointers.Box.Desktop.MainWindow"
         Title="Pointers-BOX" Width="1280" Height="800"
         MinWidth="960" MinHeight="640" Background="#0d0817">
-  <Grid ColumnDefinitions="220,*">
-    <StackPanel Grid.Column="0" Margin="16,24,16,16" Spacing="6">
-      <TextBlock Text="Pointers-BOX" FontSize="22" FontWeight="Bold" Foreground="#e8e0f5" Margin="8,0,0,18" />
-      <Button x:Name="NavHome" Content="首页" Click="NavClick" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
-      <Button x:Name="NavResources" Content="资源" Click="NavClick" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
-      <Button x:Name="NavLinks" Content="链接" Click="NavClick" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
-      <Button x:Name="NavBrowser" Content="浏览器" Click="NavClick" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
-      <Button x:Name="NavDownloads" Content="下载" Click="NavClick" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
-      <Button x:Name="NavSettings" Content="设置" Click="NavClick" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
-    </StackPanel>
+  <Panel>
+    <!-- 液态玻璃背景：柔光球层（参考 05-gradient-flow-bg，代码驱动慢速漂移） -->
+    <Panel x:Name="OrbLayer" IsHitTestVisible="False" ClipToBounds="True">
+      <Ellipse x:Name="OrbA" Width="900" Height="900" Margin="-260,-220,0,0" Opacity="0.5">
+        <Ellipse.Fill>
+          <RadialGradientBrush Center="0.4,0.4" GradientOrigin="0.4,0.4">
+            <GradientStop Color="#b37c5cff" Offset="0" />
+            <GradientStop Color="#007c5cff" Offset="0.65" />
+          </RadialGradientBrush>
+        </Ellipse.Fill>
+      </Ellipse>
+      <Ellipse x:Name="OrbB" Width="800" Height="800" Margin="0,0,-240,-200" Opacity="0.42" HorizontalAlignment="Right" VerticalAlignment="Bottom">
+        <Ellipse.Fill>
+          <RadialGradientBrush Center="0.55,0.45" GradientOrigin="0.55,0.45">
+            <GradientStop Color="#a506b6d4" Offset="0" />
+            <GradientStop Color="#0006b6d4" Offset="0.62" />
+          </RadialGradientBrush>
+        </Ellipse.Fill>
+      </Ellipse>
+      <Ellipse x:Name="OrbC" Width="520" Height="520" Opacity="0.3" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <Ellipse.Fill>
+          <RadialGradientBrush>
+            <GradientStop Color="#8fec4899" Offset="0" />
+            <GradientStop Color="#00ec4899" Offset="0.6" />
+          </RadialGradientBrush>
+        </Ellipse.Fill>
+      </Ellipse>
+    </Panel>
 
-    <ContentControl x:Name="PageHost" Grid.Column="1" Margin="0,24,24,16" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
-  </Grid>
+    <Grid ColumnDefinitions="220,*">
+      <StackPanel Grid.Column="0" Margin="16,24,16,16" Spacing="6">
+        <TextBlock Text="Pointers-BOX" FontSize="22" FontWeight="Bold" Foreground="#e8e0f5" Margin="8,0,0,18" />
+        <Button x:Name="NavHome" Classes="glass-nav" Content="首页" Click="NavClick" HorizontalAlignment="Stretch" Margin="0,0,0,4" />
+        <Button x:Name="NavResources" Classes="glass-nav" Content="资源" Click="NavClick" HorizontalAlignment="Stretch" Margin="0,0,0,4" />
+        <Button x:Name="NavLinks" Classes="glass-nav" Content="链接" Click="NavClick" HorizontalAlignment="Stretch" Margin="0,0,0,4" />
+        <Button x:Name="NavBrowser" Classes="glass-nav" Content="浏览器" Click="NavClick" HorizontalAlignment="Stretch" Margin="0,0,0,4" />
+        <Button x:Name="NavDownloads" Classes="glass-nav" Content="下载" Click="NavClick" HorizontalAlignment="Stretch" Margin="0,0,0,4" />
+        <Button x:Name="NavSettings" Classes="glass-nav" Content="设置" Click="NavClick" HorizontalAlignment="Stretch" />
+      </StackPanel>
+
+      <ContentControl x:Name="PageHost" Grid.Column="1" Margin="0,24,24,16" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
+    </Grid>
+  </Panel>
 </Window>

@@ -2,10 +2,13 @@
 import { router } from '@kit.ArkUI';
 import { DataStore } from '../data/DataStore';
 import { DataSnapshot, Resource } from '../data/Models';
+import { OrbBackground } from '../ui/Glass';
 
 const BgBase = '#0d0817';
-const CardBg = '#2a2135';
-const CardBgAlt = '#241c2e';
+const CardBg = '#8F2a2135';      // 玻璃卡：半透明（柔光球透出）
+const CardBgAlt = '#85241c2e';   // 玻璃次卡
+const GlassBorder = '#29FFFFFF';
+const GlassRim = '#59FFFFFF';
 const TextPrimary = '#f0eaf8';
 const TextSecondary = '#a99cc4';
 const Accent = '#7c5cff';
@@ -36,7 +39,10 @@ struct Index {
   }
 
   build() {
-    Column() {
+    Stack() {
+      // 液态玻璃柔光球背景（最底层）
+      OrbBackground()
+      Column() {
       Column() {
         if (this.page === Page.Home) {
           this.HomePage()
@@ -58,14 +64,19 @@ struct Index {
       }
       .width('100%')
       .padding({ top: 10, bottom: 10 })
-      .backgroundColor('#1a1425')
+      .backgroundColor('#CC1a1425')
       .borderRadius(24)
+      .border({ width: 1, color: GlassBorder })
       .margin(12)
       .justifyContent(FlexAlign.SpaceEvenly)
+      }
+      .width('100%')
+      .height('100%')
     }
     .width('100%')
     .height('100%')
     .backgroundColor(BgBase)
+    .alignContent(Alignment.TopStart)
   }
 
   @Builder
@@ -130,6 +141,7 @@ struct Index {
           .padding(20)
           .backgroundColor(CardBg)
           .borderRadius(18)
+          .border({ width: 1, color: GlassBorder })
         }, (res: Resource) => res.name)
 
         if (this.snapshot?.announcement) {
@@ -148,6 +160,7 @@ struct Index {
           .padding(20)
           .backgroundColor(CardBgAlt)
           .borderRadius(18)
+          .border({ width: 1, color: GlassBorder })
         }
 
         Column() {

@@ -6,7 +6,7 @@
     <StackPanel Spacing="14" MaxWidth="980">
       <TextBlock Text="浏览器" FontSize="30" FontWeight="Bold" Foreground="#f0eaf8" />
 
-      <Border CornerRadius="18" Padding="18" Background="#2a2135" BorderBrush="#4a3f5c" BorderThickness="1">
+      <Border Classes="glass" CornerRadius="18" Padding="18">
         <StackPanel>
           <TextBlock Text="打开链接" FontSize="14" FontWeight="SemiBold" Foreground="#f0eaf8" />
           <TextBlock Text="以系统默认浏览器打开（内嵌浏览器将于后续版本提供）" FontSize="12" Foreground="#a99cc4" Margin="0,4,0,10" />
@@ -17,7 +17,7 @@
         </StackPanel>
       </Border>
 
-      <Border CornerRadius="18" Padding="18" Background="#241c2e" BorderBrush="#4a3f5c" BorderThickness="1">
+      <Border Classes="glass-alt" CornerRadius="18" Padding="18">
         <StackPanel>
           <TextBlock Text="资源快捷链接" FontSize="14" FontWeight="SemiBold" Foreground="#f0eaf8" Margin="0,0,0,8" />
           <ItemsControl x:Name="QuickLinkList">

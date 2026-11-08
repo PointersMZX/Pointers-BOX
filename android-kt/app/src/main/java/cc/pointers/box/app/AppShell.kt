@@ -13,6 +13,7 @@ import android.webkit.WebViewClient
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -40,6 +41,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -55,8 +57,8 @@ import java.io.File
 import kotlinx.serialization.encodeToString
 
 private val BgBase = Color(0xFF0d0817)
-private val CardBg = Color(0xFF2a2135)
-private val CardBgAlt = Color(0xFF241c2e)
+private val CardBg = Color(0x8F2a2135)
+private val CardBgAlt = Color(0x85241c2e)
 private val TextPrimary = Color(0xFFf0eaf8)
 private val TextSecondary = Color(0xFFa99cc4)
 private val Accent = Color(0xFF7c5cff)
@@ -122,7 +124,9 @@ fun AppShell(store: DataStore, linksFile: File, configFile: File) {
 
     Column(modifier = Modifier.fillMaxSize()) {
         Box(modifier = Modifier.weight(1f)) {
-        when (page) {
+            // 液态玻璃柔光球背景（最底层，内容浮在其上）
+            OrbBackground(Modifier.matchParentSize())
+            when (page) {
             Page.Home -> HomeContent(snapshot, recommends) {
                 recommends = snapshot?.resources.orEmpty().shuffled().take(4)
             }
@@ -131,7 +135,7 @@ fun AppShell(store: DataStore, linksFile: File, configFile: File) {
             Page.Browser -> BrowserContent(snapshot, config)
             Page.Downloads -> DownloadsContent(snapshot)
             Page.Settings -> SettingsContent(config) { config = it; ConfigStore.save(configFile, config) }
-        }
+            }
         }
         BottomNav(page) { page = it }
     }
@@ -143,7 +147,8 @@ fun BottomNav(current: Page, onSelect: (Page) -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(12.dp)
-            .background(Color(0xFF1a1425), RoundedCornerShape(24.dp))
+            .background(Color(0xCC1a1425), RoundedCornerShape(24.dp))
+            .border(1.dp, Brush.verticalGradient(listOf(Color(0x59FFFFFF), Color(0x1AFFFFFF))), RoundedCornerShape(24.dp))
             .padding(vertical = 10.dp),
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {

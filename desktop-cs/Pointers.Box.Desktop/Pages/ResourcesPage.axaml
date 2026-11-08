@@ -12,8 +12,7 @@
       <ItemsControl x:Name="ResourceList">
         <ItemsControl.ItemTemplate>
           <DataTemplate x:DataType="core:Resource">
-            <Border CornerRadius="18" Padding="18" Margin="0,0,0,12"
-                    Background="#2a2135" BorderBrush="#4a3f5c" BorderThickness="1">
+            <Border Classes="glass" CornerRadius="18" Padding="18" Margin="0,0,0,12">
               <StackPanel>
                 <Grid ColumnDefinitions="*,Auto">
                   <TextBlock Grid.Column="0" Text="{Binding Name}" FontSize="17" FontWeight="SemiBold" Foreground="#f0eaf8" />

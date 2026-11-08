@@ -12,8 +12,7 @@
       <ItemsControl x:Name="RecommendList">
         <ItemsControl.ItemTemplate>
           <DataTemplate x:DataType="core:Resource">
-            <Border CornerRadius="18" Padding="20" Margin="0,0,0,14"
-                    Background="#2a2135" BorderBrush="#4a3f5c" BorderThickness="1">
+            <Border Classes="glass" CornerRadius="18" Padding="20" Margin="0,0,0,14">
               <StackPanel>
                 <TextBlock Text="{Binding Name}" FontSize="18" FontWeight="SemiBold" Foreground="#f0eaf8" />
                 <TextBlock Text="{Binding Introduction}" FontSize="13" Foreground="#a99cc4" TextWrapping="Wrap" Margin="0,6,0,0" />
@@ -22,13 +21,13 @@
           </DataTemplate>
         </ItemsControl.ItemTemplate>
       </ItemsControl>
-      <Border x:Name="AnnouncementCard" CornerRadius="18" Padding="20" Background="#241c2e" BorderBrush="#4a3f5c" BorderThickness="1">
+      <Border Classes="glass-alt" x:Name="AnnouncementCard" CornerRadius="18" Padding="20">
         <StackPanel>
           <TextBlock Text="公告" FontSize="16" FontWeight="SemiBold" Foreground="#f0eaf8" />
           <TextBlock x:Name="AnnouncementText" Text="（加载中）" FontSize="13" Foreground="#a99cc4" TextWrapping="Wrap" Margin="0,8,0,0" />
         </StackPanel>
       </Border>
-      <Border CornerRadius="18" Padding="20" Background="#241c2e" BorderBrush="#4a3f5c" BorderThickness="1">
+      <Border Classes="glass-alt" CornerRadius="18" Padding="20">
         <StackPanel>
           <TextBlock Text="数据状态" FontSize="16" FontWeight="SemiBold" Foreground="#f0eaf8" />
           <TextBlock x:Name="StatusText" Text="加载中" FontSize="13" Foreground="#a99cc4" Margin="0,8,0,0" />
