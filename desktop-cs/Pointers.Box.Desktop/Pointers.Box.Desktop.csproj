@@ -16,6 +16,15 @@
     <PackageReference Include="AvaloniaUI.DiagnosticsSupport" Version="2.2.3" Condition="'$(Configuration)' == 'Debug'" />
   </ItemGroup>
 
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\**" />
+  </ItemGroup>
+
+  <!-- box.mcx 内嵌兜底（数据协议：服务器 box.json 主源，包内 mcx 兜底） -->
+  <ItemGroup>
+    <None Include="..\..\resources\box.mcx" Link="box.mcx" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 
   <ItemGroup>
     <ProjectReference Include="../Pointers.Box.Core/Pointers.Box.Core.csproj" />

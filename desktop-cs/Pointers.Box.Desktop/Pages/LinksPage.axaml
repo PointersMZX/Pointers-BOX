@@ -2,24 +2,24 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:core="using:Pointers.Box.Core"
              x:Class="Pointers.Box.Desktop.Pages.LinksPage">
-  <ScrollViewer>
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled">
     <StackPanel Spacing="14" MaxWidth="980">
-      <TextBlock Text="链接" FontSize="30" FontWeight="Bold" Foreground="#f0eaf8" />
-      <Grid ColumnDefinitions="*,*,Auto" ColumnSpacing="8">
-        <TextBox Grid.Column="0" x:Name="NameBox" Watermark="链接名称" />
-        <TextBox Grid.Column="1" x:Name="UrlBox" Watermark="https://…" />
-        <Button Grid.Column="2" Content="添加" Click="AddClick" />
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBlock Grid.Column="0" Text="链接" FontSize="30" FontWeight="Bold" Foreground="#f0eaf8" />
+        <Button Grid.Column="1" Content="＋ 添加链接" Click="AddOpenClick" VerticalAlignment="Center" />
       </Grid>
       <ItemsControl x:Name="LinkList">
         <ItemsControl.ItemTemplate>
           <DataTemplate x:DataType="core:UserLink">
             <Border Classes="glass-alt" CornerRadius="14" Padding="14" Margin="0,0,0,10">
-              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                <StackPanel Grid.Column="0">
+              <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
+                <StackPanel Grid.Column="0" Cursor="Hand" PointerPressed="OpenLinkClick" Tag="{Binding Url}">
                   <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Foreground="#f0eaf8" />
                   <TextBlock Text="{Binding Url}" FontSize="12" Foreground="#7c5cff" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Text="{Binding Remark}" FontSize="11" Foreground="#a99cc4" TextTrimming="CharacterEllipsis" IsVisible="{Binding HasRemark}" />
                 </StackPanel>
-                <Button Grid.Column="1" Content="删除" Click="DeleteClick" Tag="{Binding Id}" />
+                <Button Grid.Column="1" Content="打开" Click="OpenClick" Tag="{Binding Url}" />
+                <Button Grid.Column="2" Content="删除" Click="DeleteClick" Tag="{Binding Id}" />
               </Grid>
             </Border>
           </DataTemplate>

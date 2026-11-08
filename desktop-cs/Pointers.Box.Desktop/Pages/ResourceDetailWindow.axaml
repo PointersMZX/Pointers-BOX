@@ -1,0 +1,23 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Pointers.Box.Desktop.Pages.ResourceDetailWindow"
+        Width="560" SizeToContent="Height" MaxHeight="640"
+        CanResize="False" WindowStartupLocation="CenterOwner"
+        Background="#0d0817">
+  <Border Classes="glass" CornerRadius="18" Padding="24" Margin="10">
+    <StackPanel Spacing="12">
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBlock Grid.Column="0" x:Name="DetailName" FontSize="22" FontWeight="Bold" Foreground="#f0eaf8" TextWrapping="Wrap" />
+        <Button Grid.Column="1" Content="✕" Click="CloseClick" Background="Transparent" BorderThickness="0" Foreground="#a99cc4" />
+      </Grid>
+      <TextBlock x:Name="DetailMeta" FontSize="12" Foreground="#7c5cff" TextWrapping="Wrap" />
+      <TextBlock x:Name="DetailIntro" FontSize="13" Foreground="#a99cc4" TextWrapping="Wrap" />
+      <TextBlock Text="分享项" FontSize="14" FontWeight="SemiBold" Foreground="#f0eaf8" Margin="0,6,0,0" />
+      <StackPanel x:Name="ShareList" />
+      <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
+        <Button x:Name="FavButton" Content="☆ 收藏" Click="FavClick" />
+        <Button Content="关闭" Click="CloseClick" />
+      </StackPanel>
+    </StackPanel>
+  </Border>
+</Window>

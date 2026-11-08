@@ -1,49 +1,38 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:core="using:Pointers.Box.Core"
+             xmlns:pages="using:Pointers.Box.Desktop.Pages"
              x:Class="Pointers.Box.Desktop.Pages.BrowserPage">
-  <ScrollViewer>
-    <StackPanel Spacing="14" MaxWidth="980">
-      <TextBlock Text="浏览器" FontSize="30" FontWeight="Bold" Foreground="#f0eaf8" />
-
-      <Border Classes="glass" CornerRadius="18" Padding="18">
-        <StackPanel>
-          <TextBlock Text="打开链接" FontSize="14" FontWeight="SemiBold" Foreground="#f0eaf8" />
-          <TextBlock Text="以系统默认浏览器打开（内嵌浏览器将于后续版本提供）" FontSize="12" Foreground="#a99cc4" Margin="0,4,0,10" />
-          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-            <TextBox Grid.Column="0" x:Name="UrlBox" Watermark="粘贴或输入网址，例如 https://…" />
-            <Button Grid.Column="1" Content="打开" Click="OpenCustomClick" />
-          </Grid>
-        </StackPanel>
-      </Border>
-
-      <Border Classes="glass-alt" CornerRadius="18" Padding="18">
-        <StackPanel>
-          <TextBlock Text="资源快捷链接" FontSize="14" FontWeight="SemiBold" Foreground="#f0eaf8" Margin="0,0,0,8" />
-          <ItemsControl x:Name="QuickLinkList">
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="core:Resource">
-                <StackPanel Spacing="6" Margin="0,0,0,10">
-                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                    <TextBlock Grid.Column="0" Text="{Binding Name}" FontSize="15" Foreground="#f0eaf8" />
-                    <TextBlock Grid.Column="1" Text="{Binding Category}" FontSize="12" Foreground="#7c5cff" />
-                  </Grid>
-                  <ItemsControl ItemsSource="{Binding Links}">
-                    <ItemsControl.ItemTemplate>
-                      <DataTemplate x:DataType="x:String">
-                        <Button Content="{Binding}" FontSize="13" Foreground="#a99cc4"
-                                Background="Transparent" BorderThickness="0" Padding="2"
-                                HorizontalAlignment="Left" Cursor="Hand"
-                                Tag="{Binding}" Click="QuickLinkClicked" />
-                      </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                  </ItemsControl>
-                </StackPanel>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-        </StackPanel>
-      </Border>
-    </StackPanel>
-  </ScrollViewer>
+  <Grid RowDefinitions="Auto,*">
+    <!-- 工具栏：新标签 + 地址栏 + 前往/刷新/关闭标签 -->
+    <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="8" Margin="0,0,0,12">
+      <Button Grid.Column="0" x:Name="NewTabBtn" Content="＋ 新标签" Click="NewTabClick" />
+      <TextBox Grid.Column="1" x:Name="UrlBox" Watermark="输入网址，例如 pointers-box.cc.cd" KeyDown="UrlKeyDown" />
+      <Button Grid.Column="2" Content="前往" Click="GoClick" />
+      <Button Grid.Column="3" Content="⟳" Click="ReloadClick" />
+      <Button Grid.Column="4" x:Name="CloseTabBtn" Content="✕" Click="CloseTabClick" IsVisible="False" />
+    </Grid>
+    <!-- 多标签条（多标签时显示） -->
+    <ItemsControl Grid.Row="0" x:Name="TabBar" IsVisible="False" Margin="0,46,0,12">
+      <ItemsControl.ItemsPanel>
+        <ItemsPanelTemplate>
+          <StackPanel Orientation="Horizontal" Spacing="6" />
+        </ItemsPanelTemplate>
+      </ItemsControl.ItemsPanel>
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="pages:BrowserTab">
+          <Button Click="TabClick" Background="#33ffffff" BorderBrush="#29ffffff" BorderThickness="1" CornerRadius="8" Padding="10,4">
+            <TextBlock Text="{Binding Title}" FontSize="12" Foreground="#f0eaf8" MaxWidth="140" TextTrimming="CharacterEllipsis" />
+          </Button>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+    <!-- 网页承载区：桌面 Avalonia 12 暂无内嵌 WebView（M5 回补），系统浏览器打开 -->
+    <Border Grid.Row="1" Classes="glass-alt" CornerRadius="18" Padding="30">
+      <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12" MaxWidth="520">
+        <TextBlock Text="内置浏览器" FontSize="20" FontWeight="Bold" Foreground="#f0eaf8" HorizontalAlignment="Center" />
+        <TextBlock Text="输入网址后点「前往」，页面将在系统默认浏览器中打开；多标签记录保留在标签条。" FontSize="13" Foreground="#a99cc4" TextWrapping="Wrap" TextAlignment="Center" HorizontalAlignment="Center" />
+        <Button Content="打开主页（pointers-box.cc.cd）" Click="OpenHomeClick" HorizontalAlignment="Center" />
+      </StackPanel>
+    </Border>
+  </Grid>
 </UserControl>

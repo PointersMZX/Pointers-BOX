@@ -4,24 +4,72 @@
              RequestedThemeVariant="Dark">
   <Application.Styles>
     <FluentTheme />
-    <!-- 液态玻璃样式（参考 06-liquid-glass-spec dark 预设）：
-         半透明深底 + 顶棱线 + 底缘光 + 内泛光 + 高亮边框 -->
+    <!-- 液态玻璃材质（对齐旧版 .pbox-glass 六层配方，紫金黑 dark 预设）：
+         对角渐变底 + 双棱线 + 内泛光 + 外投影 + 高亮边框 -->
     <Style Selector="Border.glass">
-      <Setter Property="CornerRadius" Value="18" />
+      <Setter Property="CornerRadius" Value="16" />
       <Setter Property="Padding" Value="20" />
-      <Setter Property="Background" Value="#6B2A2135" />
+      <Setter Property="Background" Value="#5C2A2135" />
       <Setter Property="BorderBrush" Value="#29FFFFFF" />
       <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="BoxShadow" Value="inset 0 1 0 0 #59FFFFFF, inset 0 -1 0 0 #1AFFFFFF, inset 0 0 22 0 #0DFFFFFF, 0 10 32 0 #59030014" />
+      <Setter Property="BoxShadow" Value="inset 0 1 0 0 #4DFFFFFF, inset 0 -1 0 0 #14FFFFFF, inset 0 0 28 0 #0DFFFFFF, 0 10 34 0 #59030014" />
     </Style>
-    <!-- 次级玻璃卡（更暗一档，公告/状态用） -->
+    <!-- 次级玻璃卡 -->
     <Style Selector="Border.glass-alt">
-      <Setter Property="CornerRadius" Value="18" />
+      <Setter Property="CornerRadius" Value="16" />
       <Setter Property="Padding" Value="20" />
-      <Setter Property="Background" Value="#66241C2E" />
+      <Setter Property="Background" Value="#52241C2E" />
       <Setter Property="BorderBrush" Value="#22FFFFFF" />
       <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="BoxShadow" Value="inset 0 1 0 0 #4DFFFFFF, inset 0 -1 0 0 #14FFFFFF, inset 0 0 22 0 #0DFFFFFF, 0 10 32 0 #59030014" />
+      <Setter Property="BoxShadow" Value="inset 0 1 0 0 #47FFFFFF, inset 0 -1 0 0 #14FFFFFF, inset 0 0 28 0 #0DFFFFFF, 0 10 34 0 #59030014" />
+    </Style>
+    <!-- 全局按钮：玻璃底色盖掉 Fluent 蓝高亮；焦点圈改紫描边（UI4 键位方框蓝高亮） -->
+    <Style Selector="Button">
+      <Setter Property="Background" Value="#1FFFFFFF" />
+      <Setter Property="Foreground" Value="#F0EAF8" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="BorderBrush" Value="#29FFFFFF" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Padding" Value="14,6" />
+    </Style>
+    <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="#2EFFFFFF" />
+      <Setter Property="Foreground" Value="#F0EAF8" />
+    </Style>
+    <Style Selector="Button:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="#38FFFFFF" />
+      <Setter Property="Foreground" Value="#F0EAF8" />
+    </Style>
+    <!-- 焦点可见性：紫描边（键盘导航友好，不再是蓝方块） -->
+    <Style Selector="Button:focus">
+      <Setter Property="BorderBrush" Value="#8C7C5CFF" />
+    </Style>
+    <!-- TextBox：玻璃输入底 -->
+    <Style Selector="TextBox">
+      <Setter Property="Background" Value="#1FFFFFFF" />
+      <Setter Property="Foreground" Value="#F0EAF8" />
+      <Setter Property="BorderBrush" Value="#29FFFFFF" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="MinHeight" Value="34" />
+    </Style>
+    <Style Selector="TextBox:pointerover /template/ Border#PART_BorderElement">
+      <Setter Property="Background" Value="#26FFFFFF" />
+      <Setter Property="BorderBrush" Value="#47FFFFFF" />
+    </Style>
+    <Style Selector="TextBox:focus /template/ Border#PART_BorderElement">
+      <Setter Property="BorderBrush" Value="#8C7C5CFF" />
+      <Setter Property="Background" Value="#26FFFFFF" />
+    </Style>
+    <!-- RadioButton/CheckBox 玻璃化 -->
+    <Style Selector="RadioButton">
+      <Setter Property="Foreground" Value="#F0EAF8" />
+    </Style>
+    <Style Selector="CheckBox">
+      <Setter Property="Foreground" Value="#F0EAF8" />
+    </Style>
+    <!-- ProgressBar 主色 -->
+    <Style Selector="ProgressBar">
+      <Setter Property="Foreground" Value="#7C5CFF" />
     </Style>
     <!-- 导航胶囊按钮 -->
     <Style Selector="Button.glass-nav">

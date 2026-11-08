@@ -1,25 +1,82 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:core="using:Pointers.Box.Core"
              x:Class="Pointers.Box.Desktop.Pages.SettingsPage">
-  <ScrollViewer>
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled">
     <StackPanel Spacing="14" MaxWidth="980">
       <TextBlock Text="设置" FontSize="30" FontWeight="Bold" Foreground="#f0eaf8" />
-      <Border Classes="glass-alt" CornerRadius="18" Padding="20">
-        <StackPanel Spacing="10">
-          <TextBlock Text="更新渠道" FontWeight="SemiBold" Foreground="#f0eaf8" />
-          <StackPanel Orientation="Horizontal" Spacing="20">
-            <RadioButton x:Name="ChannelGitee" Content="国内镜像（Gitee）" GroupName="channel" Click="ChannelChanged" />
-            <RadioButton x:Name="ChannelGithub" Content="全球官方（GitHub）" GroupName="channel" Click="ChannelChanged" />
-          </StackPanel>
-          <TextBlock Text="国内网络建议选 Gitee（不受 GitHub 限流影响）；切换后下次检查立即生效" FontSize="12" Foreground="#a99cc4" />
-        </StackPanel>
-      </Border>
+
+      <!-- 关于应用（置顶：简介/开发者/通用密钥/社区QQ群/版权） -->
       <Border Classes="glass-alt" CornerRadius="18" Padding="20">
         <StackPanel Spacing="6">
           <TextBlock Text="关于应用" FontWeight="SemiBold" Foreground="#f0eaf8" />
           <TextBlock Text="Pointers-BOX v2.6.0" Foreground="#a99cc4" />
-          <TextBlock Text="开发者：Pointers" FontSize="12" Foreground="#a99cc4" />
-          <TextBlock Text="Copyright © 2026 Pointers-BOX All Rights Reserved" FontSize="12" Foreground="#a99cc4" />
+          <TextBlock x:Name="AboutIntro" Text="" FontSize="12" Foreground="#a99cc4" TextWrapping="Wrap" />
+          <TextBlock x:Name="AboutGeneralKey" Text="" FontSize="12" Foreground="#a99cc4" TextWrapping="Wrap" />
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <TextBlock Text="社区 QQ 群：" FontSize="12" Foreground="#a99cc4" />
+            <Button x:Name="QQGroupBtn" Content="" Click="QQGroupClick" Background="Transparent" BorderThickness="0"
+                    Foreground="#7c5cff" Padding="0" Cursor="Hand" FontSize="12" />
+          </StackPanel>
+          <TextBlock x:Name="AboutCopyright" Text="" FontSize="12" Foreground="#a99cc4" />
+        </StackPanel>
+      </Border>
+
+      <!-- 版本日志（完整展示） -->
+      <Border Classes="glass-alt" CornerRadius="18" Padding="20">
+        <StackPanel Spacing="8">
+          <TextBlock Text="版本日志" FontWeight="SemiBold" Foreground="#f0eaf8" />
+          <TextBlock x:Name="NoLogsText" Text="暂无版本日志（离线或服务器尚未配置）" FontSize="12" Foreground="#a99cc4" />
+          <ItemsControl x:Name="VersionLogsFull">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="core:VersionLog">
+                <StackPanel Spacing="4" Margin="0,4,0,8">
+                  <Border Background="#337c5cff" CornerRadius="10" Padding="8,2" HorizontalAlignment="Left">
+                    <TextBlock Text="{Binding Version}" FontSize="11" Foreground="#c9bfe0" />
+                  </Border>
+                  <TextBlock Text="{Binding Log}" FontSize="12" Foreground="#a99cc4" TextWrapping="Wrap" />
+                </StackPanel>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </Border>
+
+      <!-- 主题外观 -->
+      <Border Classes="glass-alt" CornerRadius="18" Padding="20">
+        <StackPanel Spacing="8">
+          <TextBlock Text="主题外观" FontWeight="SemiBold" Foreground="#f0eaf8" />
+          <TextBlock Text="主题仅改变外观，不影响任何功能" FontSize="12" Foreground="#a99cc4" />
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <Button x:Name="ThemeZijin" Content="紫金黑" Click="ThemeClick" Tag="zijin" />
+            <Button x:Name="ThemeBlack" Content="纯黑" Click="ThemeClick" Tag="black" />
+            <Button x:Name="ThemeBlue" Content="深海蓝" Click="ThemeClick" Tag="blue" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <!-- 更新检查 -->
+      <Border Classes="glass-alt" CornerRadius="18" Padding="20">
+        <StackPanel Spacing="8">
+          <TextBlock Text="更新检查" FontWeight="SemiBold" Foreground="#f0eaf8" />
+          <StackPanel Orientation="Horizontal" Spacing="20">
+            <RadioButton x:Name="ChannelGitee" Content="国内镜像（Gitee）" GroupName="channel" Click="ChannelChanged" />
+            <RadioButton x:Name="ChannelGithub" Content="全球官方（GitHub）" GroupName="channel" Click="ChannelChanged" />
+          </StackPanel>
+          <TextBlock Text="国内网络建议选 Gitee（不受 GitHub 限流影响）" FontSize="12" Foreground="#a99cc4" />
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <Button Content="检查更新" Click="CheckUpdateClick" />
+            <TextBlock x:Name="UpdateResult" Text="" FontSize="12" Foreground="#a99cc4" VerticalAlignment="Center" TextWrapping="Wrap" />
+          </StackPanel>
+          <Button x:Name="OpenReleaseBtn" Content="打开发布页" Click="OpenReleaseClick" IsVisible="False" HorizontalAlignment="Left" />
+        </StackPanel>
+      </Border>
+
+      <!-- 下载设置 -->
+      <Border Classes="glass-alt" CornerRadius="18" Padding="20">
+        <StackPanel Spacing="8">
+          <TextBlock Text="下载设置" FontWeight="SemiBold" Foreground="#f0eaf8" />
+          <CheckBox x:Name="KeepHistoryCheck" Content="保留下载历史" Click="KeepHistoryChanged" />
         </StackPanel>
       </Border>
     </StackPanel>

@@ -2,7 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:core="using:Pointers.Box.Core"
              x:Class="Pointers.Box.Desktop.Pages.ResourcesPage">
-  <ScrollViewer>
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled">
     <StackPanel Spacing="14" MaxWidth="980">
       <TextBlock Text="资源" FontSize="30" FontWeight="Bold" Foreground="#f0eaf8" />
       <TextBox x:Name="SearchBox" Watermark="搜索资源名称/简介" TextChanged="SearchChanged" />

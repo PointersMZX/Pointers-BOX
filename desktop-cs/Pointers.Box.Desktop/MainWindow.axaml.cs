@@ -1,8 +1,11 @@
 using System;
 using System.Linq;
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Interactivity;
 using Avalonia.Media;
+using Avalonia.Platform;
 using Pointers.Box.Core;
 using Pointers.Box.Desktop.Pages;
 
@@ -12,11 +15,13 @@ public partial class MainWindow : Window
 {
     private readonly DataStore _store;
     private readonly string _linksPath;
+    private readonly string _favoritesPath;
     private readonly string _configPath;
     private readonly string _historyPath;
     private DataSnapshot? _snapshot;
     private AppConfig _config = new();
     private System.Collections.Generic.List<UserLink> _userLinks = new();
+    private System.Collections.Generic.List<string> _favorites = new();
 
     public MainWindow()
     {
@@ -27,16 +32,73 @@ public partial class MainWindow : Window
             System.IO.Path.Combine(baseDir, "cache", "snapshot.json"),
             System.IO.Path.Combine(AppContext.BaseDirectory, "box.mcx"));
         _linksPath = System.IO.Path.Combine(baseDir, "user-links.json");
+        _favoritesPath = System.IO.Path.Combine(baseDir, "favorites.json");
         _configPath = System.IO.Path.Combine(baseDir, "config.json");
         _historyPath = System.IO.Path.Combine(baseDir, "downloads.json");
         _userLinks = BoxLogic.LoadUserLinks(_linksPath);
+        _favorites = Favorites.Load(_favoritesPath);
         _config = LoadConfig();
         HighlightNav("NavHome");
         StartOrbDrift();
+        InitTray();
+        Navigate("NavHome"); // 启动默认进首页（启动空白页是漏洞）
         _ = LoadDataAsync();
     }
 
-    // 柔光球慢速漂移（05 号参考：只动 RenderTransform，合成器零成本）
+    // ── 托盘后台（对齐旧版 tray.ts：显示窗口/资源库/设置/退出） ──
+    private TrayIcon? _tray;
+    private bool _quitting;
+
+    private void InitTray()
+    {
+        try
+        {
+            var uri = new Uri("avares://Pointers.Box.Desktop/Assets/tray.png");
+            using var stream = AssetLoader.Open(uri);
+            var icon = new WindowIcon(stream);
+            _tray = new TrayIcon { Icon = icon, ToolTipText = "Pointers-BOX" };
+            var menu = new NativeMenu();
+            var miShow = new NativeMenuItem("显示窗口");
+            miShow.Click += (_, _) => ShowMainWindow();
+            var miLib = new NativeMenuItem("打开资源库");
+            miLib.Click += (_, _) => { ShowMainWindow(); Navigate("NavResources"); };
+            var miSet = new NativeMenuItem("设置");
+            miSet.Click += (_, _) => { ShowMainWindow(); Navigate("NavSettings"); };
+            var quit = new NativeMenuItem("退出");
+            quit.Click += (_, _) => { _quitting = true; Close(); };
+            menu.Items.Add(miShow);
+            menu.Items.Add(miLib);
+            menu.Items.Add(miSet);
+            menu.Items.Add(new NativeMenuItemSeparator());
+            menu.Items.Add(quit);
+            _tray.Menu = menu;
+            _tray.Clicked += (_, _) => ShowMainWindow();
+        }
+        catch { }
+    }
+
+    private void ShowMainWindow()
+    {
+        if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal;
+        Show();
+        Activate();
+        Focus();
+    }
+
+    // 点关闭=隐藏到托盘（后台保留），托盘菜单「退出」才真退出
+    protected override void OnClosing(WindowClosingEventArgs e)
+    {
+        if (!_quitting)
+        {
+            e.Cancel = true;
+            Hide();
+            return;
+        }
+        _tray?.Dispose();
+        base.OnClosing(e);
+    }
+
+    // ── 柔光球漂移动画 ──
     private Avalonia.Threading.DispatcherTimer? _orbTimer;
     private double _orbPhase;
     private void StartOrbDrift()
@@ -90,11 +152,38 @@ public partial class MainWindow : Window
         try
         {
             _snapshot = await _store.GetDataAsync();
-            if (PageHost.Content is HomePage home) home.UpdateSnapshot(_snapshot, _config);
+            if (PageHost.Content is HomePage home) home.UpdateSnapshot(_snapshot, _config, _favorites, this);
             if (PageHost.Content is ResourcesPage res) res.UpdateSnapshot(_snapshot);
+            if (PageHost.Content is SettingsPage set) set.UpdateSnapshot(_snapshot);
         }
         catch { }
     }
+
+    // ── 快捷键 Ctrl+1/2/3/5/6（首页/资源/链接/下载/设置，对齐旧版 PRD 2.3） ──
+    protected override void OnKeyDown(Avalonia.Input.KeyEventArgs e)
+    {
+        if (e.KeyModifiers.HasFlag(Avalonia.Input.KeyModifiers.Control))
+        {
+            var name = e.Key switch
+            {
+                Avalonia.Input.Key.D1 or Avalonia.Input.Key.NumPad1 => "NavHome",
+                Avalonia.Input.Key.D2 or Avalonia.Input.Key.NumPad2 => "NavResources",
+                Avalonia.Input.Key.D3 or Avalonia.Input.Key.NumPad3 => "NavLinks",
+                Avalonia.Input.Key.D4 or Avalonia.Input.Key.NumPad4 => "NavDownloads",
+                Avalonia.Input.Key.D5 or Avalonia.Input.Key.NumPad5 => "NavSettings",
+                _ => null
+            };
+            if (name != null) { Navigate(name); e.Handled = true; return; }
+        }
+        base.OnKeyDown(e);
+    }
+
+    public void SaveFavorites()
+    {
+        Favorites.Save(_favoritesPath, _favorites);
+    }
+
+    public System.Collections.Generic.List<string> FavoritesList => _favorites;
 
     private void HighlightNav(string activeName)
     {
@@ -116,15 +205,14 @@ public partial class MainWindow : Window
         }
     }
 
-    private void NavClick(object? sender, RoutedEventArgs e)
+    public void Navigate(string navName)
     {
-        if (sender is not Button btn || btn.Name == null) return;
-        HighlightNav(btn.Name);
-        switch (btn.Name)
+        HighlightNav(navName);
+        switch (navName)
         {
             case "NavHome":
                 var home = new HomePage();
-                home.UpdateSnapshot(_snapshot, _config);
+                home.UpdateSnapshot(_snapshot, _config, _favorites, this);
                 PageHost.Content = home;
                 break;
             case "NavResources":
@@ -136,7 +224,9 @@ public partial class MainWindow : Window
                 PageHost.Content = new LinksPage(_linksPath, _userLinks);
                 break;
             case "NavSettings":
-                PageHost.Content = new SettingsPage(_config, this);
+                var set = new SettingsPage(_config, this);
+                set.UpdateSnapshot(_snapshot);
+                PageHost.Content = set;
                 break;
             case "NavBrowser":
                 PageHost.Content = new BrowserPage(_snapshot);
@@ -145,6 +235,12 @@ public partial class MainWindow : Window
                 PageHost.Content = new DownloadsPage(_config, this, _historyPath);
                 break;
         }
+    }
+
+    private void NavClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button btn || btn.Name == null) return;
+        Navigate(btn.Name);
     }
 
     public void SaveLinks()

@@ -1,7 +1,9 @@
+// 链接页：添加走弹窗（AddLinkWindow），行内打开/删除；点行也打开
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Pointers.Box.Core;
 
@@ -20,23 +22,49 @@ public partial class LinksPage : UserControl
         LinkList.ItemsSource = _links;
     }
 
-    private void AddClick(object? sender, RoutedEventArgs e)
+    private async void AddOpenClick(object? sender, RoutedEventArgs e)
     {
-        var name = NameBox.Text?.Trim() ?? "";
-        var url = UrlBox.Text?.Trim() ?? "";
-        if (name.Length == 0 || !url.StartsWith("http")) return;
-        _links.Add(new UserLink
+        var dlg = new AddLinkWindow();
+        if (await dlg.ShowDialog<bool>(App.MainWindow!) == true)
         {
-            Id = Guid.NewGuid().ToString("N"),
-            Name = name,
-            Url = url,
-            CreatedAt = DateTimeOffset.Now.ToUnixTimeMilliseconds()
-        });
-        BoxLogic.SaveUserLinks(_path, _links);
-        LinkList.ItemsSource = null;
-        LinkList.ItemsSource = _links;
-        NameBox.Text = "";
-        UrlBox.Text = "";
+            var name = dlg.LinkName.Trim();
+            var url = dlg.LinkUrl.Trim();
+            var remark = dlg.LinkRemark.Trim();
+            if (name.Length == 0 || !url.StartsWith("http")) return;
+            if (!url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
+                !url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+                url = "https://" + url;
+            _links.Insert(0, new UserLink
+            {
+                Id = Guid.NewGuid().ToString("N"),
+                Name = name,
+                Url = url,
+                Remark = remark,
+                CreatedAt = DateTimeOffset.Now.ToUnixTimeMilliseconds()
+            });
+            BoxLogic.SaveUserLinks(_path, _links);
+            LinkList.ItemsSource = _links.ToList(); // Avalonia 12 坑：置 null 再赋会崩
+        }
+    }
+
+    private void OpenLink(string? url)
+    {
+        if (string.IsNullOrEmpty(url)) return;
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true });
+        }
+        catch { }
+    }
+
+    private void OpenClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: string url }) OpenLink(url);
+    }
+
+    private void OpenLinkClick(object? sender, PointerPressedEventArgs e)
+    {
+        if (sender is StackPanel { Tag: string url }) OpenLink(url);
     }
 
     private void DeleteClick(object? sender, RoutedEventArgs e)
@@ -47,8 +75,7 @@ public partial class LinksPage : UserControl
         {
             _links.Remove(item);
             BoxLogic.SaveUserLinks(_path, _links);
-            LinkList.ItemsSource = null;
-            LinkList.ItemsSource = _links;
+            LinkList.ItemsSource = _links.ToList(); // Avalonia 12 坑：置 null 再赋会崩
         }
     }
 }

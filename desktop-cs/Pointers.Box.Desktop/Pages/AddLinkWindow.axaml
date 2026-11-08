@@ -1,0 +1,26 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Pointers.Box.Desktop.Pages.AddLinkWindow"
+        Background="#0d0817">
+  <Border Classes="glass" CornerRadius="16" Padding="22" Margin="10">
+    <StackPanel Spacing="12">
+      <TextBlock Text="添加链接" FontSize="20" FontWeight="Bold" Foreground="#f0eaf8" />
+      <StackPanel Spacing="4">
+        <TextBlock Text="名称" FontSize="12" Foreground="#a99cc4" />
+        <TextBox x:Name="NameBox" Watermark="例如 官方网站" />
+      </StackPanel>
+      <StackPanel Spacing="4">
+        <TextBlock Text="网址" FontSize="12" Foreground="#a99cc4" />
+        <TextBox x:Name="UrlBox" Watermark="https://…" />
+      </StackPanel>
+      <StackPanel Spacing="4">
+        <TextBlock Text="备注（可选）" FontSize="12" Foreground="#a99cc4" />
+        <TextBox x:Name="RemarkBox" Watermark="随便写点什么" />
+      </StackPanel>
+      <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
+        <Button Content="取消" Click="CancelClick" />
+        <Button Content="添加" Click="OKClick" />
+      </StackPanel>
+    </StackPanel>
+  </Border>
+</Window>

@@ -6,6 +6,8 @@ namespace Pointers.Box.Desktop;
 
 public class App : Application
 {
+    public static MainWindow? MainWindow;
+
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
@@ -15,7 +17,8 @@ public class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            desktop.MainWindow = new MainWindow();
+            MainWindow = new MainWindow();
+            desktop.MainWindow = MainWindow;
         }
         base.OnFrameworkInitializationCompleted();
     }

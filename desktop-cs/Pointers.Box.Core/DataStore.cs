@@ -63,6 +63,23 @@ public class DataStore
         return JsonSerializer.Deserialize<T>(json, JsonOpts);
     }
 
+    /// <summary>版本日志（boxbbgxrz）：接受 { version_logs: [...] } 包裹，也容忍顶层直接是数组（对齐旧版 validate.ts）。</summary>
+    private static List<VersionLog> ParseVersionLogs(string raw)
+    {
+        var json = McxCrypto.OpenMuxed(raw);
+        using var doc = JsonDocument.Parse(json);
+        var root = doc.RootElement;
+        if (root.ValueKind == JsonValueKind.Array)
+            return JsonSerializer.Deserialize<List<VersionLog>>(json, JsonOpts) ?? new List<VersionLog>();
+        if (root.ValueKind == JsonValueKind.Object &&
+            root.TryGetProperty("version_logs", out var wrapped) &&
+            wrapped.ValueKind == JsonValueKind.Array)
+        {
+            return JsonSerializer.Deserialize<List<VersionLog>>(wrapped.GetRawText(), JsonOpts) ?? new List<VersionLog>();
+        }
+        return new List<VersionLog>();
+    }
+
     /// <summary>4 路并发拉取；全失败走缓存/嵌入兜底（offline=true）。</summary>
     public async Task<DataSnapshot> GetDataAsync(bool force = false)
     {
@@ -87,7 +104,7 @@ public class DataStore
         }
         catch (Exception e) { warnings.Add($"应用信息获取失败：{e.Message}"); snapshot.Box ??= EmbeddedBoxInfo(); }
 
-        try { snapshot.VersionLogs = ParseLoose<List<VersionLog>>(await tLogs); }
+        try { snapshot.VersionLogs = ParseVersionLogs(await tLogs); }
         catch (Exception e) { warnings.Add($"版本日志获取失败：{e.Message}"); }
 
         snapshot.Warnings = warnings;
