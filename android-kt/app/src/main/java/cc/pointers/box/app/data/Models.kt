@@ -50,3 +50,23 @@ data class DataSnapshot(
     val offline: Boolean = false,
     val warnings: List<String> = emptyList()
 )
+
+@Serializable
+data class AppConfig(
+    @SerialName("downloadDir") val downloadDir: String = "",
+    @SerialName("androidBrowser") val androidBrowser: String = "builtin",
+    val theme: String = "zijin",
+    val accent: String = "#7c5cff",
+    @SerialName("updateChannel") val updateChannel: String = "gitee",
+    @SerialName("homeLayout") val homeLayout: String = "compact",
+    @SerialName("keepDownloadHistory") val keepDownloadHistory: Boolean = false
+)
+
+@Serializable
+data class UserLink(
+    val id: String = "",
+    val name: String = "",
+    val url: String = "",
+    val remark: String = "",
+    val createdAt: Long = 0
+)
