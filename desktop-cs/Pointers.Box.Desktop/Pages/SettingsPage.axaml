@@ -4,29 +4,32 @@
              x:Class="Pointers.Box.Desktop.Pages.SettingsPage">
   <ScrollViewer HorizontalScrollBarVisibility="Disabled">
     <StackPanel Spacing="14" MaxWidth="980">
-      <TextBlock Text="设置" FontSize="30" FontWeight="Bold" Foreground="#f0eaf8" />
+      <TextBlock Text="设置" FontSize="30" FontWeight="Bold" Foreground="{DynamicResource TText}" />
 
       <!-- 关于应用（置顶：简介/开发者/通用密钥/社区QQ群/版权） -->
       <Border Classes="glass-alt" CornerRadius="18" Padding="20">
         <StackPanel Spacing="6">
-          <TextBlock Text="关于应用" FontWeight="SemiBold" Foreground="#f0eaf8" />
-          <TextBlock Text="Pointers-BOX v2.6.0" Foreground="#a99cc4" />
-          <TextBlock x:Name="AboutIntro" Text="" FontSize="12" Foreground="#a99cc4" TextWrapping="Wrap" />
-          <TextBlock x:Name="AboutGeneralKey" Text="" FontSize="12" Foreground="#a99cc4" TextWrapping="Wrap" />
+          <TextBlock Text="关于应用" FontWeight="SemiBold" Foreground="{DynamicResource TText}" />
+          <TextBlock Text="Pointers-BOX v2.6.0" Foreground="{DynamicResource TTextMuted}" />
+          <TextBlock x:Name="AboutIntro" Text="" FontSize="12" Foreground="{DynamicResource TTextMuted}" TextWrapping="Wrap" />
+          <TextBlock x:Name="AboutGeneralKey" Text="" FontSize="12" Foreground="{DynamicResource TTextMuted}" TextWrapping="Wrap" />
           <StackPanel Orientation="Horizontal" Spacing="8">
-            <TextBlock Text="社区 QQ 群：" FontSize="12" Foreground="#a99cc4" />
+            <TextBlock Text="社区 QQ 群：" FontSize="12" Foreground="{DynamicResource TTextMuted}" />
             <Button x:Name="QQGroupBtn" Content="" Click="QQGroupClick" Background="Transparent" BorderThickness="0"
-                    Foreground="#7c5cff" Padding="0" Cursor="Hand" FontSize="12" />
+                    Foreground="{DynamicResource TAccent}" Padding="0" Cursor="Hand" FontSize="12" />
           </StackPanel>
-          <TextBlock x:Name="AboutCopyright" Text="" FontSize="12" Foreground="#a99cc4" />
+          <TextBlock x:Name="AboutCopyright" Text="" FontSize="12" Foreground="{DynamicResource TTextMuted}" />
         </StackPanel>
       </Border>
 
-      <!-- 版本日志（完整展示） -->
+      <!-- 版本日志（完整列表，可折叠） -->
       <Border Classes="glass-alt" CornerRadius="18" Padding="20">
         <StackPanel Spacing="8">
-          <TextBlock Text="版本日志" FontWeight="SemiBold" Foreground="#f0eaf8" />
-          <TextBlock x:Name="NoLogsText" Text="暂无版本日志（离线或服务器尚未配置）" FontSize="12" Foreground="#a99cc4" />
+          <Grid ColumnDefinitions="*,Auto" Cursor="Hand" PointerPressed="ToggleFullLogsClick">
+            <TextBlock Grid.Column="0" Text="版本日志" FontWeight="SemiBold" Foreground="{DynamicResource TText}" />
+            <TextBlock Grid.Column="1" x:Name="FullLogsToggle" Text="收起 ▴" FontSize="12" Foreground="{DynamicResource TTextMuted}" VerticalAlignment="Center" />
+          </Grid>
+          <TextBlock x:Name="NoLogsText" Text="暂无版本日志（离线或服务器尚未配置）" FontSize="12" Foreground="{DynamicResource TTextMuted}" />
           <ItemsControl x:Name="VersionLogsFull">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="core:VersionLog">
@@ -34,7 +37,7 @@
                   <Border Background="#337c5cff" CornerRadius="10" Padding="8,2" HorizontalAlignment="Left">
                     <TextBlock Text="{Binding Version}" FontSize="11" Foreground="#c9bfe0" />
                   </Border>
-                  <TextBlock Text="{Binding Log}" FontSize="12" Foreground="#a99cc4" TextWrapping="Wrap" />
+                  <TextBlock Text="{Binding Log}" FontSize="12" Foreground="{DynamicResource TTextMuted}" TextWrapping="Wrap" />
                 </StackPanel>
               </DataTemplate>
             </ItemsControl.ItemTemplate>
@@ -42,15 +45,32 @@
         </StackPanel>
       </Border>
 
-      <!-- 主题外观 -->
+      <!-- 主题外观（四主题：紫金黑/自定义/纯黑/纯白 + 液态玻璃开关 + 自定义颜色） -->
       <Border Classes="glass-alt" CornerRadius="18" Padding="20">
         <StackPanel Spacing="8">
-          <TextBlock Text="主题外观" FontWeight="SemiBold" Foreground="#f0eaf8" />
-          <TextBlock Text="主题仅改变外观，不影响任何功能" FontSize="12" Foreground="#a99cc4" />
+          <TextBlock Text="主题外观" FontWeight="SemiBold" Foreground="{DynamicResource TText}" />
+          <TextBlock Text="主题仅改变外观，不影响任何功能；默认「紫金黑」（液态玻璃锁死开启），「自定义」支持自选颜色与玻璃开关，「纯黑 / 纯白」玻璃默认关闭" FontSize="12" Foreground="{DynamicResource TTextMuted}" TextWrapping="Wrap" />
           <StackPanel Orientation="Horizontal" Spacing="10">
-            <Button x:Name="ThemeZijin" Content="紫金黑" Click="ThemeClick" Tag="zijin" />
-            <Button x:Name="ThemeBlack" Content="纯黑" Click="ThemeClick" Tag="black" />
-            <Button x:Name="ThemeBlue" Content="深海蓝" Click="ThemeClick" Tag="blue" />
+            <Button x:Name="ThemeZijin" Content="紫金黑（默认 · 玻璃常开）" Click="ThemeClick" Tag="zijin" />
+            <Button x:Name="ThemeCustom" Content="自定义（自选颜色 · 玻璃可关）" Click="ThemeClick" Tag="custom" />
+            <Button x:Name="ThemeBlack" Content="纯黑（玻璃默认关）" Click="ThemeClick" Tag="black" />
+            <Button x:Name="ThemeWhite" Content="纯白（玻璃默认关）" Click="ThemeClick" Tag="white" />
+          </StackPanel>
+          <!-- 液态玻璃开关（紫金黑锁死；其余可切，按主题记忆） -->
+          <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,4,0,0">
+            <TextBlock Text="液态玻璃" FontSize="13" Foreground="{DynamicResource TText}" VerticalAlignment="Center" />
+            <CheckBox x:Name="GlassToggle" Click="GlassToggleClick" />
+            <TextBlock x:Name="GlassHint" Text="" FontSize="11" Foreground="{DynamicResource TTextMuted}" VerticalAlignment="Center" TextWrapping="Wrap" />
+          </StackPanel>
+          <!-- 主题颜色（仅自定义主题可用）：预设色 + RGB + 色值 -->
+          <StackPanel x:Name="AccentPanel" Spacing="6" Margin="0,4,0,0" IsVisible="False">
+            <TextBlock Text="主题颜色" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TText}" />
+            <StackPanel Orientation="Horizontal" Spacing="8" x:Name="PresetRow" />
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <Border x:Name="AccentSwatch" Width="40" Height="28" CornerRadius="6" />
+              <TextBox x:Name="AccentHex" Width="110" Watermark="#7c5cff" KeyDown="AccentHexKeyDown" />
+              <TextBlock Text="输入 #RRGGBB 或 #RGB 色值后回车" FontSize="11" Foreground="{DynamicResource TTextMuted}" VerticalAlignment="Center" />
+            </StackPanel>
           </StackPanel>
         </StackPanel>
       </Border>
@@ -58,15 +78,15 @@
       <!-- 更新检查 -->
       <Border Classes="glass-alt" CornerRadius="18" Padding="20">
         <StackPanel Spacing="8">
-          <TextBlock Text="更新检查" FontWeight="SemiBold" Foreground="#f0eaf8" />
+          <TextBlock Text="更新检查" FontWeight="SemiBold" Foreground="{DynamicResource TText}" />
           <StackPanel Orientation="Horizontal" Spacing="20">
             <RadioButton x:Name="ChannelGitee" Content="国内镜像（Gitee）" GroupName="channel" Click="ChannelChanged" />
             <RadioButton x:Name="ChannelGithub" Content="全球官方（GitHub）" GroupName="channel" Click="ChannelChanged" />
           </StackPanel>
-          <TextBlock Text="国内网络建议选 Gitee（不受 GitHub 限流影响）" FontSize="12" Foreground="#a99cc4" />
+          <TextBlock Text="国内网络建议选 Gitee（不受 GitHub 限流影响）" FontSize="12" Foreground="{DynamicResource TTextMuted}" />
           <StackPanel Orientation="Horizontal" Spacing="10">
             <Button Content="检查更新" Click="CheckUpdateClick" />
-            <TextBlock x:Name="UpdateResult" Text="" FontSize="12" Foreground="#a99cc4" VerticalAlignment="Center" TextWrapping="Wrap" />
+            <TextBlock x:Name="UpdateResult" Text="" FontSize="12" Foreground="{DynamicResource TTextMuted}" VerticalAlignment="Center" TextWrapping="Wrap" />
           </StackPanel>
           <Button x:Name="OpenReleaseBtn" Content="打开发布页" Click="OpenReleaseClick" IsVisible="False" HorizontalAlignment="Left" />
         </StackPanel>
@@ -75,7 +95,7 @@
       <!-- 下载设置 -->
       <Border Classes="glass-alt" CornerRadius="18" Padding="20">
         <StackPanel Spacing="8">
-          <TextBlock Text="下载设置" FontWeight="SemiBold" Foreground="#f0eaf8" />
+          <TextBlock Text="下载设置" FontWeight="SemiBold" Foreground="{DynamicResource TText}" />
           <CheckBox x:Name="KeepHistoryCheck" Content="保留下载历史" Click="KeepHistoryChanged" />
         </StackPanel>
       </Border>

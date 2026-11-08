@@ -2,7 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="Pointers.Box.Desktop.MainWindow"
         Title="Pointers-BOX" Width="1280" Height="800"
-        MinWidth="960" MinHeight="640" Background="#0d0817">
+        MinWidth="960" MinHeight="640" Background="{DynamicResource TGlassBg}">
   <Panel>
     <!-- 液态玻璃背景：柔光球层（参考 05-gradient-flow-bg，代码驱动慢速漂移） -->
     <Panel x:Name="OrbLayer" IsHitTestVisible="False" ClipToBounds="True">

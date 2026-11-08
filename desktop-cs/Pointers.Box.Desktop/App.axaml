@@ -2,74 +2,93 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="Pointers.Box.Desktop.App"
              RequestedThemeVariant="Dark">
+  <Application.Resources>
+    <!-- 主题动态资源（ThemeManager.Apply 运行时改写；默认紫金黑） -->
+    <SolidColorBrush x:Key="TAppBgBrush" Color="#0d0817" />
+    <SolidColorBrush x:Key="TText" Color="#f0eaf8" />
+    <SolidColorBrush x:Key="TTextMuted" Color="#a99cc4" />
+    <SolidColorBrush x:Key="TAccent" Color="#7c5cff" />
+    <SolidColorBrush x:Key="TNavIdle" Color="#a99cc4" />
+    <SolidColorBrush x:Key="TCardBorder" Color="#1affffff" />
+    <SolidColorBrush x:Key="TGlassBg" Color="#5C2A2135" />
+    <SolidColorBrush x:Key="TGlassBorder" Color="#29FFFFFF" />
+    <SolidColorBrush x:Key="TGlassAltBg" Color="#52241C2E" />
+    <SolidColorBrush x:Key="TGlassAltBorder" Color="#22FFFFFF" />
+    <SolidColorBrush x:Key="TBtnBg" Color="#1FFFFFFF" />
+    <SolidColorBrush x:Key="TBtnOver" Color="#2EFFFFFF" />
+    <SolidColorBrush x:Key="TBtnBorder" Color="#29FFFFFF" />
+    <SolidColorBrush x:Key="TInputBg" Color="#1FFFFFFF" />
+    <SolidColorBrush x:Key="TInputBorder" Color="#29FFFFFF" />
+    <SolidColorBrush x:Key="TRowBg" Color="#14241c2e" />
+    <x:String x:Key="TGlassShadow">inset 0 1 0 0 #4DFFFFFF, inset 0 -1 0 0 #14FFFFFF, inset 0 0 28 0 #0DFFFFFF, 0 10 34 0 #59030014</x:String>
+  </Application.Resources>
   <Application.Styles>
     <FluentTheme />
-    <!-- 液态玻璃材质（对齐旧版 .pbox-glass 六层配方，紫金黑 dark 预设）：
-         对角渐变底 + 双棱线 + 内泛光 + 外投影 + 高亮边框 -->
+    <!-- 液态玻璃材质（六层配方，紫金黑 dark 预设；主题色走动态资源） -->
     <Style Selector="Border.glass">
       <Setter Property="CornerRadius" Value="16" />
       <Setter Property="Padding" Value="20" />
-      <Setter Property="Background" Value="#5C2A2135" />
-      <Setter Property="BorderBrush" Value="#29FFFFFF" />
+      <Setter Property="Background" Value="{DynamicResource TGlassBg}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource TGlassBorder}" />
       <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="BoxShadow" Value="inset 0 1 0 0 #4DFFFFFF, inset 0 -1 0 0 #14FFFFFF, inset 0 0 28 0 #0DFFFFFF, 0 10 34 0 #59030014" />
+      <Setter Property="BoxShadow" Value="{DynamicResource TGlassShadow}" />
     </Style>
     <!-- 次级玻璃卡 -->
     <Style Selector="Border.glass-alt">
       <Setter Property="CornerRadius" Value="16" />
       <Setter Property="Padding" Value="20" />
-      <Setter Property="Background" Value="#52241C2E" />
-      <Setter Property="BorderBrush" Value="#22FFFFFF" />
+      <Setter Property="Background" Value="{DynamicResource TGlassAltBg}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource TGlassAltBorder}" />
       <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="BoxShadow" Value="inset 0 1 0 0 #47FFFFFF, inset 0 -1 0 0 #14FFFFFF, inset 0 0 28 0 #0DFFFFFF, 0 10 34 0 #59030014" />
+      <Setter Property="BoxShadow" Value="{DynamicResource TGlassShadow}" />
     </Style>
-    <!-- 全局按钮：玻璃底色盖掉 Fluent 蓝高亮；焦点圈改紫描边（UI4 键位方框蓝高亮） -->
+    <!-- 全局按钮：玻璃底色盖掉 Fluent 蓝高亮 -->
     <Style Selector="Button">
-      <Setter Property="Background" Value="#1FFFFFFF" />
-      <Setter Property="Foreground" Value="#F0EAF8" />
+      <Setter Property="Background" Value="{DynamicResource TBtnBg}" />
+      <Setter Property="Foreground" Value="{DynamicResource TText}" />
       <Setter Property="CornerRadius" Value="10" />
-      <Setter Property="BorderBrush" Value="#29FFFFFF" />
+      <Setter Property="BorderBrush" Value="{DynamicResource TBtnBorder}" />
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="Padding" Value="14,6" />
     </Style>
     <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="#2EFFFFFF" />
-      <Setter Property="Foreground" Value="#F0EAF8" />
+      <Setter Property="Background" Value="{DynamicResource TBtnOver}" />
+      <Setter Property="Foreground" Value="{DynamicResource TText}" />
     </Style>
     <Style Selector="Button:pressed /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="#38FFFFFF" />
-      <Setter Property="Foreground" Value="#F0EAF8" />
+      <Setter Property="Background" Value="{DynamicResource TBtnOver}" />
+      <Setter Property="Foreground" Value="{DynamicResource TText}" />
     </Style>
-    <!-- 焦点可见性：紫描边（键盘导航友好，不再是蓝方块） -->
     <Style Selector="Button:focus">
-      <Setter Property="BorderBrush" Value="#8C7C5CFF" />
+      <Setter Property="BorderBrush" Value="{DynamicResource TAccent}" />
     </Style>
     <!-- TextBox：玻璃输入底 -->
     <Style Selector="TextBox">
-      <Setter Property="Background" Value="#1FFFFFFF" />
-      <Setter Property="Foreground" Value="#F0EAF8" />
-      <Setter Property="BorderBrush" Value="#29FFFFFF" />
+      <Setter Property="Background" Value="{DynamicResource TInputBg}" />
+      <Setter Property="Foreground" Value="{DynamicResource TText}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource TInputBorder}" />
       <Setter Property="CornerRadius" Value="10" />
       <Setter Property="MinHeight" Value="34" />
     </Style>
     <Style Selector="TextBox:pointerover /template/ Border#PART_BorderElement">
-      <Setter Property="Background" Value="#26FFFFFF" />
-      <Setter Property="BorderBrush" Value="#47FFFFFF" />
+      <Setter Property="Background" Value="{DynamicResource TInputBg}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource TBtnOver}" />
     </Style>
     <Style Selector="TextBox:focus /template/ Border#PART_BorderElement">
-      <Setter Property="BorderBrush" Value="#8C7C5CFF" />
-      <Setter Property="Background" Value="#26FFFFFF" />
+      <Setter Property="BorderBrush" Value="{DynamicResource TAccent}" />
+      <Setter Property="Background" Value="{DynamicResource TInputBg}" />
     </Style>
-    <!-- RadioButton/CheckBox 玻璃化 -->
     <Style Selector="RadioButton">
-      <Setter Property="Foreground" Value="#F0EAF8" />
+      <Setter Property="Foreground" Value="{DynamicResource TText}" />
     </Style>
     <Style Selector="CheckBox">
-      <Setter Property="Foreground" Value="#F0EAF8" />
+      <Setter Property="Foreground" Value="{DynamicResource TText}" />
     </Style>
-    <!-- ProgressBar 主色 -->
+    <Style Selector="ListBoxItem">
+      <Setter Property="Foreground" Value="{DynamicResource TText}" />
+    </Style>
     <Style Selector="ProgressBar">
-      <Setter Property="Foreground" Value="#7C5CFF" />
+      <Setter Property="Foreground" Value="{DynamicResource TAccent}" />
     </Style>
     <!-- 导航胶囊按钮 -->
     <Style Selector="Button.glass-nav">

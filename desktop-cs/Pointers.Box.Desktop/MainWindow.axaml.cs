@@ -41,6 +41,10 @@ public partial class MainWindow : Window
         HighlightNav("NavHome");
         StartOrbDrift();
         InitTray();
+        // 主题（四套+玻璃开关）启动即应用
+        ThemeManager.Instance.Apply(_config);
+        ThemeManager.Instance.ThemeApplied += (_, cfg) => ApplyChrome(cfg);
+        ApplyChrome(_config);
         Navigate("NavHome"); // 启动默认进首页（启动空白页是漏洞）
         _ = LoadDataAsync();
     }
@@ -187,6 +191,7 @@ public partial class MainWindow : Window
 
     private void HighlightNav(string activeName)
     {
+        _activeNav = activeName;
         foreach (var name in new[] { "NavHome", "NavResources", "NavLinks", "NavBrowser", "NavDownloads", "NavSettings" })
         {
             if (this.FindControl<Button>(name) is { } btn)
@@ -200,13 +205,14 @@ public partial class MainWindow : Window
                     : new SolidColorBrush(Color.Parse("#1affffff"));
                 btn.Foreground = name == activeName
                     ? new SolidColorBrush(Color.Parse("#f0eaf8"))
-                    : new SolidColorBrush(Color.Parse("#a99cc4"));
+                    : ResolveBrush("TNavIdle", "#a99cc4");
             }
         }
     }
 
     public void Navigate(string navName)
     {
+        _activeNav = navName;
         HighlightNav(navName);
         switch (navName)
         {
@@ -217,6 +223,7 @@ public partial class MainWindow : Window
                 break;
             case "NavResources":
                 var res = new ResourcesPage();
+                res.Init(this);
                 res.UpdateSnapshot(_snapshot);
                 PageHost.Content = res;
                 break;
@@ -247,4 +254,25 @@ public partial class MainWindow : Window
     {
         BoxLogic.SaveUserLinks(_linksPath, _userLinks);
     }
+
+    // ── 主题应用（ThemeManager 回调）：窗口底色 + 柔光球可见性 + 导航文字色 ──
+    public void ApplyChrome(AppConfig config)
+    {
+        Background = ResolveBrush("TAppBgBrush", "#0d0817");
+        // 纯黑/纯白或玻璃关：柔光球藏掉（实色面板语义）
+        OrbLayer.IsVisible = config.GlassOn;
+        // 导航闲置色随主题
+        var idle = ResolveBrush("TNavIdle", "#a99cc4");
+        foreach (var name in new[] { "NavHome", "NavResources", "NavLinks", "NavBrowser", "NavDownloads", "NavSettings" })
+            if (this.FindControl<Button>(name) is { } btn && btn.Name != _activeNav)
+                btn.Foreground = idle;
+    }
+
+    private Avalonia.Media.IBrush ResolveBrush(string key, string fallback)
+    {
+        if (this.TryFindResource(key, out var v) && v is Avalonia.Media.IBrush b) return b;
+        return new Avalonia.Media.SolidColorBrush(Color.Parse(fallback));
+    }
+
+    private string? _activeNav;
 }

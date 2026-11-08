@@ -1,5 +1,5 @@
 // 主页：7 张标签卡（今日推荐/公告/数据状态/版本日志/我的收藏/快捷入口）+ 堆叠/紧凑/宽展布局
-// + 资源详情弹窗（点开卡片）+ 收藏切换（☆/★）
+// + 资源详情页内切换（用户反馈：模态窗口反感 → 点卡片切详情，点返回回列表）+ 收藏切换（☆/★）
 
 using System;
 using System.Collections.Generic;
@@ -11,7 +11,6 @@ using Avalonia.Media;
 using Avalonia.Controls.Shapes;
 using Avalonia.Input;
 using Avalonia.Interactivity;
-using Avalonia.Media;
 using Pointers.Box.Core;
 
 namespace Pointers.Box.Desktop.Pages;
@@ -23,6 +22,8 @@ public partial class HomePage : UserControl
     private List<Resource> _recommends = new();
     private List<string> _favorites = new();
     private MainWindow _main = null!;
+    private Resource? _currentDetail;
+    private bool _logsExpanded;
 
     public HomePage()
     {
@@ -67,29 +68,18 @@ public partial class HomePage : UserControl
         }
         ChannelText.Text = $"更新渠道：{(_config.UpdateChannel == "gitee" ? "国内镜像（Gitee）" : "全球官方（GitHub）")}";
 
-        // 版本日志（最近 2 条）
+        // 版本日志（折叠：收起=1条摘要，展开=最近3条完整）
         var logs = _snapshot?.VersionLogs ?? new List<VersionLog>();
         VersionLogsCard.IsVisible = logs.Count > 0;
         if (logs.Count > 0)
         {
-            VersionLogsCount.Text = $"共 {logs.Count} 条 · 完整日志见设置页";
             VersionLogsList.Children.Clear();
-            foreach (var v in logs.Take(2))
-            {
-                var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new Thickness(0, 0, 0, 6) };
-                var badge = new Border
-                {
-                    Background = new SolidColorBrush(Color.Parse("#337c5cff")),
-                    CornerRadius = new CornerRadius(10),
-                    Padding = new Thickness(8, 2, 8, 2),
-                    VerticalAlignment = VerticalAlignment.Top,
-                    Child = new TextBlock { Text = v.Version, FontSize = 11, Foreground = new SolidColorBrush(Color.Parse("#c9bfe0")) }
-                };
-                var text = new TextBlock { Text = v.Log, FontSize = 12, Foreground = new SolidColorBrush(Color.Parse("#a99cc4")), TextWrapping = TextWrapping.Wrap, MaxHeight = 56, TextTrimming = TextTrimming.CharacterEllipsis };
-                row.Children.Add(badge);
-                row.Children.Add(text);
-                VersionLogsList.Children.Add(row);
-            }
+            foreach (var v in logs.Take(_logsExpanded ? 3 : 0))
+                VersionLogsList.Children.Add(BuildLogRow(v));
+            VersionLogsList.IsVisible = _logsExpanded;
+            LogsSummary.Text = _logsExpanded ? "" : $"{logs[0].Version}  {logs[0].Log}";
+            LogsSummary.IsVisible = !_logsExpanded;
+            LogsToggleText.Text = _logsExpanded ? "收起 ▴" : "展开 ▾";
         }
 
         // 我的收藏
@@ -99,26 +89,65 @@ public partial class HomePage : UserControl
         if (favResources.Count > 0) FavoritesList.ItemsSource = favResources.Take(8).ToList();
     }
 
+    private static StackPanel BuildLogRow(VersionLog v)
+    {
+        var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Margin = new Thickness(0, 0, 0, 6) };
+        var badge = new Border
+        {
+            Background = new SolidColorBrush(Color.Parse("#337c5cff")),
+            CornerRadius = new CornerRadius(10),
+            Padding = new Thickness(8, 2, 8, 2),
+            VerticalAlignment = VerticalAlignment.Top,
+            Child = new TextBlock { Text = v.Version, FontSize = 11, Foreground = new SolidColorBrush(Color.Parse("#c9bfe0")) }
+        };
+        var text = new TextBlock { Text = v.Log, FontSize = 12, Foreground = new SolidColorBrush(Color.Parse("#a99cc4")), TextWrapping = TextWrapping.Wrap };
+        row.Children.Add(badge);
+        row.Children.Add(text);
+        return row;
+    }
+
     internal static string IdStr(Resource r) => r.Id?.ToString() ?? "";
 
-    // ── 详情弹窗（功3：资源点得开） ──
+    // 收藏切换（静态：详情面板也复用）
+    internal static void ToggleFavStatic(Resource r, List<string> favorites, MainWindow main)
+    {
+        var id = IdStr(r);
+        if (favorites.Contains(id)) favorites.Remove(id);
+        else favorites.Add(id);
+        main.SaveFavorites();
+    }
+
+    // ── 详情：页内切换（点卡片切详情，点返回回列表） ──
     private void ResourceClick(object? sender, PointerPressedEventArgs e)
     {
         Resource? r = null;
-        if (sender is Border b)
-        {
-            r = b.DataContext as Resource;
-        }
+        if (sender is Border b) r = b.DataContext as Resource;
         if (r == null) return;
-        _ = new ResourceDetailWindow(r, _favorites, this).ShowDialog(App.MainWindow);
+        ShowDetail(r, _favorites);
+    }
+
+    internal void ShowDetail(Resource r, List<string> favorites)
+    {
+        _currentDetail = r;
+        var panel = new ResourceDetailPanel(r, favorites, _main);
+        panel.CloseRequested += (_, _) => ShowList();
+        DetailHost.Children.Clear();
+        DetailHost.Children.Add(panel);
+        ListView.IsVisible = false;
+        DetailView.IsVisible = true;
+    }
+
+    private void ShowList()
+    {
+        _currentDetail = null;
+        DetailView.IsVisible = false;
+        ListView.IsVisible = true;
+        Bind(); // 刷新收藏星标
     }
 
     public void ToggleFav(Resource r)
     {
-        var id = IdStr(r);
-        if (_favorites.Contains(id)) _favorites.Remove(id);
-        else _favorites.Add(id);
-        _main.SaveFavorites();
+        ToggleFavStatic(r, _favorites, _main);
         // 刷新星标（重新绑定推荐列表；Avalonia 12 坑：ItemsSource 置 null 再赋会崩，直接换新集合）
         RecommendList.ItemsSource = _recommends.ToList();
     }
@@ -128,6 +157,13 @@ public partial class HomePage : UserControl
     {
         if (sender is Button b && b.Tag is Resource r) ToggleFav(r);
         e.Handled = true;
+    }
+
+    // 版本日志折叠切换
+    private void ToggleLogsClick(object? sender, PointerPressedEventArgs e)
+    {
+        _logsExpanded = !_logsExpanded;
+        Bind();
     }
 
     private void ShuffleClick(object? sender, RoutedEventArgs e)

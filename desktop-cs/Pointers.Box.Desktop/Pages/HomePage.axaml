@@ -1,105 +1,116 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:core="using:Pointers.Box.Core"
+             xmlns:pages="using:Pointers.Box.Desktop.Pages"
              x:Class="Pointers.Box.Desktop.Pages.HomePage">
-  <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-    <StackPanel Spacing="16" MaxWidth="980">
-      <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
-        <TextBlock Grid.Column="0" Text="主页" FontSize="30" FontWeight="Bold" Foreground="#f0eaf8" />
-        <!-- 布局切换：堆叠/紧凑/宽展（对齐旧版 HomeLayout） -->
-        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-          <Button x:Name="LayoutStacked" Content="堆叠" Click="LayoutClick" />
-          <Button x:Name="LayoutCompact" Content="紧凑" Click="LayoutClick" />
-          <Button x:Name="LayoutWide" Content="宽展" Click="LayoutClick" />
-        </StackPanel>
-        <Button Grid.Column="2" Content="换一批" Click="ShuffleClick" VerticalAlignment="Center" />
-      </Grid>
+  <Panel>
+    <!-- 列表视图（默认） -->
+    <ScrollViewer x:Name="ListView" HorizontalScrollBarVisibility="Disabled">
+      <StackPanel Spacing="16" MaxWidth="980">
+        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
+          <TextBlock Grid.Column="0" Text="主页" FontSize="30" FontWeight="Bold" Foreground="{DynamicResource TText}" />
+          <!-- 布局切换：堆叠/紧凑/宽展（对齐旧版 HomeLayout） -->
+          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+            <Button x:Name="LayoutStacked" Content="堆叠" Click="LayoutClick" />
+            <Button x:Name="LayoutCompact" Content="紧凑" Click="LayoutClick" />
+            <Button x:Name="LayoutWide" Content="宽展" Click="LayoutClick" />
+          </StackPanel>
+          <Button Grid.Column="2" Content="换一批" Click="ShuffleClick" VerticalAlignment="Center" />
+        </Grid>
 
-      <!-- 今日推荐（堆叠=deck 卡 / 其他=网格） -->
-      <TextBlock Text="今日推荐" FontSize="18" FontWeight="SemiBold" Foreground="#c9bfe0" />
-      <ItemsControl x:Name="RecommendList">
-        <ItemsControl.ItemTemplate>
-          <DataTemplate x:DataType="core:Resource">
-            <Border Classes="glass" CornerRadius="18" Padding="20" Margin="0,0,0,14" Cursor="Hand"
-                    PointerPressed="ResourceClick">
-              <StackPanel>
-                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                  <TextBlock Grid.Column="0" Text="{Binding Name}" FontSize="18" FontWeight="SemiBold" Foreground="#f0eaf8" />
-                  <Button Grid.Column="1" Content="☆" Click="FavClick" Tag="{Binding}"
-                          Background="Transparent" BorderThickness="0" FontSize="18" Foreground="#d29922" Cursor="Hand" />
-                </Grid>
-                <TextBlock Text="{Binding Introduction}" FontSize="13" Foreground="#a99cc4" TextWrapping="Wrap" Margin="0,6,0,0" />
-              </StackPanel>
-            </Border>
-          </DataTemplate>
-        </ItemsControl.ItemTemplate>
-      </ItemsControl>
+        <!-- 今日推荐 -->
+        <TextBlock Text="今日推荐" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource TTextMuted}" />
+        <ItemsControl x:Name="RecommendList">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="core:Resource">
+              <Border Classes="glass" CornerRadius="18" Padding="20" Margin="0,0,0,14" Cursor="Hand"
+                      PointerPressed="ResourceClick">
+                <StackPanel>
+                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                    <TextBlock Grid.Column="0" Text="{Binding Name}" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource TText}" />
+                    <Button Grid.Column="1" Content="☆" Click="FavClick" Tag="{Binding}"
+                            Background="Transparent" BorderThickness="0" FontSize="18" Foreground="#d29922" Cursor="Hand" />
+                  </Grid>
+                  <TextBlock Text="{Binding Introduction}" FontSize="13" Foreground="{DynamicResource TTextMuted}" TextWrapping="Wrap" Margin="0,6,0,0" />
+                </StackPanel>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
 
-      <!-- 公告 + 数据状态（半宽并排） -->
-      <Grid ColumnDefinitions="*,*" ColumnSpacing="14">
-        <Border Grid.Column="0" Classes="glass-alt" x:Name="AnnouncementCard" CornerRadius="18" Padding="20">
+        <!-- 公告 + 数据状态（半宽并排） -->
+        <Grid ColumnDefinitions="*,*" ColumnSpacing="14">
+          <Border Grid.Column="0" Classes="glass-alt" x:Name="AnnouncementCard" CornerRadius="18" Padding="20">
+            <StackPanel>
+              <TextBlock Text="公告" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource TText}" />
+              <TextBlock x:Name="AnnouncementText" Text="（加载中）" FontSize="13" Foreground="{DynamicResource TTextMuted}" TextWrapping="Wrap" Margin="0,8,0,0" MaxHeight="120" />
+            </StackPanel>
+          </Border>
+          <Border Grid.Column="1" Classes="glass-alt" CornerRadius="18" Padding="20">
+            <StackPanel>
+              <TextBlock Text="数据状态" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource TText}" />
+              <TextBlock x:Name="StatusText" Text="加载中" FontSize="13" Foreground="{DynamicResource TTextMuted}" Margin="0,8,0,0" />
+              <TextBlock x:Name="ChannelText" Text="" FontSize="12" Foreground="{DynamicResource TAccent}" Margin="0,4,0,0" />
+            </StackPanel>
+          </Border>
+        </Grid>
+
+        <!-- 版本日志（可折叠：默认收起，点标题展开） -->
+        <Border Classes="glass-alt" x:Name="VersionLogsCard" CornerRadius="18" Padding="20" IsVisible="False">
           <StackPanel>
-            <TextBlock Text="公告" FontSize="16" FontWeight="SemiBold" Foreground="#f0eaf8" />
-            <TextBlock x:Name="AnnouncementText" Text="（加载中）" FontSize="13" Foreground="#a99cc4" TextWrapping="Wrap" Margin="0,8,0,0" MaxHeight="120" />
+            <Grid ColumnDefinitions="*,Auto" Cursor="Hand" PointerPressed="ToggleLogsClick">
+              <TextBlock Grid.Column="0" Text="版本日志" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource TText}" />
+              <TextBlock Grid.Column="1" x:Name="LogsToggleText" Text="展开 ▾" FontSize="12" Foreground="{DynamicResource TTextMuted}" VerticalAlignment="Center" />
+            </Grid>
+            <StackPanel x:Name="VersionLogsList" Spacing="8" Margin="0,8,0,0" IsVisible="False" />
+            <!-- 收起态：最近 1 条摘要 -->
+            <TextBlock x:Name="LogsSummary" Text="" FontSize="12" Foreground="{DynamicResource TTextMuted}" TextWrapping="Wrap" Margin="0,8,0,0" MaxHeight="34" TextTrimming="CharacterEllipsis" />
           </StackPanel>
         </Border>
-        <Border Grid.Column="1" Classes="glass-alt" CornerRadius="18" Padding="20">
+
+        <!-- 我的收藏横滑条 -->
+        <Border Classes="glass-alt" x:Name="FavoritesCard" CornerRadius="18" Padding="20" IsVisible="False">
           <StackPanel>
-            <TextBlock Text="数据状态" FontSize="16" FontWeight="SemiBold" Foreground="#f0eaf8" />
-            <TextBlock x:Name="StatusText" Text="加载中" FontSize="13" Foreground="#a99cc4" Margin="0,8,0,0" />
-            <TextBlock x:Name="ChannelText" Text="" FontSize="12" Foreground="#7c5cff" Margin="0,4,0,0" />
+            <TextBlock Text="我的收藏" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource TText}" />
+            <ItemsControl x:Name="FavoritesList" Margin="0,10,0,0">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel Orientation="Horizontal" Spacing="10" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="core:Resource">
+                  <Border Classes="glass" CornerRadius="14" Padding="12" Width="190" Cursor="Hand"
+                          PointerPressed="ResourceClick">
+                    <StackPanel>
+                      <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Foreground="{DynamicResource TText}" TextTrimming="CharacterEllipsis" />
+                      <TextBlock Text="{Binding Introduction}" FontSize="12" Foreground="{DynamicResource TTextMuted}" TextWrapping="Wrap" MaxHeight="34" Margin="0,4,0,0" />
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
           </StackPanel>
         </Border>
-      </Grid>
 
-      <!-- 版本更新日志（最近 2 条摘要） -->
-      <Border Classes="glass-alt" x:Name="VersionLogsCard" CornerRadius="18" Padding="20" IsVisible="False">
-        <StackPanel>
-          <Grid ColumnDefinitions="*,Auto">
-            <TextBlock Grid.Column="0" Text="版本日志" FontSize="16" FontWeight="SemiBold" Foreground="#f0eaf8" />
-            <TextBlock Grid.Column="1" x:Name="VersionLogsCount" Text="" FontSize="12" Foreground="#a99cc4" />
-          </Grid>
-          <StackPanel x:Name="VersionLogsList" Spacing="8" Margin="0,8,0,0" />
-        </StackPanel>
-      </Border>
-
-      <!-- 我的收藏横滑条 -->
-      <Border Classes="glass-alt" x:Name="FavoritesCard" CornerRadius="18" Padding="20" IsVisible="False">
-        <StackPanel>
-          <TextBlock Text="我的收藏" FontSize="16" FontWeight="SemiBold" Foreground="#f0eaf8" />
-          <ItemsControl x:Name="FavoritesList" Margin="0,10,0,0">
-            <ItemsControl.ItemsPanel>
-              <ItemsPanelTemplate>
-                <StackPanel Orientation="Horizontal" Spacing="10" />
-              </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="core:Resource">
-                <Border Classes="glass" CornerRadius="14" Padding="12" Width="190" Cursor="Hand"
-                        PointerPressed="ResourceClick">
-                  <StackPanel>
-                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Foreground="#f0eaf8" TextTrimming="CharacterEllipsis" />
-                    <TextBlock Text="{Binding Introduction}" FontSize="12" Foreground="#a99cc4" TextWrapping="Wrap" MaxHeight="34" Margin="0,4,0,0" />
-                  </StackPanel>
-                </Border>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-        </StackPanel>
-      </Border>
-
-      <!-- 快捷入口 -->
-      <Border Classes="glass-alt" CornerRadius="18" Padding="20">
-        <StackPanel>
-          <TextBlock Text="快捷入口" FontSize="16" FontWeight="SemiBold" Foreground="#f0eaf8" />
-          <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,10,0,0">
-            <Button Content="资源库" Click="QuickResources" />
-            <Button Content="链接" Click="QuickLinks" />
-            <Button Content="浏览器" Click="QuickBrowser" />
-            <Button Content="下载" Click="QuickDownloads" />
+        <!-- 快捷入口 -->
+        <Border Classes="glass-alt" CornerRadius="18" Padding="20">
+          <StackPanel>
+            <TextBlock Text="快捷入口" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource TText}" />
+            <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,10,0,0">
+              <Button Content="资源库" Click="QuickResources" />
+              <Button Content="链接" Click="QuickLinks" />
+              <Button Content="浏览器" Click="QuickBrowser" />
+              <Button Content="下载" Click="QuickDownloads" />
+            </StackPanel>
           </StackPanel>
-        </StackPanel>
-      </Border>
-    </StackPanel>
-  </ScrollViewer>
+        </Border>
+      </StackPanel>
+    </ScrollViewer>
+
+    <!-- 详情视图（页内切换，点返回回列表；宿主代码构建 ResourceDetailPanel） -->
+    <ScrollViewer x:Name="DetailView" IsVisible="False" HorizontalScrollBarVisibility="Disabled">
+      <StackPanel x:Name="DetailHost" MaxWidth="760" />
+    </ScrollViewer>
+  </Panel>
 </UserControl>

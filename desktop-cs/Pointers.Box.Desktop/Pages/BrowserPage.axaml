@@ -2,9 +2,9 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:pages="using:Pointers.Box.Desktop.Pages"
              x:Class="Pointers.Box.Desktop.Pages.BrowserPage">
-  <Grid RowDefinitions="Auto,*">
+  <Grid RowDefinitions="Auto,Auto,*,Auto">
     <!-- 工具栏：新标签 + 地址栏 + 前往/刷新/关闭标签 -->
-    <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="8" Margin="0,0,0,12">
+    <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="8" Margin="0,0,0,8">
       <Button Grid.Column="0" x:Name="NewTabBtn" Content="＋ 新标签" Click="NewTabClick" />
       <TextBox Grid.Column="1" x:Name="UrlBox" Watermark="输入网址，例如 pointers-box.cc.cd" KeyDown="UrlKeyDown" />
       <Button Grid.Column="2" Content="前往" Click="GoClick" />
@@ -12,7 +12,7 @@
       <Button Grid.Column="4" x:Name="CloseTabBtn" Content="✕" Click="CloseTabClick" IsVisible="False" />
     </Grid>
     <!-- 多标签条（多标签时显示） -->
-    <ItemsControl Grid.Row="0" x:Name="TabBar" IsVisible="False" Margin="0,46,0,12">
+    <ItemsControl Grid.Row="1" x:Name="TabBar" IsVisible="False" Margin="0,0,0,8">
       <ItemsControl.ItemsPanel>
         <ItemsPanelTemplate>
           <StackPanel Orientation="Horizontal" Spacing="6" />
@@ -26,13 +26,15 @@
         </DataTemplate>
       </ItemsControl.ItemTemplate>
     </ItemsControl>
-    <!-- 网页承载区：桌面 Avalonia 12 暂无内嵌 WebView（M5 回补），系统浏览器打开 -->
-    <Border Grid.Row="1" Classes="glass-alt" CornerRadius="18" Padding="30">
+    <!-- 内嵌网页承载区：WebView2 真内嵌渲染 -->
+    <Border Grid.Row="2" x:Name="WebHost" CornerRadius="14" ClipToBounds="True" />
+    <!-- WebView 未就绪占位 -->
+    <Border Grid.Row="2" x:Name="WebPlaceholder" Classes="glass-alt" CornerRadius="18" Padding="30" IsVisible="False">
       <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12" MaxWidth="520">
-        <TextBlock Text="内置浏览器" FontSize="20" FontWeight="Bold" Foreground="#f0eaf8" HorizontalAlignment="Center" />
-        <TextBlock Text="输入网址后点「前往」，页面将在系统默认浏览器中打开；多标签记录保留在标签条。" FontSize="13" Foreground="#a99cc4" TextWrapping="Wrap" TextAlignment="Center" HorizontalAlignment="Center" />
-        <Button Content="打开主页（pointers-box.cc.cd）" Click="OpenHomeClick" HorizontalAlignment="Center" />
+        <TextBlock Text="正在加载网页组件…" FontSize="16" Foreground="#f0eaf8" HorizontalAlignment="Center" />
       </StackPanel>
     </Border>
+    <!-- 状态栏 -->
+    <TextBlock Grid.Row="3" x:Name="StatusLine" Text="" FontSize="11" Foreground="#a99cc4" Margin="0,6,0,0" />
   </Grid>
 </UserControl>
