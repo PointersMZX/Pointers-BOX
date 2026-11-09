@@ -14,6 +14,9 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
 
 object RemoteUrls {
     const val Resources = "https://api.pointers-box.cc.cd/box/resources.mcx"
@@ -58,13 +61,20 @@ class DataStore(
     private inline fun <reified T> parseLoose(raw: String): T? =
         json.decodeFromString<T>(McxCrypto.openMuxed(raw))
 
+    /** 版本日志（boxbbgxrz）：接受 { version_logs: [...] } 包裹，也容忍顶层直接是数组（对齐桌面 DataStore.cs）。 */
+    private fun parseVersionLogs(raw: String): List<VersionLog>? = runCatching {
+        val root = json.parseToJsonElement(McxCrypto.openMuxed(raw))
+        val arr = root.jsonObject["version_logs"] ?: root
+        json.decodeFromJsonElement<List<VersionLog>>(arr.jsonArray)
+    }.getOrNull()
+
     /** 4 路并发拉取；全失败走缓存/嵌入兜底（offline=true）。 */
     suspend fun getData(force: Boolean = false): DataSnapshot = coroutineScope {
         val pool = Dispatchers.IO
         val rResources = async(pool) { runCatching { parseLoose<List<Resource>>(fetchText(RemoteUrls.Resources, force)) } }
         val rAnnouncement = async(pool) { runCatching { parseLoose<Announcement>(fetchText(RemoteUrls.Announcement, force)) } }
         val rBox = async(pool) { runCatching { parseLoose<BoxInfo>(fetchText(RemoteUrls.Box, force)) } }
-        val rLogs = async(pool) { runCatching { parseLoose<List<VersionLog>>(fetchText(RemoteUrls.VersionLogs, force)) } }
+        val rLogs = async(pool) { runCatching { parseVersionLogs(fetchText(RemoteUrls.VersionLogs, force)) } }
 
         val warnings = mutableListOf<String>()
         val resources = rResources.await().getOrElse { warnings.add("资源数据获取失败：${it.message}"); null }

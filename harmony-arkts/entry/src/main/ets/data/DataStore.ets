@@ -1,6 +1,7 @@
 // Pointers-BOX 鸿蒙数据层（v2.6.0 ArkTS）：4 路并发+重试+缓存（对齐桌面 DataStore.cs）
 import { http } from '@kit.NetworkKit';
 import { Resource, Announcement, VersionLog, BoxInfo, DataSnapshot } from './Models';
+import { openMuxed } from '../mcx/McxCrypto';
 
 class Urls {
   static resources: string = 'https://api.pointers-box.cc.cd/box/resources.mcx';
@@ -62,22 +63,27 @@ export class DataStore {
     ]);
 
     try {
-      if (results[0].status === 'fulfilled') { resources = JSON.parse(results[0].value) as Resource[]; }
+      if (results[0].status === 'fulfilled') { resources = JSON.parse(openMuxed(results[0].value)) as Resource[]; }
     } catch (e) {
       warnings.push('资源数据获取失败');
     }
     try {
-      if (results[1].status === 'fulfilled') { announcement = JSON.parse(results[1].value) as Announcement; }
+      if (results[1].status === 'fulfilled') { announcement = JSON.parse(openMuxed(results[1].value)) as Announcement; }
     } catch (e) {
       warnings.push('公告获取失败');
     }
     try {
-      if (results[2].status === 'fulfilled') { box = JSON.parse(results[2].value) as BoxInfo; }
+      if (results[2].status === 'fulfilled') { box = JSON.parse(openMuxed(results[2].value)) as BoxInfo; }
     } catch (e) {
       warnings.push('应用信息获取失败');
     }
     try {
-      if (results[3].status === 'fulfilled') { versionLogs = JSON.parse(results[3].value) as VersionLog[]; }
+      // boxbbgxrz：接受 { version_logs: [...] } 包裹，也容忍顶层直接是数组（对齐桌面 DataStore.cs）
+      if (results[3].status === 'fulfilled') {
+        const root = JSON.parse(openMuxed(results[3].value)) as Record<string, object> | VersionLog[];
+        const arr = (root instanceof Array) ? root : (root as Record<string, object>)['version_logs'];
+        versionLogs = (arr as VersionLog[]) ?? null;
+      }
     } catch (e) {
       warnings.push('版本日志获取失败');
     }
