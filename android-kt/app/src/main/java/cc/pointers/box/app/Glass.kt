@@ -10,19 +10,15 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
-import androidx.compose.ui.graphics.nativeCanvas
 import kotlin.math.cos
 import kotlin.math.sin
 import androidx.compose.ui.unit.dp
@@ -33,7 +29,10 @@ val GlassCardBorder = Color(0x29FFFFFF)
 val GlassAltBg = Color(0x66241c2e)
 val GlassRimTop = Color(0x59FFFFFF)
 
-/** 柔光球流动背景层：Canvas 上画三个径向渐变球，慢速漂移（timeScale 低=慢炖） */
+/**
+ * 柔光球流动背景层：三个径向渐变球慢速漂移，整体做高斯模糊 →
+ * 得到弥散的液态光晕（不模糊时球心边缘生硬、观感脏）。
+ */
 @Composable
 fun OrbBackground(modifier: Modifier = Modifier) {
     val t = rememberInfiniteTransition(label = "orb")
@@ -42,40 +41,59 @@ fun OrbBackground(modifier: Modifier = Modifier) {
         animationSpec = infiniteRepeatable(tween(90000, easing = LinearEasing), RepeatMode.Restart),
         label = "phase"
     )
-    Canvas(modifier = modifier.fillMaxSize()) {
+    Canvas(modifier = modifier.fillMaxSize().blur(70.dp)) {
         val w = size.width
         val h = size.height
-        fun orb(cx: Float, cy: Float, r: Float, color: Color) {
+        fun orb(cx: Float, cy: Float, r: Float, color: Color, alpha: Float) {
             drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(color.copy(alpha = 0.55f), color.copy(alpha = 0f)),
+                    colors = listOf(color.copy(alpha = alpha), color.copy(alpha = alpha * 0.35f), color.copy(alpha = 0f)),
                     center = Offset(cx, cy), radius = r
                 ),
                 radius = r, center = Offset(cx, cy)
             )
         }
-        // 主紫球（左上漂移）
-        orb(
-            w * 0.25f + sin(phase) * w * 0.06f,
-            h * 0.2f + cos(phase * 0.7f) * h * 0.05f,
-            w * 0.55f, Color(0xFF7c5cff)
-        )
-        // 青球（右下反向漂移）
-        orb(
-            w * 0.8f + cos(phase * 0.8f) * w * 0.05f,
-            h * 0.85f + sin(phase * 0.6f) * h * 0.05f,
-            w * 0.5f, Color(0xFF06b6d4)
-        )
-        // 粉点缀（中部小漂移）
-        orb(
-            w * 0.55f + sin(phase * 1.3f) * w * 0.04f,
-            h * 0.55f + cos(phase * 0.9f) * h * 0.04f,
-            w * 0.35f, Color(0xFFec4899)
-        )
+        orb(w * 0.22f + sin(phase) * w * 0.05f, h * 0.16f + cos(phase * 0.7f) * h * 0.04f,
+            w * 0.62f, Color(0xFF7c5cff), 0.42f)
+        orb(w * 0.82f + cos(phase * 0.8f) * w * 0.04f, h * 0.88f + sin(phase * 0.6f) * h * 0.04f,
+            w * 0.56f, Color(0xFF06b6d4), 0.30f)
+        orb(w * 0.58f + sin(phase * 1.3f) * w * 0.03f, h * 0.52f + cos(phase * 0.9f) * h * 0.03f,
+            w * 0.40f, Color(0xFFec4899), 0.24f)
     }
 }
 
-/** 玻璃卡 modifier：圆角 + 半透明底 + 高亮描边 + 顶棱线（inset 边框近似） */
+/**
+ * 玻璃面板 modifier：半透明底 + 对角高光 sheen + 顶部棱线描边。
+ * 玻璃关时退化为实色卡片（对齐桌面 flatMaterial 语义）。
+ */
+fun Modifier.glassPanel(palette: ThemePalette, corner: Int = 18, alt: Boolean = false): Modifier {
+    val shape = RoundedCornerShape(corner.dp)
+    val bg = if (alt) palette.cardBgAlt else palette.cardBg
+    if (!palette.glassOn) {
+        return this.background(bg, shape).border(1.dp, palette.navBorderBottom, shape)
+    }
+    return this
+        .background(bg, shape)
+        // 左上角高光渐变（玻璃的"被照亮"面），右上/底部保持透明
+        .background(
+            Brush.linearGradient(
+                0.0f to Color(0x1FFFFFFF),
+                0.30f to Color(0x0AFFFFFF),
+                0.62f to Color(0x00FFFFFF)
+            ), shape
+        )
+        .border(
+            1.dp,
+            Brush.linearGradient(
+                0.0f to Color(0x73FFFFFF),
+                0.25f to Color(0x24FFFFFF),
+                0.60f to Color(0x0FFFFFFF),
+                1.0f to Color(0x14FFFFFF)
+            ), shape
+        )
+}
+
+/** 兼容旧调用点。 */
 fun Modifier.glassCard(bg: Color = GlassCardBg, corner: Int = 18): Modifier = this
     .background(bg, RoundedCornerShape(corner.dp))
     .border(1.dp, Brush.verticalGradient(listOf(GlassRimTop, GlassCardBorder)), RoundedCornerShape(corner.dp))
