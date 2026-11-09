@@ -6,7 +6,7 @@ export class Glass {
   static readonly navBg: string = '#CC1a1425';
 }
 
-// 柔光球背景：三颗径向渐变大球（百分比 center/radius，铺满各自区域）
+// 柔光球背景：三颗径向渐变大球（整体做高斯模糊，得到弥散光晕而不是生硬球心）
 @Component
 export struct OrbBackground {
   build() {
@@ -41,6 +41,7 @@ export struct OrbBackground {
     }
     .width('100%')
     .height('100%')
+    .blur(48)
     .alignContent(Alignment.TopStart)
   }
 }

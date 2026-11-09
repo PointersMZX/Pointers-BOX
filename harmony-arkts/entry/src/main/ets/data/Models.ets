@@ -46,6 +46,10 @@ export class AppConfig {
   theme: string = 'zijin';
   accent: string = '#7c5cff';
   liquidGlass: boolean = true;
+  androidBrowser: string = 'builtin';
+  homeLayout: string = 'stacked';
+  keepDownloadHistory: boolean = true;
+  favorites: string[] = [];
 }
 
 export class UserLink {
