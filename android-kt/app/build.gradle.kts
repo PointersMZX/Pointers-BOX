@@ -17,9 +17,20 @@ android {
         versionName = "2.6.0"
     }
 
+    // 与旧版 Capacitor 包同签名（同 applicationId，覆盖升级无需卸载）
+    signingConfigs {
+        create("release") {
+            storeFile = file("../../android/app/pbox-release.keystore")
+            storePassword = "pointers-box-2026"
+            keyAlias = "pointers-box"
+            keyPassword = "pointers-box-2026"
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 
