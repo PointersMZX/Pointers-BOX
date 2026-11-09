@@ -44,6 +44,8 @@ export class DataSnapshot {
 export class AppConfig {
   updateChannel: string = 'gitee';
   theme: string = 'zijin';
+  accent: string = '#7c5cff';
+  liquidGlass: boolean = true;
 }
 
 export class UserLink {

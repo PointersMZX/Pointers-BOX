@@ -20,6 +20,12 @@ struct BrowserPage {
   controller: webview.WebviewController = new webview.WebviewController();
 
   aboutToAppear(): void {
+    // 接住详情页「领取」等入口传来的初始 URL
+    const params = router.getParams() as Record<string, string> | undefined;
+    if (params && params.url) {
+      this.currentUrl = params.url;
+      this.urlInput = params.url;
+    }
     new DataStore().getData().then((snap: DataSnapshot) => {
       this.snapshot = snap;
     });

@@ -57,9 +57,11 @@ data class AppConfig(
     @SerialName("androidBrowser") val androidBrowser: String = "builtin",
     val theme: String = "zijin",
     val accent: String = "#7c5cff",
+    @SerialName("liquidGlass") val liquidGlass: Boolean = true,
     @SerialName("updateChannel") val updateChannel: String = "gitee",
     @SerialName("homeLayout") val homeLayout: String = "compact",
-    @SerialName("keepDownloadHistory") val keepDownloadHistory: Boolean = false
+    @SerialName("keepDownloadHistory") val keepDownloadHistory: Boolean = false,
+    val favorites: List<String> = emptyList()
 )
 
 @Serializable
