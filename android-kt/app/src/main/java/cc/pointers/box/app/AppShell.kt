@@ -882,7 +882,7 @@ fun DownloadsContent(snapshot: DataSnapshot?, config: AppConfig, history: List<S
 
 // ───────────────────────── 设置 ─────────────────────────
 
-private const val APP_VERSION = "2.6.0"
+private const val APP_VERSION = "3.0.0-Beta.1"
 
 data class UpdateState(val checking: Boolean = false, val message: String = "", val releaseUrl: String? = null)
 

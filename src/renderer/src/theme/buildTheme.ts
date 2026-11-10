@@ -67,6 +67,10 @@ interface SurfaceMaterial {
   conic: string
   /** 全屏噪点透明度（表面层：打散大面积渐变的色带） */
   grainOpacity: number
+  /** v2.6.0：SVG 位移折射强度倍率（内容卡 .pbox-glass 的 backdrop 折射；0 = 关闭） */
+  refraction: number
+  /** v2.6.0：折射圈厚度倍率（SDF 边缘阈值缩放，越大边缘环越宽） */
+  refractionEdge: number
 }
 
 // v2.3.1：chrome 件金/发丝令牌（按主题注入 CSS 变量；紫金黑带金元素，其余中性）
@@ -167,7 +171,9 @@ const SURFACES: Record<ThemeKey, SurfaceTokens> = {
       shadow: '0 10px 34px rgba(3,0,20,0.35)',
       conic:
         'conic-gradient(from 0deg at 50% 50%, rgba(124,58,237,0.15), rgba(232,179,62,0.10), rgba(6,182,212,0.11), rgba(236,72,153,0.09), rgba(124,58,237,0.15))',
-      grainOpacity: 0.07
+      grainOpacity: 0.07,
+      refraction: 1.0,
+      refractionEdge: 1.0
     }
   },
   custom: {
@@ -203,7 +209,9 @@ const SURFACES: Record<ThemeKey, SurfaceTokens> = {
       shadow: '0 10px 34px rgba(2,4,16,0.35)',
       conic:
         'conic-gradient(from 0deg at 50% 50%, rgba(124,58,237,0.13), rgba(6,182,212,0.10), rgba(236,72,153,0.08), rgba(96,165,250,0.09), rgba(124,58,237,0.13))',
-      grainOpacity: 0.07
+      grainOpacity: 0.07,
+      refraction: 1.0,
+      refractionEdge: 1.0
     }
   },
   black: {
@@ -239,7 +247,9 @@ const SURFACES: Record<ThemeKey, SurfaceTokens> = {
       shadow: '0 10px 34px rgba(0,0,0,0.5)',
       conic:
         'conic-gradient(from 0deg at 50% 50%, rgba(124,58,237,0.08), rgba(6,182,212,0.06), rgba(124,58,237,0.08))',
-      grainOpacity: 0.06
+      grainOpacity: 0.06,
+      refraction: 0.8,
+      refractionEdge: 1.0
     }
   },
   white: {
@@ -275,7 +285,9 @@ const SURFACES: Record<ThemeKey, SurfaceTokens> = {
       shadow: '0 10px 34px rgba(15,23,42,0.10)',
       conic:
         'conic-gradient(from 0deg at 50% 50%, rgba(124,58,237,0.06), rgba(6,182,212,0.05), rgba(236,72,153,0.04), rgba(124,58,237,0.06))',
-      grainOpacity: 0.05
+      grainOpacity: 0.05,
+      refraction: 0.7,
+      refractionEdge: 1.1
     }
   }
 }
@@ -297,7 +309,9 @@ function flatMaterial(s: SurfaceTokens): SurfaceMaterial {
     spot: 'transparent',
     shadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.06)',
     conic: 'none',
-    grainOpacity: 0
+    grainOpacity: 0,
+    refraction: 0,
+    refractionEdge: 1
   }
 }
 
@@ -690,6 +704,13 @@ function makeGlassExtra(surface: SurfaceTokens, blob1: string, chrome: ChromeTok
       }
     }
   }
+}
+
+// v2.6.0：材质配方出口（svgGlass 内容卡折射层消费折射档位与磨砂尾串；
+// 与 buildTheme 同源同退化规则，避免两处口径漂移）
+export function getSurfaceMaterial(themeKey: ThemeKey, glassOn: boolean): SurfaceMaterial {
+  const s = SURFACES[themeKey]
+  return glassOn ? s.material : flatMaterial(s)
 }
 
 // 主题工厂：accent 仅自定义主题可自定义，其余固定默认色

@@ -183,7 +183,7 @@ public partial class SettingsPage : UserControl
     {
         UpdateResult.Text = "检查中…";
         OpenReleaseBtn.IsVisible = false;
-        var result = await UpdateChecker.CheckAsync(_config.UpdateChannel, "2.6.0");
+        var result = await UpdateChecker.CheckAsync(_config.UpdateChannel, "3.0.0-Beta.1");
         _lastCheck = result;
         if (result.Error != null)
         {
@@ -193,7 +193,7 @@ public partial class SettingsPage : UserControl
         }
         if (result.HasUpdate)
         {
-            UpdateResult.Text = $"发现新版本 {result.Latest}（当前 v2.6.0）";
+            UpdateResult.Text = $"发现新版本 {result.Latest}（当前 v3.0.0-Beta.1）";
             UpdateResult.Foreground = new SolidColorBrush(Color.Parse("#7ee787"));
             OpenReleaseBtn.IsVisible = true;
         }

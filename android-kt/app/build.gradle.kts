@@ -13,8 +13,8 @@ android {
         applicationId = "cc.pointers.box"
         minSdk = 26
         targetSdk = 34
-        versionCode = 11
-        versionName = "2.6.0"
+        versionCode = 12
+        versionName = "3.0.0-Beta.1"
     }
 
     // 与旧版 Capacitor 包同签名（同 applicationId，覆盖升级无需卸载）

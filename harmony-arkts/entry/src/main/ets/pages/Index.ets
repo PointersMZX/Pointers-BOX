@@ -12,7 +12,7 @@ import { ThemePalette, ACCENT_PRESETS, normalizeAccent, buildPalette } from '../
 const Green = '#7ee787';
 const Amber = '#d29922';
 const Redish = '#FF7b72';
-const APP_VERSION = '2.6.0';
+const APP_VERSION = '3.0.0-Beta.1';
 
 const THEME_LABELS: string[] = ['紫金黑', '自定义', '纯黑', '纯白'];
 

@@ -10,7 +10,7 @@
       <Border Classes="glass-alt" CornerRadius="18" Padding="20">
         <StackPanel Spacing="6">
           <TextBlock Text="关于应用" FontWeight="SemiBold" Foreground="{DynamicResource TText}" />
-          <TextBlock Text="Pointers-BOX v2.6.0" Foreground="{DynamicResource TTextMuted}" />
+          <TextBlock Text="Pointers-BOX v3.0.0-Beta.1" Foreground="{DynamicResource TTextMuted}" />
           <TextBlock x:Name="AboutIntro" Text="" FontSize="12" Foreground="{DynamicResource TTextMuted}" TextWrapping="Wrap" />
           <TextBlock x:Name="AboutGeneralKey" Text="" FontSize="12" Foreground="{DynamicResource TTextMuted}" TextWrapping="Wrap" />
           <StackPanel Orientation="Horizontal" Spacing="8">
