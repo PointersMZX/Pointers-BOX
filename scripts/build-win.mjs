@@ -73,9 +73,11 @@ if (!ok33 || !ok22) {
   process.exit(1)
 }
 
-// v2.2.0：双 Windows 端直接输出到 release/（用户自行制作安装程序）
-const installDir = releaseDir
-console.log('\n=== 输出到 release/ ===')
+// v2.6.0：双 Windows 端输出到版本化目录 release/v<版本>/（用户自行制作安装程序）——
+// 不再使用无版本号的 release/win-64|win7-x64 工作目录，避免与归档副本混淆
+const version = JSON.parse(origPkg).version
+const installDir = join(releaseDir, `v${version}`)
+console.log(`\n=== 输出到 release/v${version}/ ===`)
 rmDir(join(installDir, 'win-64'))
 rmDir(join(installDir, 'win7-x64'))
 mkdirSync(installDir, { recursive: true })
@@ -97,6 +99,6 @@ for (const outName of ['win-64', 'win7-x64']) {
 
 const e33 = statSync(join(installDir, 'win-64', 'Pointers-BOX.exe'))
 const e22 = statSync(join(installDir, 'win7-x64', 'Pointers-BOX.exe'))
-console.log(`\nwin-64（Electron 33）: ${e33.size} bytes → release/win-64/`)
-console.log(`win7-x64（Electron 22）: ${e22.size} bytes → release/win7-x64/`)
+console.log(`\nwin-64（Electron 33）: ${e33.size} bytes → release/v${version}/win-64/`)
+console.log(`win7-x64（Electron 22）: ${e22.size} bytes → release/v${version}/win7-x64/`)
 console.log('全部完成')
