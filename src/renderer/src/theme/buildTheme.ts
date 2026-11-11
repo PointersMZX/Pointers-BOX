@@ -98,8 +98,8 @@ const CHROME: Record<ThemeKey, ChromeTokens> = {
     indicator: `linear-gradient(90deg, ${ZJ_ACCENT}, ${ZJ_GOLD})`,
     logoBar: `linear-gradient(90deg, ${hexToRgba(ZJ_GOLD, 0.95)}, ${hexToRgba(ZJ_GOLD, 0)} 90%)`,
     goldGlow: hexToRgba(ZJ_GOLD, 0.22),
-    sidebarLiquid: 'rgba(24,14,40,0.2)',
-    barLiquid: 'rgba(20,10,36,0.24)'
+    sidebarLiquid: 'transparent',
+    barLiquid: 'transparent'
   },
   custom: {
     edge: 'rgba(255,255,255,0.16)',
@@ -107,8 +107,8 @@ const CHROME: Record<ThemeKey, ChromeTokens> = {
     indicator: 'var(--pbox-accent)',
     logoBar: 'transparent',
     goldGlow: 'transparent',
-    sidebarLiquid: 'rgba(10,20,40,0.18)',
-    barLiquid: 'rgba(8,16,32,0.22)'
+    sidebarLiquid: 'transparent',
+    barLiquid: 'transparent'
   },
   black: {
     edge: '#2e2e2e',
@@ -116,8 +116,8 @@ const CHROME: Record<ThemeKey, ChromeTokens> = {
     indicator: 'var(--pbox-accent)',
     logoBar: 'transparent',
     goldGlow: 'transparent',
-    sidebarLiquid: 'rgba(5,5,5,0.55)',
-    barLiquid: 'rgba(10,10,10,0.6)'
+    sidebarLiquid: 'transparent',
+    barLiquid: 'transparent'
   },
   white: {
     edge: '#d9d9d9',
@@ -125,8 +125,8 @@ const CHROME: Record<ThemeKey, ChromeTokens> = {
     indicator: 'var(--pbox-accent)',
     logoBar: 'transparent',
     goldGlow: 'transparent',
-    sidebarLiquid: 'rgba(245,245,245,0.6)',
-    barLiquid: 'rgba(247,247,247,0.65)'
+    sidebarLiquid: 'transparent',
+    barLiquid: 'transparent'
   }
 }
 
@@ -160,8 +160,8 @@ const SURFACES: Record<ThemeKey, SurfaceTokens> = {
       blur: 18,
       saturate: 150,
       brightness: 1.07,
-      glassHi: 'rgba(255,255,255,0.14)',
-      glassLo: 'rgba(255,255,255,0.05)',
+      glassHi: 'transparent',
+      glassLo: 'transparent',
       border: 'rgba(255,255,255,0.16)',
       rimTop: 'rgba(255,255,255,0.30)',
       rimBottom: 'rgba(255,255,255,0.08)',
@@ -198,8 +198,8 @@ const SURFACES: Record<ThemeKey, SurfaceTokens> = {
       blur: 18,
       saturate: 148,
       brightness: 1.06,
-      glassHi: 'rgba(255,255,255,0.14)',
-      glassLo: 'rgba(255,255,255,0.05)',
+      glassHi: 'transparent',
+      glassLo: 'transparent',
       border: 'rgba(255,255,255,0.16)',
       rimTop: 'rgba(255,255,255,0.28)',
       rimBottom: 'rgba(255,255,255,0.08)',
@@ -236,8 +236,8 @@ const SURFACES: Record<ThemeKey, SurfaceTokens> = {
       blur: 20,
       saturate: 140,
       brightness: 1.05,
-      glassHi: 'rgba(255,255,255,0.16)',
-      glassLo: 'rgba(255,255,255,0.07)',
+      glassHi: 'transparent',
+      glassLo: 'transparent',
       border: '#232323',
       rimTop: 'rgba(255,255,255,0.24)',
       rimBottom: 'rgba(255,255,255,0.07)',
@@ -274,8 +274,8 @@ const SURFACES: Record<ThemeKey, SurfaceTokens> = {
       blur: 16,
       saturate: 135,
       brightness: 1.02,
-      glassHi: 'rgba(255,255,255,0.55)',
-      glassLo: 'rgba(255,255,255,0.32)',
+      glassHi: 'transparent',
+      glassLo: 'transparent',
       border: '#e2e2e2',
       rimTop: 'rgba(255,255,255,0.70)',
       rimBottom: 'rgba(15,23,42,0.08)',
@@ -322,24 +322,24 @@ function glassVarsOf(themeKey: ThemeKey, accent: string): GlassCssVars {
   switch (themeKey) {
     case 'zj':
       // 紫金黑：金色发丝描边 + 紫晕染色 + 半透深紫金底板（观感基准 = XingyuMusic 紫金黑底栏）
-      return { edge: hexToRgba(ZJ_GOLD, 0.9), tint: hexToRgba(ZJ_ACCENT, 0.45), base: 'rgba(13,8,23,0.6)' }
+      return { edge: hexToRgba(ZJ_GOLD, 0.9), tint: hexToRgba(ZJ_ACCENT, 0.16), base: 'transparent' }
     case 'custom':
       return {
         edge: 'rgba(255,255,255,0.34)',
-        tint: `rgba(${a.r},${a.g},${a.b},0.26)`,
-        base: 'rgba(10,20,40,0.62)'
+        tint: `rgba(${a.r},${a.g},${a.b},0.14)`,
+        base: 'transparent'
       }
     case 'black':
       return {
         edge: 'rgba(255,255,255,0.28)',
-        tint: `rgba(${a.r},${a.g},${a.b},0.22)`,
-        base: 'rgba(0,0,0,0.68)'
+        tint: `rgba(${a.r},${a.g},${a.b},0.12)`,
+        base: 'transparent'
       }
     case 'white':
       return {
         edge: 'rgba(15,23,42,0.22)',
-        tint: `rgba(${a.r},${a.g},${a.b},0.15)`,
-        base: 'rgba(255,255,255,0.6)'
+        tint: `rgba(${a.r},${a.g},${a.b},0.10)`,
+        base: 'transparent'
       }
   }
   return { edge: 'transparent', tint: 'transparent', base: 'transparent' }
@@ -392,7 +392,9 @@ function makeStyles(effectiveAccent: string) {
       // ── v2.5.0 内容区玻璃材质类（六层模型的表面/光照/颜色层 CSS 落地）──
       // 全主题注册：玻璃开时消费 --pbox-g-* 玻璃配方；玻璃关时变量退化为朴素面板值
       // （flatMaterial），组件无条件挂用、无需感知玻璃开关。
-      // 玻璃底对角渐变 + backdrop 磨砂/提饱和/提亮 + 双棱线 + 内泛光 + 外投影
+      // v2.6.0 完全液态玻璃：玻璃底渐变已归零（四主题 glassHi/glassLo = transparent），
+      // 玻璃卡本体只由 backdrop 折射/磨砂 + 双棱线 + 内泛光 + 外投影构成，不再铺填充底色。
+      // 保留 background 这句是为了玻璃关时 flatMaterial 给的朴素面板值仍能生效（同一出口）。
       '.pbox-glass': {
         position: 'relative',
         isolation: 'isolate',
@@ -473,7 +475,7 @@ function makeStyles(effectiveAccent: string) {
         borderRadius: '20px',
         border: '1px solid rgba(255,255,255,0.22)',
         boxShadow: '0 24px 80px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.12)',
-        background: 'rgba(22,30,55,0.6)',
+        background: 'transparent',
         backdropFilter: 'blur(40px) saturate(160%)',
         WebkitBackdropFilter: 'blur(40px) saturate(160%)',
         overflow: 'hidden',
@@ -745,15 +747,18 @@ export function buildTheme(themeKey: ThemeKey, accent: string, glassOn: boolean)
     semanticTokens: {
       colors: {
         appbg: { default: s.appBg },
-        panel: { default: s.panel },
-        panelstrong: { default: s.panelStrong },
+        // v2.6.0 完全液态玻璃：玻璃开时面板类一律无填充底色（只留折射/磨砂/棱线/光泽），
+        // 玻璃关时回落主题实色——组件侧无需感知开关
+        panel: { default: glassOn ? 'transparent' : s.panel },
+        panelstrong: { default: glassOn ? 'transparent' : s.panelStrong },
         pborder: { default: s.border },
         hoverbg: { default: s.hover },
-        sidebarbg: { default: s.sidebar },
-        barbg: { default: s.bar },
+        sidebarbg: { default: glassOn ? 'transparent' : s.sidebar },
+        barbg: { default: glassOn ? 'transparent' : s.bar },
         ptext: { default: s.textPrimary },
         ptextmuted: { default: s.textMuted },
-        pinput: { default: s.inputBg }
+        // 输入框：玻璃开时同样只留描边（内部仍是磨砂玻璃），关时实色
+        pinput: { default: glassOn ? 'transparent' : s.inputBg }
       }
     },
     styles: {
@@ -768,8 +773,10 @@ export function buildTheme(themeKey: ThemeKey, accent: string, glassOn: boolean)
           '--color-glass-edge': gvars.edge,
           '--color-glass-tint': gvars.tint,
           '--color-glass-base': gvars.base,
-          '--pbox-bg-sidebar': s.sidebar,
-          '--pbox-bg-bar': s.bar,
+          // v2.6.0 完全液态玻璃：玻璃开时侧栏/底栏/状态栏无自身填充（磨砂+折射全交给
+          // backdrop/WebGL 着色器），关时回落主题实色
+          '--pbox-bg-sidebar': glassOn ? 'transparent' : s.sidebar,
+          '--pbox-bg-bar': glassOn ? 'transparent' : s.bar,
           '--pbox-edge': chrome.edge,
           '--pbox-pill': chrome.pill,
           '--pbox-indicator': chrome.indicator,

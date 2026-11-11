@@ -143,7 +143,7 @@ void main() {
   col.b += purple.b / 3.0;
   col.a += purple.a / 7.0;
 
-  // ---------- 玻璃体：染色 + 底板 ----------
+  // ---------- 玻璃体：介质吸收（v2.6.0 无填充底色——不再叠加任何底板色） ----------
   float shadeMix = clamp(u_tint.a * 1.7, 0.0, 1.0);
   vec3 shade = mix(vec3(1.0), u_tint.rgb, shadeMix);
   vec3 rgb = col.rgb * shade + u_base.rgb * u_base.a;
@@ -180,8 +180,12 @@ void main() {
   float grain = (hash21(css) - 0.5) * u_grain;
   rgb += grain;
 
-  // ---------- 合成（v2.3.1：边缘/镜面/高光权重提强，玻璃体更"亮"） ----------
-  float alpha = coverage * clamp(u_base.a + u_tint.a * 0.9 + rim * 0.9 + sheen * 0.8 + glow * 0.8, 0.0, 0.99);
+  // ---------- 合成（v2.6.0 完全液态玻璃：无填充底色，折射影像本身即"介质本体"） ----------
+  // 底板归零后 alpha 不能再靠 u_base/u_tint 撑——否则整块玻璃趋于全透明、折射影像看不见。
+  // 改为：本体取介质透过率（折射后的背景磨砂影像作为面板实质），棱线/镜面/指针高光叠加，
+  // 边缘 1.5px 内保不透明，边界不穿帮。
+  float body = 0.90 + u_tint.a * 0.3;
+  float alpha = coverage * clamp(body + rim * 0.9 + sheen * 0.8 + glow * 0.8, 0.0, 0.99);
   gl_FragColor = vec4(rgb, alpha);
 }
 `
