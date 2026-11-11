@@ -40,31 +40,17 @@ describe('主题键归一化（v2.3.0 四主题，默认紫金黑）', () => {
   })
 })
 
-describe('液态玻璃开关（v2.3.0 按主题记忆）', () => {
-  it('紫金黑锁死开启：任何配置都开', () => {
-    expect(isGlassLocked('zj')).toBe(true)
-    expect(effectiveLiquidGlass('zj', {})).toBe(true)
-    expect(effectiveLiquidGlass('zj', { zj: false })).toBe(true) // 锁死不可关
-    expect(effectiveLiquidGlass('zj', undefined)).toBe(true)
+describe('液态玻璃开关（v2.6.0 全局恒开，开关已删除）', () => {
+  it('全主题锁死开启：任何配置都开', () => {
+    for (const t of ['zj', 'custom', 'black', 'white'] as const) {
+      expect(isGlassLocked(t)).toBe(true)
+      expect(effectiveLiquidGlass(t, undefined)).toBe(true)
+      expect(effectiveLiquidGlass(t, {})).toBe(true)
+      // 旧配置里的显式关闭值不再生效（开关已移除）
+      expect(effectiveLiquidGlass(t, { [t]: false })).toBe(true)
+    }
   })
 
-  it('自定义默认开、纯黑/纯白默认关；显式值优先于默认', () => {
-    expect(effectiveLiquidGlass('custom', undefined)).toBe(true)
-    expect(effectiveLiquidGlass('black', undefined)).toBe(false)
-    expect(effectiveLiquidGlass('white', undefined)).toBe(false)
-    // 显式覆盖
-    expect(effectiveLiquidGlass('custom', { custom: false })).toBe(false)
-    expect(effectiveLiquidGlass('black', { black: true })).toBe(true)
-    expect(effectiveLiquidGlass('white', { white: true })).toBe(true)
-    // 未显式设置的键回各主题默认
-    expect(effectiveLiquidGlass('white', { black: true })).toBe(false)
-  })
-
-  it('各主题玻璃锁死/默认语义', () => {
-    expect(isGlassLocked('custom')).toBe(false)
-    expect(isGlassLocked('black')).toBe(false)
-    expect(isGlassLocked('white')).toBe(false)
-  })
 })
 
 describe('强调色归一化', () => {

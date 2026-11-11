@@ -15,7 +15,6 @@ import BottomNav from './components/BottomNav'
 import StatusBar from './components/StatusBar'
 import UpdateChannelModal from './components/UpdateChannelModal'
 import AnnouncementModal from './components/AnnouncementModal'
-import LiquidGlass from './components/LiquidGlass'
 import { setSvgGlass } from './components/LiquidGlass/svgGlass'
 import HomePage from './pages/HomePage'
 import LibraryPage from './pages/LibraryPage'
@@ -232,7 +231,9 @@ function ThemedShell() {
   }, [announcement, needChannelChoice])
 
   return (
-    <Box ref={shellRef} h="100vh" bg="appbg" position="relative" zIndex={1}>
+    // v2.6.0 全局液态玻璃：根容器不再铺实色背景——body 的主题渐变（折射源）与
+    // WebGL 玻璃叠层（zIndex 0）必须透到这里，实色 appbg 会把整块玻璃层盖死
+    <Box ref={shellRef} h="100vh" bg="transparent" position="relative" zIndex={1}>
       <Flex h="full" direction="column" overflow="hidden">
         <Flex flex="1" minH={0}>
           {/* v2.0.0：Android 手机端以底部导航栏替代侧边栏（竖屏/横屏均适配） */}
@@ -272,17 +273,18 @@ export default function App() {
   // v2.5.0：全局指针液体跟随（玻璃开启时才启用，随玻璃开关挂/摘）
   usePointerFlow(glassOn)
 
-  // v2.6.0：内容卡 SVG 位移折射（.pbox-glass 真折射背景，Chromium 全家可用；
-  // 玻璃关/折射档位 0/非 Chromium 时自动清场回落 CSS 磨砂，降级链零改动）
+  // v2.6.0 全局液态玻璃：内容卡+侧栏+底栏统一 SVG 位移折射（原生 backdrop 采样，
+  // 折射源=真实页面；非 Chromium/折射档位 0 时自动清场回落各自 CSS 磨砂）。
+  // 零染色：尾串只含磨砂三件套，无任何色彩调整。
   useEffect(() => {
     const m = getSurfaceMaterial(themeKey, glassOn)
-    setSvgGlass(glassOn && m.refraction > 0, { ref: m.refraction, edge: m.refractionEdge }, {
-      blur: m.blur,
-      saturate: m.saturate,
-      brightness: m.brightness
-    })
-    return () => setSvgGlass(false, { ref: 0, edge: 1 }, { blur: 0, saturate: 100, brightness: 1 })
-  }, [glassOn, themeKey, accent])
+    setSvgGlass(glassOn && m.refraction > 0, { ref: m.refraction, edge: m.refractionEdge }, [
+      { selector: '.pbox-glass', cssVar: '--pbox-g-backdrop', tail: { blur: m.blur, saturate: m.saturate, brightness: m.brightness } },
+      { selector: '#pbox-sidebar', cssVar: '--pbox-sb-backdrop', tail: { blur: 30, saturate: 165, brightness: 1 } },
+      { selector: '#pbox-bottomnav', cssVar: '--pbox-bn-backdrop', tail: { blur: 26, saturate: 155, brightness: 1 } }
+    ])
+    return () => setSvgGlass(false, { ref: 0, edge: 1 }, [])
+  }, [glassOn, themeKey])
 
   return (
     <ChakraProvider theme={buildTheme(themeKey, accent, glassOn)}>
@@ -293,12 +295,6 @@ export default function App() {
           <Box className="pbox-conic" aria-hidden />
           <GlassBlobs />
           <Box className="pbox-grain" aria-hidden />
-        </>
-      )}
-      {glassOn && (
-        <>
-          <LiquidGlass target="#pbox-sidebar" variant="sidebar" />
-          <LiquidGlass target="#pbox-bottomnav" variant="bar" />
         </>
       )}
       <ThemedShell />

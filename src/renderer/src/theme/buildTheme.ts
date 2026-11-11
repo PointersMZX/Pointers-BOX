@@ -5,7 +5,6 @@ import {
   accentScale,
   DEFAULT_ACCENT,
   hexToRgb,
-  mixColor,
   type ThemeKey,
   ZJ_ACCENT,
   ZJ_GOLD
@@ -90,11 +89,13 @@ interface ChromeTokens {
   barLiquid: string
 }
 
+// v2.6.0 全局液态玻璃：激活胶囊不再用实心色块——半透强调色玻璃（透出液态背景）+
+// 内缘高光由组件侧 boxShadow 承担；指示条保留（细线是指示不是填充）
 const CHROME: Record<ThemeKey, ChromeTokens> = {
   zj: {
-    // 紫金黑：金发丝描边 + 紫金渐变胶囊/指示条 + Logo 金条 + 金色环境辉光
+    // 紫金黑：金发丝描边 + 紫金玻璃胶囊/指示条 + Logo 金条 + 金色环境辉光
     edge: hexToRgba(ZJ_GOLD, 0.55),
-    pill: `linear-gradient(118deg, ${mixColor(ZJ_ACCENT, '#000000', 0.16)} 0%, ${ZJ_ACCENT} 55%, ${ZJ_GOLD} 135%)`,
+    pill: `linear-gradient(118deg, ${hexToRgba(ZJ_ACCENT, 0.26)} 0%, ${hexToRgba(ZJ_ACCENT, 0.10)} 55%, ${hexToRgba(ZJ_GOLD, 0.16)} 135%)`,
     indicator: `linear-gradient(90deg, ${ZJ_ACCENT}, ${ZJ_GOLD})`,
     logoBar: `linear-gradient(90deg, ${hexToRgba(ZJ_GOLD, 0.95)}, ${hexToRgba(ZJ_GOLD, 0)} 90%)`,
     goldGlow: hexToRgba(ZJ_GOLD, 0.22),
@@ -103,7 +104,7 @@ const CHROME: Record<ThemeKey, ChromeTokens> = {
   },
   custom: {
     edge: 'rgba(255,255,255,0.16)',
-    pill: 'var(--chakra-colors-brand-600)',
+    pill: 'var(--pbox-accent-soft)',
     indicator: 'var(--pbox-accent)',
     logoBar: 'transparent',
     goldGlow: 'transparent',
@@ -112,7 +113,7 @@ const CHROME: Record<ThemeKey, ChromeTokens> = {
   },
   black: {
     edge: '#2e2e2e',
-    pill: 'var(--chakra-colors-brand-600)',
+    pill: 'var(--pbox-accent-soft)',
     indicator: 'var(--pbox-accent)',
     logoBar: 'transparent',
     goldGlow: 'transparent',
@@ -120,8 +121,8 @@ const CHROME: Record<ThemeKey, ChromeTokens> = {
     barLiquid: 'transparent'
   },
   white: {
-    edge: '#d9d9d9',
-    pill: 'var(--chakra-colors-brand-600)',
+    edge: '#c9c9d4',
+    pill: 'var(--pbox-accent-soft)',
     indicator: 'var(--pbox-accent)',
     logoBar: 'transparent',
     goldGlow: 'transparent',
@@ -151,29 +152,30 @@ const SURFACES: Record<ThemeKey, SurfaceTokens> = {
     textMuted: 'gray.300',
     inputBg: 'rgba(255,255,255,0.10)',
     // 深紫金底 + 紫晕/金晕（v2.3.1：晕更强，玻璃折射源更亮）
-    glassBg: `radial-gradient(1100px 700px at 18% -10%, ${hexToRgba(ZJ_ACCENT, 0.7)}, transparent 62%), radial-gradient(900px 620px at 88% 108%, ${hexToRgba(ZJ_GOLD, 0.5)}, transparent 62%), #0d0817`,
+    glassBg: `radial-gradient(1100px 700px at 18% -10%, ${hexToRgba(ZJ_ACCENT, 0.45)}, transparent 62%), radial-gradient(900px 620px at 90% 112%, ${hexToRgba(ZJ_GOLD, 0.22)}, transparent 62%), #0d0817`,
     blob1: ZJ_ACCENT,
     blob2: ZJ_GOLD,
-    blobOpacity: 0.65,
-    // 紫金黑：玻璃锁死开的基准配方——磨砂足、金/紫氛围、光泽带与光斑按深色玻璃调校
+    blobOpacity: 0.30,
+    // 紫金黑：全局液态玻璃基准配方（v2.6.0 重写）——无填充，靠磨砂+提亮+双棱线+折射成形；
+    // 深色玻璃方向 = 介质提亮（透过玻璃的背景比周围亮半档）
     material: {
-      blur: 18,
-      saturate: 150,
-      brightness: 1.07,
+      blur: 22,
+      saturate: 165,
+      brightness: 1.10,
       glassHi: 'transparent',
       glassLo: 'transparent',
-      border: 'rgba(255,255,255,0.16)',
-      rimTop: 'rgba(255,255,255,0.30)',
-      rimBottom: 'rgba(255,255,255,0.08)',
-      innerGlow: 'rgba(255,255,255,0.05)',
-      sheenColor: 'rgba(255,255,255,0.13)',
-      spot: 'rgba(255,255,255,0.16)',
-      shadow: '0 10px 34px rgba(3,0,20,0.35)',
+      border: 'rgba(255,255,255,0.20)',
+      rimTop: 'rgba(255,255,255,0.42)',
+      rimBottom: 'rgba(255,255,255,0.10)',
+      innerGlow: 'rgba(255,255,255,0.06)',
+      sheenColor: 'rgba(255,255,255,0.16)',
+      spot: 'rgba(255,255,255,0.20)',
+      shadow: '0 10px 34px rgba(3,0,20,0.38)',
       conic:
         'conic-gradient(from 0deg at 50% 50%, rgba(124,58,237,0.15), rgba(232,179,62,0.10), rgba(6,182,212,0.11), rgba(236,72,153,0.09), rgba(124,58,237,0.15))',
       grainOpacity: 0.07,
-      refraction: 1.0,
-      refractionEdge: 1.0
+      refraction: 1.25,
+      refractionEdge: 1.1
     }
   },
   custom: {
@@ -189,29 +191,29 @@ const SURFACES: Record<ThemeKey, SurfaceTokens> = {
     textMuted: 'gray.300',
     inputBg: 'rgba(255,255,255,0.10)',
     // 深色蓝底 + 强调色晕（accent 运行时注入；v2.3.1：晕更强）
-    glassBg: `radial-gradient(1000px 640px at 20% -10%, ${hexToRgba(DEFAULT_ACCENT, 0.55)}, transparent 62%), radial-gradient(800px 560px at 90% 110%, rgba(124,92,255,0.42), transparent 62%), #0a1428`,
+    glassBg: `radial-gradient(1000px 640px at 20% -10%, ${hexToRgba(DEFAULT_ACCENT, 0.38)}, transparent 62%), radial-gradient(800px 560px at 90% 110%, rgba(124,92,255,0.28), transparent 62%), #0a1428`,
     blob1: DEFAULT_ACCENT,
     blob2: '#7c5cff',
-    blobOpacity: 0.65,
+    blobOpacity: 0.36,
     // 自定义：与紫金黑同档深色配方（无金色系，氛围色偏中性蓝紫）
     material: {
-      blur: 18,
-      saturate: 148,
-      brightness: 1.06,
+      blur: 22,
+      saturate: 160,
+      brightness: 1.08,
       glassHi: 'transparent',
       glassLo: 'transparent',
-      border: 'rgba(255,255,255,0.16)',
-      rimTop: 'rgba(255,255,255,0.28)',
-      rimBottom: 'rgba(255,255,255,0.08)',
-      innerGlow: 'rgba(255,255,255,0.05)',
-      sheenColor: 'rgba(255,255,255,0.12)',
-      spot: 'rgba(255,255,255,0.15)',
-      shadow: '0 10px 34px rgba(2,4,16,0.35)',
+      border: 'rgba(255,255,255,0.20)',
+      rimTop: 'rgba(255,255,255,0.38)',
+      rimBottom: 'rgba(255,255,255,0.10)',
+      innerGlow: 'rgba(255,255,255,0.06)',
+      sheenColor: 'rgba(255,255,255,0.14)',
+      spot: 'rgba(255,255,255,0.18)',
+      shadow: '0 10px 34px rgba(2,4,16,0.38)',
       conic:
         'conic-gradient(from 0deg at 50% 50%, rgba(124,58,237,0.13), rgba(6,182,212,0.10), rgba(236,72,153,0.08), rgba(96,165,250,0.09), rgba(124,58,237,0.13))',
       grainOpacity: 0.07,
-      refraction: 1.0,
-      refractionEdge: 1.0
+      refraction: 1.2,
+      refractionEdge: 1.1
     }
   },
   black: {
@@ -227,29 +229,30 @@ const SURFACES: Record<ThemeKey, SurfaceTokens> = {
     textMuted: '#8f8f8f',
     inputBg: '#111111',
     // 纯黑底 + 微弱强调色晕（玻璃开时给折射源一点变化；v2.3.1：提亮一档）
-    glassBg: `radial-gradient(900px 600px at 50% -20%, ${hexToRgba(DEFAULT_ACCENT, 0.35)}, transparent 65%), #000000`,
-    blob1: hexToRgba(DEFAULT_ACCENT, 0.5),
-    blob2: 'rgba(124,92,255,0.3)',
-    blobOpacity: 0.45,
-    // 纯黑：玻璃手动开启时底色更实一档（深底上玻璃要可见），氛围更收敛
+    glassBg: `radial-gradient(900px 600px at 50% -20%, ${hexToRgba(DEFAULT_ACCENT, 0.32)}, transparent 65%), #000000`,
+    blob1: hexToRgba(DEFAULT_ACCENT, 0.48),
+    blob2: 'rgba(124,92,255,0.30)',
+    blobOpacity: 0.34,
+    // 纯黑（v2.6.0 全局玻璃重写）：黑底上玻璃可见性全靠提亮——透过玻璃的背景
+    // 明显比周围亮（brightness 1.12），白棱线更亮一档；折射收敛防噪
     material: {
-      blur: 20,
-      saturate: 140,
-      brightness: 1.05,
+      blur: 24,
+      saturate: 145,
+      brightness: 1.12,
       glassHi: 'transparent',
       glassLo: 'transparent',
-      border: '#232323',
-      rimTop: 'rgba(255,255,255,0.24)',
-      rimBottom: 'rgba(255,255,255,0.07)',
-      innerGlow: 'rgba(255,255,255,0.04)',
-      sheenColor: 'rgba(255,255,255,0.10)',
-      spot: 'rgba(255,255,255,0.14)',
+      border: 'rgba(255,255,255,0.18)',
+      rimTop: 'rgba(255,255,255,0.34)',
+      rimBottom: 'rgba(255,255,255,0.10)',
+      innerGlow: 'rgba(255,255,255,0.05)',
+      sheenColor: 'rgba(255,255,255,0.12)',
+      spot: 'rgba(255,255,255,0.16)',
       shadow: '0 10px 34px rgba(0,0,0,0.5)',
       conic:
         'conic-gradient(from 0deg at 50% 50%, rgba(124,58,237,0.08), rgba(6,182,212,0.06), rgba(124,58,237,0.08))',
       grainOpacity: 0.06,
-      refraction: 0.8,
-      refractionEdge: 1.0
+      refraction: 1.1,
+      refractionEdge: 1.1
     }
   },
   white: {
@@ -265,29 +268,31 @@ const SURFACES: Record<ThemeKey, SurfaceTokens> = {
     textMuted: '#6b6b6b',
     inputBg: '#ffffff',
     // 纯白底 + 极淡强调色晕（v2.3.1：提亮一档）
-    glassBg: `radial-gradient(900px 600px at 50% -20%, ${hexToRgba(DEFAULT_ACCENT, 0.24)}, transparent 65%), #ffffff`,
-    blob1: hexToRgba(DEFAULT_ACCENT, 0.35),
-    blob2: 'rgba(124,92,255,0.2)',
-    blobOpacity: 0.4,
-    // 纯白：浅色玻璃——底更白才和背景分层，棱线转浅色调，光斑/光泽带用淡紫可见色
+    glassBg: `radial-gradient(900px 600px at 50% -20%, ${hexToRgba(DEFAULT_ACCENT, 0.28)}, transparent 65%), #ffffff`,
+    blob1: hexToRgba(DEFAULT_ACCENT, 0.38),
+    blob2: 'rgba(124,92,255,0.22)',
+    blobOpacity: 0.36,
+    // 纯白（v2.6.0 全局玻璃重写）：浅色玻璃方向与深色相反——介质微降亮度（0.97，
+    // 透过玻璃的背景比周围暗半档才有"玻璃厚度"），白高光棱线在浅底可见、底棱转暗；
+    // 无填充下靠暗描边+淡紫内泛光分层
     material: {
-      blur: 16,
-      saturate: 135,
-      brightness: 1.02,
+      blur: 22,
+      saturate: 140,
+      brightness: 0.94,
       glassHi: 'transparent',
       glassLo: 'transparent',
-      border: '#e2e2e2',
-      rimTop: 'rgba(255,255,255,0.70)',
-      rimBottom: 'rgba(15,23,42,0.08)',
+      border: 'rgba(15,23,42,0.18)',
+      rimTop: 'rgba(255,255,255,0.95)',
+      rimBottom: 'rgba(15,23,42,0.14)',
       innerGlow: 'rgba(124,92,255,0.07)',
-      sheenColor: 'rgba(124,92,255,0.14)',
-      spot: 'rgba(124,92,255,0.12)',
-      shadow: '0 10px 34px rgba(15,23,42,0.10)',
+      sheenColor: 'rgba(124,92,255,0.16)',
+      spot: 'rgba(124,92,255,0.13)',
+      shadow: '0 10px 34px rgba(15,23,42,0.16)',
       conic:
         'conic-gradient(from 0deg at 50% 50%, rgba(124,58,237,0.06), rgba(6,182,212,0.05), rgba(236,72,153,0.04), rgba(124,58,237,0.06))',
       grainOpacity: 0.05,
-      refraction: 0.7,
-      refractionEdge: 1.1
+      refraction: 1.0,
+      refractionEdge: 1.15
     }
   }
 }
@@ -315,33 +320,9 @@ function flatMaterial(s: SurfaceTokens): SurfaceMaterial {
   }
 }
 
-// 玻璃 CSS 变量（按主题定死；v2.3.1：整体提一档——边缘发丝/染色/底板更明显；
-// WebGL 玻璃不可用时仅 CSS 玻璃，变量不参与）
-function glassVarsOf(themeKey: ThemeKey, accent: string): GlassCssVars {
-  const a = hexToRgb(accent) ?? hexToRgb(DEFAULT_ACCENT)!
-  switch (themeKey) {
-    case 'zj':
-      // 紫金黑：金色发丝描边 + 紫晕染色 + 半透深紫金底板（观感基准 = XingyuMusic 紫金黑底栏）
-      return { edge: hexToRgba(ZJ_GOLD, 0.9), tint: hexToRgba(ZJ_ACCENT, 0.16), base: 'transparent' }
-    case 'custom':
-      return {
-        edge: 'rgba(255,255,255,0.34)',
-        tint: `rgba(${a.r},${a.g},${a.b},0.14)`,
-        base: 'transparent'
-      }
-    case 'black':
-      return {
-        edge: 'rgba(255,255,255,0.28)',
-        tint: `rgba(${a.r},${a.g},${a.b},0.12)`,
-        base: 'transparent'
-      }
-    case 'white':
-      return {
-        edge: 'rgba(15,23,42,0.22)',
-        tint: `rgba(${a.r},${a.g},${a.b},0.10)`,
-        base: 'transparent'
-      }
-  }
+// 玻璃 CSS 变量（v2.6.0：WebGL 层退役，tint/base 链路作废——全 transparent 零染色；
+// edge 保留：金/白发丝是「棱线」光照，不是染色）
+function glassVarsOf(_themeKey: ThemeKey, _accent: string): GlassCssVars {
   return { edge: 'transparent', tint: 'transparent', base: 'transparent' }
 }
 
@@ -399,12 +380,21 @@ function makeStyles(effectiveAccent: string) {
         position: 'relative',
         isolation: 'isolate',
         overflow: 'hidden',
+        // v2.6.0：全局些许圆角（资源卡等玻璃卡默认 14px；胶囊件用内联 full 覆盖）
+        borderRadius: '14px',
         background: 'linear-gradient(135deg, var(--pbox-g-hi) 0%, var(--pbox-g-lo) 100%)',
         backdropFilter: 'var(--pbox-g-backdrop, none)',
         WebkitBackdropFilter: 'var(--pbox-g-backdrop, none)',
         border: '1px solid var(--pbox-g-border)',
         boxShadow:
           'inset 0 1px 0 var(--pbox-g-rim-top), inset 0 -1px 0 var(--pbox-g-rim-bottom), inset 0 0 28px var(--pbox-g-inner-glow), var(--pbox-g-shadow)'
+      },
+      // v2.6.0：玻璃发丝分隔线（两端淡出的渐变线，替代实色 Divider 的"实心感"）
+      '.pbox-hairline': {
+        height: '1px',
+        border: 'none',
+        background:
+          'linear-gradient(90deg, transparent, var(--pbox-g-border, rgba(255,255,255,0.16)) 18%, var(--pbox-g-border, rgba(255,255,255,0.16)) 82%, transparent)'
       },
       // 指针光斑：跟全局 --mx/--my（液体阻尼 lerp）在玻璃表面游走，hover 时浮现；
       // 玻璃关时 --pbox-g-spot 为透明 → 永不显现
@@ -472,9 +462,9 @@ function makeStyles(effectiveAccent: string) {
         WebkitBackdropFilter: 'blur(40px) saturate(140%)'
       },
       '.pbox-modal-panel': {
-        borderRadius: '20px',
+        borderRadius: '22px',
         border: '1px solid rgba(255,255,255,0.22)',
-        boxShadow: '0 24px 80px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.12)',
+        boxShadow: '0 24px 80px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.16)',
         background: 'transparent',
         backdropFilter: 'blur(40px) saturate(160%)',
         WebkitBackdropFilter: 'blur(40px) saturate(160%)',
@@ -632,9 +622,10 @@ function makeGlassExtra(surface: SurfaceTokens, blob1: string, chrome: ChromeTok
         }
       },
       // v2.3.1：磨砂加深 + 内缘高光发丝（玻璃体轮廓感）
+      // v2.6.0：磨砂串变量化——svgGlass 接管时 inline 写入「url(#折射) + 磨砂」，未接管回落默认
       '.pbox-blur-sidebar': {
-        backdropFilter: 'blur(30px) saturate(165%)',
-        WebkitBackdropFilter: 'blur(30px) saturate(165%)'
+        backdropFilter: 'var(--pbox-sb-backdrop, blur(30px) saturate(165%))',
+        WebkitBackdropFilter: 'var(--pbox-sb-backdrop, blur(30px) saturate(165%))'
       },
       '.pbox-blur-panel': {
         backdropFilter: 'blur(18px) saturate(145%)',
@@ -642,8 +633,8 @@ function makeGlassExtra(surface: SurfaceTokens, blob1: string, chrome: ChromeTok
         boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08)'
       },
       '.pbox-blur-bar': {
-        backdropFilter: 'blur(26px) saturate(155%)',
-        WebkitBackdropFilter: 'blur(26px) saturate(155%)',
+        backdropFilter: 'var(--pbox-bn-backdrop, blur(26px) saturate(155%))',
+        WebkitBackdropFilter: 'var(--pbox-bn-backdrop, blur(26px) saturate(155%))',
         boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.10)'
       },
       // v2.3.1：chrome 件金色环境辉光（仅紫金黑非空；其余主题 transparent 无观感）
@@ -669,24 +660,6 @@ function makeGlassExtra(surface: SurfaceTokens, blob1: string, chrome: ChromeTok
         height: '2px',
         borderRadius: '2px',
         background: 'var(--pbox-logo-bar, transparent)'
-      },
-      // v2.3.0：WebGL LiquidGlass 叠层接管侧栏/Android 底栏玻璃体时（documentElement.pbox-liquid-active），
-      // 撤掉被接管面板的 CSS 磨砂——折射/色散/边缘流光改由 GPU 着色器绘制；
-      // 面板保留自身半透明底色（canvas 在其下层，自然叠加成磨砂观感，与 Chakra 内联样式无冲突）。
-      // 按 id 精确命中：状态栏同用 pbox-blur-bar 但无 canvas 接管，不受影响。
-      '.pbox-liquid-active #pbox-sidebar': {
-        backdropFilter: 'none',
-        WebkitBackdropFilter: 'none'
-      },
-      '.pbox-liquid-active #pbox-bottomnav': {
-        backdropFilter: 'none',
-        WebkitBackdropFilter: 'none'
-      },
-      // v2.3.1：WebGL 接管时 chrome 底板减纱（变量重定义，内联 bg: var(...) 自动生效）——
-      // 折射/色散/金色发丝从玻璃体里透出来，液态玻璃观感更明显
-      '.pbox-liquid-active': {
-        '--pbox-bg-sidebar': chrome.sidebarLiquid,
-        '--pbox-bg-bar': chrome.barLiquid
       },
       // 三条异路径漂移：与 26s/34s/19s 互质周期配合，光斑永不整体重复
       '@keyframes pboxDrift1': {

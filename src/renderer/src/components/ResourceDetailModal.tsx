@@ -1,7 +1,6 @@
 import {
   Badge,
   Box,
-  Divider,
   Flex,
   HStack,
   IconButton,
@@ -119,7 +118,7 @@ export default function ResourceDetailModal({ resource, isOpen, onClose }: Props
                     {resource.category}
                   </Badge>
                 </HStack>
-                <Text fontWeight="bold" fontSize="lg" color="ptext" noOfLines={2}>
+                <Text fontWeight="bold" fontSize="xl" color="ptext" noOfLines={2}>
                   {resource.name}
                 </Text>
                 <HStack spacing={3} fontSize="xs" color="ptextmuted" flexWrap="wrap">
@@ -152,7 +151,7 @@ export default function ResourceDetailModal({ resource, isOpen, onClose }: Props
                 {resource.introduction || '暂无简介'}
               </Text>
 
-              <Divider borderColor="pborder" mb={4} />
+              <Box className="pbox-hairline" mb={4} />
 
               <Text fontSize="sm" fontWeight="bold" mb={3} color="ptext">
                 分享项（{getResourceShares(resource).length}）
@@ -171,6 +170,8 @@ export default function ResourceDetailModal({ resource, isOpen, onClose }: Props
                     px={4}
                     py={3}
                     className="pbox-morph"
+                    transition="border-color .2s ease"
+                    _hover={{ borderColor: 'brand.400' }}
                   >
                     <Box minW={0} flex="1">
                       {/* v2.4.0：分享项不再明文展示链接，仅保留「领取」跳转入口 */}
@@ -199,7 +200,7 @@ export default function ResourceDetailModal({ resource, isOpen, onClose }: Props
               </VStack>
 
               {/* v2.4.0 平台绑定分享：对方拿到的是平台分享页链接，回平台领取，拿不到资源真实链接 */}
-              <Divider borderColor="pborder" my={4} />
+              <Box className="pbox-hairline" my={4} />
               <Box>
                 <GlassButton
                   variant="ghost"

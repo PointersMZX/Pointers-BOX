@@ -48,7 +48,6 @@ export default function ResourceCard({ resource, onOpen, minH = '170px' }: Props
         aria-label={`查看资源详情：${resource.name}`}
       >
         <Box
-          borderRadius="lg"
           p={4}
           display="flex"
           flexDirection="column"

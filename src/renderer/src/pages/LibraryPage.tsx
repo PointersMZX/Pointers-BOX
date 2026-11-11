@@ -144,9 +144,15 @@ export default function LibraryPage() {
           rounded="full"
           fontSize="xs"
           borderWidth="1px"
+          // v2.6.0 全局液态玻璃：选中态 = 半透液色玻璃 + 内缘高光（不再实心色块）
           borderColor={category === node.name ? 'transparent' : 'pborder'}
-          bg={category === node.name ? 'brand.500' : 'pinput'}
-          color={category === node.name ? 'white' : 'ptextmuted'}
+          bg={category === node.name ? 'var(--pbox-accent-soft)' : 'pinput'}
+          color={category === node.name ? 'ptext' : 'ptextmuted'}
+          boxShadow={
+            category === node.name
+              ? 'inset 0 1px 0 rgba(255,255,255,0.22), 0 0 14px var(--pbox-accent-soft)'
+              : 'none'
+          }
           onClick={() => setCategory(node.name)}
         >
           <Text noOfLines={1}>{node.name}</Text>
@@ -200,11 +206,11 @@ export default function LibraryPage() {
                 py={2}
                 rounded="md"
                 fontSize="sm"
-                bg={category === node.name ? 'brand.500' : 'transparent'}
-                color={category === node.name ? 'white' : 'ptextmuted'}
+                bg={category === node.name ? 'var(--pbox-accent-soft)' : 'transparent'}
+                color={category === node.name ? 'ptext' : 'ptextmuted'}
                 _hover={{
-                  bg: category === node.name ? 'brand.500' : 'hoverbg',
-                  color: category === node.name ? 'white' : 'ptext'
+                  bg: category === node.name ? 'var(--pbox-accent-soft)' : 'hoverbg',
+                  color: 'ptext'
                 }}
                 onClick={() => setCategory(node.name)}
               >

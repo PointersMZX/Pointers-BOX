@@ -17,27 +17,25 @@ export const DEFAULT_ACCENT = '#7c5cff'
 export const ZJ_ACCENT = '#7c5cff'
 export const ZJ_GOLD = '#e8b33e'
 
-// 各主题液态玻璃默认值：紫金黑/自定义 开，纯黑/纯白 关
-export function defaultLiquidGlass(theme: ThemeKey): boolean {
-  return theme === 'zj' || theme === 'custom'
+// v2.6.0 全局液态玻璃：开关已移除，液态玻璃是应用的唯一外观——所有主题恒开。
+// 旧配置里的按主题开关字段仍在读取链路上（normalize/持久化兼容），但不再产生任何效果。
+export function defaultLiquidGlass(_theme: ThemeKey): boolean {
+  return true
 }
 
-// 玻璃锁死开启的主题（不提供开关）
-export function isGlassLocked(theme: ThemeKey): boolean {
-  return theme === 'zj'
+// 全主题玻璃恒开（无锁死概念，函数保留兼容调用方）
+export function isGlassLocked(_theme: ThemeKey): boolean {
+  return true
 }
 
 /**
- * 生效的液态玻璃开关：锁死主题恒开；其余取该主题显式配置，缺省回主题默认。
- * perTheme = 配置里存的按主题开关（缺省键 = 未显式设置过）
+ * 生效的液态玻璃开关：v2.6.0 起恒 true（开关已删除；perTheme 参数仅为兼容旧签名保留）
  */
 export function effectiveLiquidGlass(
-  theme: ThemeKey,
-  perTheme: Partial<Record<ThemeKey, boolean>> | null | undefined
+  _theme: ThemeKey,
+  _perTheme?: Partial<Record<ThemeKey, boolean>> | null
 ): boolean {
-  if (isGlassLocked(theme)) return true
-  const explicit = perTheme?.[theme]
-  return explicit !== undefined ? explicit : defaultLiquidGlass(theme)
+  return true
 }
 
 // 仅自定义主题允许自定义颜色（v2.3.0：原“液态玻璃”主题更名为“自定义”）

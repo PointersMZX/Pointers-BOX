@@ -28,7 +28,7 @@ import {
   FiStar
 } from 'react-icons/fi'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { motion } from 'framer-motion'
+import { animate, motion, useMotionValue } from 'framer-motion'
 import type { HomeLayout, Resource, UpdateCheckResult } from '../../../shared/types'
 import { backend, openClaim } from '../platform'
 import EmptyState from '../components/EmptyState'
@@ -118,7 +118,6 @@ function GlassCard({
   return (
     <Box
       data-no-ptr={noPtr ? true : undefined}
-      borderRadius="lg"
       p={5}
       minH={minH}
       className="pbox-glass pbox-sheen"
@@ -255,7 +254,9 @@ function StackedDeck({ cards }: { cards: React.ReactNode[] }) {
   )
 }
 
-// ── 布局切换：玻璃分段控件（选中滑块跟随 + 图标）────────────
+// ── 布局切换：液态玻璃分段控件（v2.6.0 玻璃滑块跟手拖动 + 预览 + 吸附）────
+// 连排可点击项支持两种手势：点按直选；按住拖动时玻璃滑块跟手、经过的项实时
+// 预览高亮，松手 spring 吸附最近项并触发切换（reduced-motion 直接跳变）。
 function LayoutSwitcher({
   layout,
   onChange
@@ -263,8 +264,72 @@ function LayoutSwitcher({
   layout: HomeLayout
   onChange: (l: HomeLayout) => void
 }) {
+  const wrapRef = useRef<HTMLDivElement>(null)
+  const x = useMotionValue(0)
+  const itemW = useRef(0)
+  const [preview, setPreview] = useState<number | null>(null)
+  const dragState = useRef<{ startX: number; baseX: number; moved: boolean } | null>(null)
+  const reduced = useRef(
+    typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  )
+
+  const measure = (): number => {
+    const el = wrapRef.current
+    const w = el ? el.clientWidth / LAYOUTS.length : 0
+    itemW.current = w
+    return w
+  }
+
+  // 外部 layout 变化（含点击后父组件回流）→ 滑块吸附到目标
+  useEffect(() => {
+    const w = measure()
+    const target = LAYOUTS.indexOf(layout) * w
+    if (reduced.current) x.set(target)
+    else {
+      const c = animate(x, target, { type: 'spring', stiffness: 500, damping: 38 })
+      return () => c.stop()
+    }
+  }, [layout, x])
+
+  const clampX = (v: number): number =>
+    Math.max(0, Math.min(itemW.current * (LAYOUTS.length - 1), v))
+
+  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>): void => {
+    measure()
+    dragState.current = {
+      startX: e.clientX,
+      baseX: LAYOUTS.indexOf(layout) * itemW.current,
+      moved: false
+    }
+    e.currentTarget.setPointerCapture(e.pointerId)
+  }
+  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>): void => {
+    const st = dragState.current
+    if (!st || itemW.current === 0) return
+    const dx = e.clientX - st.startX
+    if (Math.abs(dx) > 4) st.moved = true
+    const nx = clampX(st.baseX + dx)
+    x.set(nx)
+    setPreview(Math.round(nx / itemW.current))
+  }
+  const onPointerUp = (): void => {
+    const st = dragState.current
+    dragState.current = null
+    setPreview(null)
+    if (!st || itemW.current === 0) return
+    const idx = Math.max(0, Math.min(LAYOUTS.length - 1, Math.round(x.get() / itemW.current)))
+    const target = LAYOUTS[idx]!
+    if (st.moved && target !== layout) onChange(target)
+    else {
+      // 未拖动/落回原项：滑块吸回当前位置
+      if (reduced.current) x.set(idx * itemW.current)
+      else animate(x, idx * itemW.current, { type: 'spring', stiffness: 500, damping: 38 })
+    }
+  }
+
   return (
     <Box
+      ref={wrapRef}
       position="relative"
       bg="panel"
       borderWidth="1px"
@@ -275,28 +340,36 @@ function LayoutSwitcher({
       role="radiogroup"
       aria-label="主页布局"
       _hover={{ borderColor: 'brand.400' }}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerUp}
+      style={{ touchAction: 'pan-y', userSelect: 'none', WebkitUserSelect: 'none' } as React.CSSProperties}
     >
+      {/* 玻璃滑块：半透液色 + 内缘高光 + 发丝描边（跟手 x 位移） */}
       <motion.div
         aria-hidden
         style={{
           position: 'absolute',
           top: 2,
           bottom: 2,
+          left: 0,
+          width: `${100 / LAYOUTS.length}%`,
           borderRadius: 999,
           background: 'var(--pbox-accent)',
-          opacity: 0.18
-        }}
-        transition={{ type: 'spring', stiffness: 500, damping: 38 }}
-        animate={{
-          left: `${(LAYOUTS.indexOf(layout) / LAYOUTS.length) * 100}%`,
-          width: `${100 / LAYOUTS.length}%`
+          opacity: 0.18,
+          boxShadow:
+            'inset 0 1px 0 rgba(255,255,255,0.25), inset 0 0 0 1px var(--pbox-accent-soft, rgba(124,92,255,0.35)), 0 0 14px var(--pbox-accent-soft, rgba(124,92,255,0.35))',
+          x
         }}
       />
       <Flex gap={0} position="relative" zIndex={1}>
-        {LAYOUTS.map((l) => {
+        {LAYOUTS.map((l, i) => {
           const m = LAYOUT_META[l]
           const Icon = m.icon
           const active = l === layout
+          // 拖动经过的项实时预览高亮（未松手不生效）
+          const hot = preview === i && !active
           return (
             <Box
               as="button"
@@ -312,9 +385,9 @@ function LayoutSwitcher({
               px={3.5}
               py={1.5}
               borderRadius="full"
-              color={active ? 'brand.400' : 'ptextmuted'}
+              color={active || hot ? 'brand.400' : 'ptextmuted'}
               fontSize="xs"
-              fontWeight={active ? 'semibold' : 'normal'}
+              fontWeight={active || hot ? 'semibold' : 'normal'}
               cursor="pointer"
               bg="transparent"
               border="none"

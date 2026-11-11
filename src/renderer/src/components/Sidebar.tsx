@@ -65,8 +65,8 @@ export default function Sidebar() {
             rounded="full"
             fontSize="sm"
             fontWeight={active ? 'semibold' : 'normal'}
-            color={active ? 'white' : 'ptextmuted'}
-            _hover={{ color: active ? 'white' : 'ptext' }}
+            color={active ? 'ptext' : 'ptextmuted'}
+            _hover={{ color: active ? 'ptext' : 'ptext' }}
             onClick={() => setPage(p)}
             position="relative"
             className={active ? 'pbox-nav-item pbox-nav-item-active' : 'pbox-nav-item'}
@@ -79,9 +79,13 @@ export default function Sidebar() {
                   position: 'absolute',
                   inset: 0,
                   borderRadius: '9999px',
-                  // v2.3.1：胶囊背景按主题（紫金黑 = 紫金渐变）；v2.4.0：加同色辉光
+                  // v2.3.1：胶囊背景按主题（v2.6.0 起 = 半透玻璃色，透出液态背景）；
+                  // 内缘高光 + 同色辉光 + 发丝描边构成玻璃选中态（不再用实心色块）
                   background: 'var(--pbox-pill, var(--chakra-colors-brand-600))',
-                  boxShadow: '0 0 18px var(--pbox-accent-soft, rgba(124,92,255,0.35))'
+                  boxShadow:
+                    'inset 0 1px 0 rgba(255,255,255,0.22), inset 0 0 0 1px var(--pbox-accent-soft, rgba(124,92,255,0.35)), 0 0 18px var(--pbox-accent-soft, rgba(124,92,255,0.35))',
+                  backdropFilter: 'blur(8px) saturate(150%)',
+                  WebkitBackdropFilter: 'blur(8px) saturate(150%)'
                 }}
               />
             )}

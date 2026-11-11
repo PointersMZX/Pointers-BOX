@@ -1,12 +1,12 @@
 /// <reference lib="dom" />
-// v2.6.0 内容卡液态玻璃折射层（SVG 位移滤镜）
+// v2.6.0 全局液态玻璃折射层（SVG 位移滤镜，全站统一：内容卡+侧栏+底栏）
 // 原理（移植自 shuding/liquid-glass，MIT）：按元素尺寸用 Canvas2D 预计算一张位移贴图
 // （圆角矩形 SDF 的边缘折射场，编码进 R/G 通道），经 feImage + feDisplacementMap 挂到
-// 元素的 backdrop-filter 上——扭曲的是元素背后的真实页面背景（WebGL 折射做不到的：
-// 它只能折射栅格化快照）。
-// 分工：本模块接管内容卡（.pbox-glass）；侧栏/底栏仍归 WebGL 折射（带 7 色色散）。
+// 元素的 backdrop-filter 上——扭曲的是元素背后的真实页面内容（浏览器原生 backdrop
+// 采样，含全部动态层；WebGL 栅格化方案因手画渐变与原生渲染不一致已退役）。
+// 零染色：玻璃只折射/磨砂/棱线/光泽，尾串不含任何颜色调整（纯光学）。
 // 兼容性：backdrop-filter: url(#svg) 仅 Chromium 支持（Electron/Android WebView/ArkWeb
-// 都是 Chromium 内核）；不支持时本模块不启用，元素回落 :root 的 CSS 磨砂配方，降级链不受影响。
+// 都是 Chromium 内核）；不支持时本模块不启用，元素回落各自 CSS 磨砂配方，降级链不受影响。
 // 零依赖；DOM 操作全部收敛在管理器内，纯函数可在 node 测试环境直接跑。
 
 /** 折射参数（来自主题材质档位 SurfaceMaterial.refraction / refractionEdge） */
@@ -130,17 +130,17 @@ class SvgGlassManager {
   private entries = new Map<HTMLElement, GlassEntry>()
   private mo: MutationObserver | null = null
   private params: RefractionParams = { ref: 1, edge: 1 }
-  private tail: BackdropTail = { blur: 18, saturate: 150, brightness: 1.07 }
+  private targets: GlassTarget[] = []
   private scanTimer: number | null = null
   private uid = 0
   private running = false
 
-  start(params: RefractionParams, tail: BackdropTail): void {
+  start(params: RefractionParams, targets: GlassTarget[]): void {
     if (!canUseSvgFilter()) return
     const edgeChanged = this.running && this.params.edge !== params.edge
     const refChanged = this.running && this.params.ref !== params.ref
     this.params = params
-    this.tail = tail
+    this.targets = targets
     if (!this.running) {
       this.running = true
       this.mo = new MutationObserver(() => this.scheduleScan())
@@ -178,7 +178,8 @@ class SvgGlassManager {
 
   private scan(): void {
     if (!this.running) return
-    document.querySelectorAll<HTMLElement>('.pbox-glass').forEach((el) => {
+    const sel = this.targets.map((t) => t.selector).join(',')
+    document.querySelectorAll<HTMLElement>(sel).forEach((el) => {
       if (this.entries.has(el)) return
       // 藏起来的（display:none / 尺寸塌缩）暂不接管，等显示后 resize/重扫触发
       if (el.offsetWidth < 24 || el.offsetHeight < 24) return
@@ -254,7 +255,7 @@ class SvgGlassManager {
     el.removeEventListener('pointerdown', entry.onDown)
     el.removeEventListener('pointerup', entry.onUp)
     el.removeEventListener('pointerleave', entry.onUp)
-    el.style.removeProperty('--pbox-g-backdrop')
+    this.targets.forEach((t) => el.style.removeProperty(t.cssVar))
   }
 
   private scheduleResize(entry: GlassEntry): void {
@@ -301,10 +302,12 @@ class SvgGlassManager {
     entry.feDisp.setAttribute('scale', String(entry.maxScale * this.params.ref))
   }
 
-  /** inline 覆盖 :root 的 backdrop 配方：url 滤镜打头 + 材质磨砂尾串 */
+  /** inline 覆盖该目标的 backdrop 配方：url 滤镜打头 + 目标磨砂尾串（零染色） */
   private applyVars(entry: GlassEntry): void {
     const fid = entry.svg.querySelector('filter')!.id
-    entry.el.style.setProperty('--pbox-g-backdrop', buildBackdropValue(fid, this.tail))
+    const target = this.targets.find((t) => entry.el.matches(t.selector))
+    if (!target) return
+    entry.el.style.setProperty(target.cssVar, buildBackdropValue(fid, target.tail))
   }
 
   /** 按压加厚 + 果冻回弹（只动 scale 属性；reduced-motion 直接跳变） */
@@ -361,14 +364,18 @@ class SvgGlassManager {
 
 const manager = new SvgGlassManager()
 
-/** 总开关：玻璃开 + 主题折射档位 > 0 时启用；关闭时清场回落 CSS 磨砂 */
-export function setSvgGlass(
-  enabled: boolean,
-  params: RefractionParams,
+/** 折射目标：选择器 + 各自的磨砂尾串（零染色：只有 blur/saturate/brightness，无色彩调整） */
+export interface GlassTarget {
+  selector: string
   tail: BackdropTail
-): void {
+  /** 元素上挂磨砂变量的 CSS 变量名（inline 覆盖类默认值；移除即回落 CSS 磨砂） */
+  cssVar: string
+}
+
+/** 总开关：玻璃开 + 主题折射档位 > 0 时启用；关闭时清场回落 CSS 磨砂 */
+export function setSvgGlass(enabled: boolean, params: RefractionParams, targets: GlassTarget[]): void {
   if (enabled && params.ref > 0) {
-    manager.start(params, tail)
+    manager.start(params, targets)
   } else {
     manager.stop()
   }

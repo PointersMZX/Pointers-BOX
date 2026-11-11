@@ -209,7 +209,6 @@ export default function LinksPage() {
           {links.map((link) => (
             <Box
               key={link.id}
-              borderRadius="lg"
               p={4}
               display="flex"
               flexDirection="column"

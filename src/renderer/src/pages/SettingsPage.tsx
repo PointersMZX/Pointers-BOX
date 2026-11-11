@@ -15,11 +15,11 @@ import {
   RadioGroup,
   SimpleGrid,
   Stack,
-  Switch,
   Text,
   useDisclosure,
   useToast,
-  VStack
+  VStack,
+  Switch
 } from '@chakra-ui/react'
 import {
   FiCheck,
@@ -38,7 +38,6 @@ import {
   canCustomizeAccent,
   DEFAULT_ACCENT,
   hexToRgb,
-  isGlassLocked,
   rgbToHex,
   THEME_KEYS
 } from '../../../shared/theme'
@@ -51,7 +50,7 @@ import { backend, openClaim } from '../platform'
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <Box rounded="lg" p={5} mb={4} className="pbox-glass">
+    <Box p={5} mb={4} className="pbox-glass">
       <Heading size="sm" mb={3} color="ptext">
         {title}
       </Heading>
@@ -75,7 +74,7 @@ function CollapsibleSection({
   const [open, setOpen] = useState(defaultOpen)
   return (
     <Box
-      rounded="lg"
+      
       mb={4}
       px={5}
       py={0}
@@ -171,10 +170,10 @@ const THEME_LABELS: Record<ThemeKey, string> = {
 }
 
 const THEME_BADGE: Record<ThemeKey, string> = {
-  zj: '默认 · 玻璃常开',
-  custom: '自选颜色 · 玻璃可关',
-  black: '玻璃默认关',
-  white: '玻璃默认关'
+  zj: '默认 · 紫金黑',
+  custom: '自选颜色',
+  black: '纯黑',
+  white: '纯白'
 }
 
 function ThemePreview({ themeKey }: { themeKey: ThemeKey }) {
@@ -258,11 +257,8 @@ function ThemePreview({ themeKey }: { themeKey: ThemeKey }) {
 function ThemeSectionInner() {
   const themeKey = useThemeStore((s) => s.themeKey)
   const accent = useThemeStore((s) => s.accent)
-  const liquidGlass = useThemeStore((s) => s.liquidGlass)
-  const isGlassOn = useThemeStore((s) => s.isGlassOn)
   const setAppearance = useThemeStore((s) => s.setAppearance)
   const canCustom = canCustomizeAccent(themeKey)
-  const locked = isGlassLocked(themeKey)
   const rgb = hexToRgb(accent) ?? hexToRgb(DEFAULT_ACCENT)!
 
   const setChannel = (ch: 'r' | 'g' | 'b', v: number): void => {
@@ -274,8 +270,7 @@ function ThemeSectionInner() {
   return (
     <>
       <Text fontSize="xs" color="ptextmuted">
-        主题仅改变外观，不影响任何功能；默认「紫金黑」（液态玻璃锁死开启），「自定义」支持自选颜色与玻璃开关，
-        「纯黑 / 纯白」玻璃默认关闭
+        主题仅改变外观，不影响任何功能；全主题均为全局液态玻璃外观（折射/磨砂自动适配深浅色）
       </Text>
       <SimpleGrid columns={{ base: 2, sm: 4 }} spacing={3}>
         {THEME_KEYS.map((k) => {
@@ -310,25 +305,6 @@ function ThemeSectionInner() {
           )
         })}
       </SimpleGrid>
-
-      {/* 液态玻璃开关（v2.3.0）：按主题记忆；紫金黑锁死不可关 */}
-      <Flex align="center" justify="space-between" gap={3} wrap="wrap" pt={2} borderTopWidth="1px" borderTopColor="pborder">
-        <Text fontSize="sm" color="ptext">
-          液态玻璃
-          <Text as="span" fontSize="xs" color="ptextmuted" ml={2}>
-            {locked
-              ? '（紫金黑主题锁死开启，不可关闭）'
-              : '（侧栏/底栏 GPU 折射玻璃体；无 GPU 时自动回落磨砂玻璃）'}
-          </Text>
-        </Text>
-        <Switch
-          colorScheme="brand"
-          isChecked={isGlassOn}
-          isDisabled={locked}
-          onChange={() => setAppearance(themeKey, undefined, !isGlassOn)}
-          aria-label="液态玻璃"
-        />
-      </Flex>
 
       {canCustom ? (
         <Box pt={2} borderTopWidth="1px" borderTopColor="pborder">
@@ -391,7 +367,6 @@ function ThemeSectionInner() {
       ) : (
         <Text fontSize="xs" color="ptextmuted">
           仅「自定义」主题支持自定义颜色；切换到自定义后可挑选预设色或用 RGB 自定义
-          {Object.keys(liquidGlass).length > 0 ? '；已按主题记住的液态玻璃开关将随主题保留' : ''}
         </Text>
       )}
     </>
