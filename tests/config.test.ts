@@ -1,13 +1,13 @@
 import { normalizeConfig } from '../src/shared/config'
 
-describe('配置归一化（PRD 4.4 下载路径/Android 浏览器选项 + 主题外观 + v2.3.0 四主题/液态玻璃）', () => {
+describe('配置归一化（PRD 4.4 下载路径/Android 浏览器选项 + 主题外观 + v2.6.0 深浅双色/液态玻璃）', () => {
   const defDir = 'C:\\Users\\u\\Downloads'
   const defaults = {
     downloadDir: defDir,
     // v2.5.0：恢复内嵌浏览器，默认内置
     androidBrowser: 'builtin' as const,
-    // v2.3.0：默认主题紫金黑
-    theme: 'zj' as const,
+    // v2.6.0：默认主题深色
+    theme: 'dark' as const,
     accent: '#7c5cff',
     favorites: [],
     keepDownloadHistory: false,
@@ -17,7 +17,7 @@ describe('配置归一化（PRD 4.4 下载路径/Android 浏览器选项 + 主�
     updateChannel: 'gitee' as const
   }
 
-  it('空/损坏配置回退默认值（默认紫金黑主题）', () => {
+  it('空/损坏配置回退默认值（默认深色主题）', () => {
     expect(normalizeConfig(null, defDir)).toEqual(defaults)
     expect(normalizeConfig(undefined, defDir)).toEqual(defaults)
     expect(normalizeConfig('garbage', defDir)).toEqual(defaults)
@@ -30,7 +30,7 @@ describe('配置归一化（PRD 4.4 下载路径/Android 浏览器选项 + 主�
         {
           downloadDir: 'D:\\dd',
           androidBrowser: 'system',
-          theme: 'black',
+          theme: 'dark',
           accent: '#ff8800',
           favorites: ['1', 2, '1'],
           keepDownloadHistory: true,
@@ -41,7 +41,7 @@ describe('配置归一化（PRD 4.4 下载路径/Android 浏览器选项 + 主�
     ).toEqual({
       downloadDir: 'D:\\dd',
       androidBrowser: 'system',
-      theme: 'black',
+      theme: 'dark',
       accent: '#ff8800',
       favorites: ['1', '2'],
       keepDownloadHistory: true,
@@ -55,8 +55,11 @@ describe('配置归一化（PRD 4.4 下载路径/Android 浏览器选项 + 主�
   it('非法值被纠正：空路径回退、浏览器非法回 builtin、主题/颜色非法回退默认', () => {
     expect(normalizeConfig({ downloadDir: '   ' }, defDir).downloadDir).toBe(defDir)
     expect(normalizeConfig({ androidBrowser: 'ie' }, defDir).androidBrowser).toBe('builtin')
-    expect(normalizeConfig({ theme: 'neon' }, defDir).theme).toBe('zj')
-    expect(normalizeConfig({ theme: 'glass' }, defDir).theme).toBe('custom') // v2.2.0 旧键迁移
+    expect(normalizeConfig({ theme: 'neon' }, defDir).theme).toBe('dark')
+    // v2.6.0：旧四主题键迁移（深色系→dark、white→light）
+    expect(normalizeConfig({ theme: 'zj' }, defDir).theme).toBe('dark')
+    expect(normalizeConfig({ theme: 'glass' }, defDir).theme).toBe('dark')
+    expect(normalizeConfig({ theme: 'white' }, defDir).theme).toBe('light')
     expect(normalizeConfig({ accent: 'not-a-color' }, defDir).accent).toBe('#7c5cff')
   })
 
@@ -66,20 +69,19 @@ describe('配置归一化（PRD 4.4 下载路径/Android 浏览器选项 + 主�
     expect(normalizeConfig({ androidBrowser: 'builtin' }, defDir).androidBrowser).toBe('builtin')
   })
 
-  it('v2.3.0：液态玻璃按主题开关——合法布尔保留，zj 键剔除，非对象回退缺省', () => {
-    // 未提供 = 无该键（各主题走自身默认）
+  it('v2.6.0：液态玻璃按主题开关字段归一化——合法双主题布尔保留，旧键剔除，非对象回退缺省', () => {
+    // 未提供 = 无该键（玻璃恒开，字段仅兼容保留）
     expect('liquidGlass' in normalizeConfig({}, defDir)).toBe(false)
-    // 合法值保留（zj 锁死，配置被剔除）
-    expect(normalizeConfig({ liquidGlass: { zj: false, custom: false, black: true, white: false } }, defDir).liquidGlass).toEqual({
-      custom: false,
-      black: true,
-      white: false
+    // 合法双主题键保留
+    expect(normalizeConfig({ liquidGlass: { light: false, dark: true } }, defDir).liquidGlass).toEqual({
+      light: false,
+      dark: true
     })
-    // 仅 zj 键 = 全被剔除 → 无该键
-    expect('liquidGlass' in normalizeConfig({ liquidGlass: { zj: false } }, defDir)).toBe(false)
+    // 旧四主题键（zj/custom/black/white）已不在新键集 → 整块无有效键 → 无该字段
+    expect('liquidGlass' in normalizeConfig({ liquidGlass: { zj: false, custom: false, black: true, white: false } }, defDir)).toBe(false)
     // 非法值（字符串/数组/非布尔）整块回退缺省
     expect('liquidGlass' in normalizeConfig({ liquidGlass: 'on' }, defDir)).toBe(false)
-    expect('liquidGlass' in normalizeConfig({ liquidGlass: { black: 'yes' } }, defDir)).toBe(false)
+    expect('liquidGlass' in normalizeConfig({ liquidGlass: { dark: 'yes' } }, defDir)).toBe(false)
   })
 
   it('v2.2.0 迁移：存档中的旧默认紫 #9f7aea 自动跟随新默认 #7c5cff', () => {

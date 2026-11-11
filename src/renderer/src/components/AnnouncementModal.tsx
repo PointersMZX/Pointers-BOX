@@ -76,7 +76,7 @@ export default function AnnouncementModal({ announcement, open, onClose }: Props
                   平台公告
                 </Text>
                 {announcement.date && (
-                  <Badge colorScheme="brand" variant="subtle" borderRadius="full">
+                  <Badge colorScheme="gray" variant="subtle" borderRadius="full">
                     {announcement.date}
                   </Badge>
                 )}

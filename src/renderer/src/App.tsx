@@ -42,15 +42,6 @@ function renderPage(page: Page) {
 
 // 液态玻璃背景：三团缓慢漂移的模糊色斑（波浪氛围，纯装饰）
 // v2.5.0：周期改互质（26/34/19s）+ 异路径，与锥形色相缓转、细噪点共同构成流动背景层
-function GlassBlobs() {
-  return (
-    <>
-      <Box className="pbox-blob b1" aria-hidden />
-      <Box className="pbox-blob b2" aria-hidden />
-      <Box className="pbox-blob b3" aria-hidden />
-    </>
-  )
-}
 
 // v2.5.0 全局指针液体跟随：rAF 每帧把指针目标值以 lerp 平滑写入 --mx/--my
 // （.pbox-glass 指针光斑与卡片微倾消费；桌面精确指针才启用，触屏/减少动效不启动）
@@ -115,7 +106,7 @@ function ThemedShell() {
 
   // 主题切换 → 内置组件明暗模式（v2.1.0：移除弹跳动画，纯切换）
   useEffect(() => {
-    setColorMode(themeKey === 'white' ? 'light' : 'dark')
+    setColorMode(themeKey)
   }, [themeKey, setColorMode])
 
   // 平台探测 + 数据引导 + 托盘跳转监听 + 主题配置加载 + 收藏加载 + 首启渠道询问
@@ -290,13 +281,6 @@ export default function App() {
     <ChakraProvider theme={buildTheme(themeKey, accent, glassOn)}>
       {/* 液态玻璃开时：锥形色相缓转 + CSS 光斑（互质周期漂移）+ 细噪点防色带 +
           WebGL 叠层（侧栏/Android 底栏 GPU 折射，不可用自动 CSS 兜底） */}
-      {glassOn && (
-        <>
-          <Box className="pbox-conic" aria-hidden />
-          <GlassBlobs />
-          <Box className="pbox-grain" aria-hidden />
-        </>
-      )}
       <ThemedShell />
     </ChakraProvider>
   )

@@ -163,93 +163,52 @@ function ExpandableText({ text, empty }: { text: string; empty: string }) {
 // ── 主题外观（纯外观功能，不影响任何业务逻辑） ──────────────────
 
 const THEME_LABELS: Record<ThemeKey, string> = {
-  zj: '紫金黑',
-  custom: '自定义',
-  black: '纯黑',
-  white: '纯白'
+  dark: '深色',
+  light: '浅色'
 }
 
 const THEME_BADGE: Record<ThemeKey, string> = {
-  zj: '默认 · 紫金黑',
-  custom: '自选颜色',
-  black: '纯黑',
-  white: '纯白'
+  dark: '深色玻璃',
+  light: '浅色玻璃'
 }
 
 function ThemePreview({ themeKey }: { themeKey: ThemeKey }) {
-  if (themeKey === 'zj') {
-    return (
-      <Box
-        h="64px"
-        rounded="md"
-        mb={2}
-        bg="radial-gradient(circle at 24% 18%, rgba(124,92,255,0.55), transparent 55%), radial-gradient(circle at 82% 88%, rgba(232,179,62,0.35), transparent 55%), #0d0817"
-        position="relative"
-        overflow="hidden"
-      >
-        <Box
-          position="absolute"
-          left="8%"
-          top="18%"
-          w="28%"
-          h="64%"
-          rounded="md"
-          bg="rgba(255,255,255,0.14)"
-          style={{ backdropFilter: 'blur(4px)' }}
-        />
-        <Box
-          position="absolute"
-          left="42%"
-          top="30%"
-          w="46%"
-          h="40%"
-          rounded="md"
-          bg="rgba(255,255,255,0.09)"
-        />
-        <Box position="absolute" right="8%" bottom="12%" w="14%" h="14%" rounded="full" bg="#e8b33e" />
-      </Box>
-    )
-  }
-  if (themeKey === 'custom') {
-    return (
-      <Box
-        h="64px"
-        rounded="md"
-        mb={2}
-        bg="linear-gradient(135deg, #16305a 0%, #274b82 55%, #0d9488 130%)"
-        position="relative"
-        overflow="hidden"
-      >
-        <Box
-          position="absolute"
-          left="8%"
-          top="18%"
-          w="28%"
-          h="64%"
-          rounded="md"
-          bg="rgba(255,255,255,0.16)"
-          style={{ backdropFilter: 'blur(4px)' }}
-        />
-        <Box
-          position="absolute"
-          left="42%"
-          top="30%"
-          w="46%"
-          h="40%"
-          rounded="md"
-          bg="rgba(255,255,255,0.10)"
-        />
-        <Box position="absolute" right="8%" bottom="12%" w="14%" h="14%" rounded="full" bg="var(--pbox-accent)" />
-      </Box>
-    )
-  }
-  const dark = themeKey === 'black'
+  const dark = themeKey === 'dark'
   return (
-    <Box h="64px" rounded="md" mb={2} bg={dark ? '#000000' : '#ffffff'} borderWidth="1px" borderColor={dark ? '#232323' : '#e6e6e6'} position="relative" overflow="hidden">
-      <Box position="absolute" left="0" top="0" w="26%" h="100%" bg={dark ? '#0a0a0a' : '#f5f5f5'} />
-      <Box position="absolute" left="32%" top="18%" w="56%" h="22%" rounded="sm" bg={dark ? '#161616' : '#ececec'} />
-      <Box position="absolute" left="32%" top="50%" w="38%" h="22%" rounded="sm" bg={dark ? '#161616' : '#ececec'} />
-      <Box position="absolute" right="8%" bottom="12%" w="14%" h="14%" rounded="full" bg="#3182ce" />
+    <Box
+      h="64px"
+      rounded="md"
+      mb={2}
+      bg={dark ? '#0b0b12' : '#eef0f4'}
+      borderWidth="1px"
+      borderColor={dark ? 'rgba(255,255,255,0.10)' : 'rgba(15,23,42,0.10)'}
+      position="relative"
+      overflow="hidden"
+    >
+      {/* 玻璃卡示意：零填充，只画棱线与磨砂卡影 */}
+      <Box
+        position="absolute"
+        left="10%"
+        top="20%"
+        w="52%"
+        h="34%"
+        rounded="md"
+        style={{ backdropFilter: 'blur(4px)' }}
+        bg={dark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.55)'}
+        border="1px solid"
+        borderColor={dark ? 'rgba(255,255,255,0.22)' : 'rgba(15,23,42,0.10)'}
+      />
+      <Box
+        position="absolute"
+        left="30%"
+        top="62%"
+        w="60%"
+        h="24%"
+        rounded="md"
+        bg={dark ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.45)'}
+        border="1px solid"
+        borderColor={dark ? 'rgba(255,255,255,0.14)' : 'rgba(15,23,42,0.08)'}
+      />
     </Box>
   )
 }
@@ -264,13 +223,13 @@ function ThemeSectionInner() {
   const setChannel = (ch: 'r' | 'g' | 'b', v: number): void => {
     if (!Number.isFinite(v)) return
     const next = { ...rgb, [ch]: Math.min(255, Math.max(0, Math.round(v))) }
-    setAppearance('custom', rgbToHex(next.r, next.g, next.b))
+    setAppearance(themeKey, rgbToHex(next.r, next.g, next.b))
   }
 
   return (
     <>
       <Text fontSize="xs" color="ptextmuted">
-        主题仅改变外观，不影响任何功能；全主题均为全局液态玻璃外观（折射/磨砂自动适配深浅色）
+        主题仅改变外观，不影响任何功能；深浅双色 + 全局液态玻璃（折射/磨砂自动适配深浅色）
       </Text>
       <SimpleGrid columns={{ base: 2, sm: 4 }} spacing={3}>
         {THEME_KEYS.map((k) => {
@@ -324,7 +283,7 @@ function ThemeSectionInner() {
                 borderWidth="2px"
                 borderColor={accent === c ? 'ptext' : 'transparent'}
                 className="pbox-morph"
-                onClick={() => setAppearance('custom', c)}
+                onClick={() => setAppearance(themeKey, c)}
               />
             ))}
           </HStack>
@@ -358,7 +317,7 @@ function ThemeSectionInner() {
               onChange={(e) => {
                 const v = e.target.value.trim()
                 if (/^#[0-9a-fA-F]{6}$/.test(v) || /^#[0-9a-fA-F]{3}$/.test(v)) {
-                  setAppearance('custom', v)
+                  setAppearance(themeKey, v)
                 }
               }}
             />
@@ -366,7 +325,7 @@ function ThemeSectionInner() {
         </Box>
       ) : (
         <Text fontSize="xs" color="ptextmuted">
-          仅「自定义」主题支持自定义颜色；切换到自定义后可挑选预设色或用 RGB 自定义
+          挑选预设色或用 RGB 自定义（用于主按钮/进度条/焦点环；导航选中态零色不消费）
         </Text>
       )}
     </>
@@ -591,7 +550,7 @@ export default function SettingsPage() {
                     p={3}
                   >
                     <Box mb={2}>
-                      <Badge colorScheme="brand" variant="subtle" borderRadius="full">
+                      <Badge colorScheme="gray" variant="subtle" borderRadius="full">
                         {v.version}
                       </Badge>
                     </Box>

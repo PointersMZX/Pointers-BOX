@@ -23,7 +23,6 @@ export default function Sidebar() {
   const page = useUiStore((s) => s.page)
   const platform = useUiStore((s) => s.platform)
   const setPage = useUiStore((s) => s.setPage)
-  const isGlassOn = useThemeStore((s) => s.isGlassOn)
 
   return (
     <Box
@@ -32,19 +31,14 @@ export default function Sidebar() {
       flexShrink={0}
       bg="var(--pbox-bg-sidebar)"
       color="ptextmuted"
-      // v2.4.0：玻璃开时侧栏 = 悬浮胶囊板（stadium 两端半圆透镜；SDF 半径钳到短边一半与之同形）
-      // —— 上浮留出空隙 + 顶部加内边距让 Logo 落进胶囊曲线之内
-      py={isGlassOn ? 0 : 4}
-      pt={isGlassOn ? 11 : 4}
-      pb={isGlassOn ? 2 : 4}
-      margin={isGlassOn ? '10px 12px 10px 10px' : 0}
-      borderRadius={isGlassOn ? '9999px' : undefined}
+      // v2.6.0：侧栏回归正常全高栏（悬浮胶囊板造型已删）；液态玻璃磨砂+折射保留
+      py={4}
       display="flex"
       flexDirection="column"
       gap={1}
-      className={isGlassOn ? 'pbox-blur-sidebar' : undefined}
+      className="pbox-blur-sidebar"
       borderRightWidth="1px"
-      // v2.3.1：发丝边按主题（紫金黑 = 金发丝）
+      // 发丝边按深浅色（dark=白、light=暗）
       borderRightColor="var(--pbox-edge, rgba(255,255,255,0.16))"
     >
       <Text px={5} pb={4} fontSize="md" fontWeight="bold" color="ptext" letterSpacing={1} className="pbox-logo">
@@ -79,13 +73,11 @@ export default function Sidebar() {
                   position: 'absolute',
                   inset: 0,
                   borderRadius: '9999px',
-                  // v2.3.1：胶囊背景按主题（v2.6.0 起 = 半透玻璃色，透出液态背景）；
-                  // 内缘高光 + 同色辉光 + 发丝描边构成玻璃选中态（不再用实心色块）
-                  background: 'var(--pbox-pill, var(--chakra-colors-brand-600))',
-                  boxShadow:
-                    'inset 0 1px 0 rgba(255,255,255,0.22), inset 0 0 0 1px var(--pbox-accent-soft, rgba(124,92,255,0.35)), 0 0 18px var(--pbox-accent-soft, rgba(124,92,255,0.35))',
-                  backdropFilter: 'blur(8px) saturate(150%)',
-                  WebkitBackdropFilter: 'blur(8px) saturate(150%)'
+                  // v2.6.0 选中态零色：中性磨砂玻璃 + 按深浅色的棱线（无任何强调色填充/辉光）
+                  background: 'var(--pbox-nav-active, rgba(255,255,255,0.10))',
+                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.20), inset 0 0 0 1px var(--pbox-nav-active-ring, rgba(255,255,255,0.22))',
+                  backdropFilter: 'blur(8px) saturate(140%)',
+                  WebkitBackdropFilter: 'blur(8px) saturate(140%)'
                 }}
               />
             )}

@@ -356,10 +356,10 @@ function LayoutSwitcher({
           left: 0,
           width: `${100 / LAYOUTS.length}%`,
           borderRadius: 999,
-          background: 'var(--pbox-accent)',
-          opacity: 0.18,
+          background: 'var(--pbox-nav-active, rgba(255,255,255,0.10))',
+          opacity: 1,
           boxShadow:
-            'inset 0 1px 0 rgba(255,255,255,0.25), inset 0 0 0 1px var(--pbox-accent-soft, rgba(124,92,255,0.35)), 0 0 14px var(--pbox-accent-soft, rgba(124,92,255,0.35))',
+            'inset 0 1px 0 rgba(255,255,255,0.20), inset 0 0 0 1px var(--pbox-nav-active-ring, rgba(255,255,255,0.22))',
           x
         }}
       />
@@ -385,7 +385,7 @@ function LayoutSwitcher({
               px={3.5}
               py={1.5}
               borderRadius="full"
-              color={active || hot ? 'brand.400' : 'ptextmuted'}
+              color={active || hot ? 'ptext' : 'ptextmuted'}
               fontSize="xs"
               fontWeight={active || hot ? 'semibold' : 'normal'}
               cursor="pointer"
@@ -393,7 +393,7 @@ function LayoutSwitcher({
               border="none"
               transition={`color ${DUR.fast}s ${EASE.out}`}
               onClick={() => onChange(l)}
-              _focusVisible={{ outline: '2px solid', outlineColor: 'brand.400' }}
+              _focusVisible={{ outline: '2px solid', outlineColor: 'pborder' }}
             >
               <Icon size={13} />
               {m.label}
@@ -630,7 +630,7 @@ export default function HomePage() {
                 </Text>
               </Box>
               <Badge
-                colorScheme="brand"
+                colorScheme="gray"
                 variant="subtle"
                 borderRadius="full"
                 fontSize="2xs"

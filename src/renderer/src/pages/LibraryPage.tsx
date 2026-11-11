@@ -146,11 +146,11 @@ export default function LibraryPage() {
           borderWidth="1px"
           // v2.6.0 全局液态玻璃：选中态 = 半透液色玻璃 + 内缘高光（不再实心色块）
           borderColor={category === node.name ? 'transparent' : 'pborder'}
-          bg={category === node.name ? 'var(--pbox-accent-soft)' : 'pinput'}
+          bg={category === node.name ? 'var(--pbox-nav-active)' : 'pinput'}
           color={category === node.name ? 'ptext' : 'ptextmuted'}
           boxShadow={
             category === node.name
-              ? 'inset 0 1px 0 rgba(255,255,255,0.22), 0 0 14px var(--pbox-accent-soft)'
+              ? 'inset 0 1px 0 rgba(255,255,255,0.20), inset 0 0 0 1px var(--pbox-nav-active-ring)'
               : 'none'
           }
           onClick={() => setCategory(node.name)}
@@ -206,7 +206,7 @@ export default function LibraryPage() {
                 py={2}
                 rounded="md"
                 fontSize="sm"
-                bg={category === node.name ? 'var(--pbox-accent-soft)' : 'transparent'}
+                bg={category === node.name ? 'var(--pbox-nav-active)' : 'transparent'}
                 color={category === node.name ? 'ptext' : 'ptextmuted'}
                 _hover={{
                   bg: category === node.name ? 'var(--pbox-accent-soft)' : 'hoverbg',

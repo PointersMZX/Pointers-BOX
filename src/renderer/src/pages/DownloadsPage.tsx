@@ -197,7 +197,7 @@ export default function DownloadsPage() {
               <Text fontWeight="bold" color="ptext" fontSize="sm">
                 下载历史
               </Text>
-              <Badge borderRadius="full" fontSize="2xs" colorScheme="purple" variant="subtle">
+              <Badge borderRadius="full" fontSize="2xs" colorScheme="gray" variant="subtle">
                 {history.length}
               </Badge>
             </HStack>

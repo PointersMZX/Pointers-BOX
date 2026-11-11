@@ -11,7 +11,7 @@ export function normalizeLiquidGlass(raw: unknown): Partial<Record<ThemeKey, boo
   const out: Partial<Record<ThemeKey, boolean>> = {}
   for (const k of THEME_KEYS) {
     const v = (raw as Record<string, unknown>)[k]
-    if (k !== 'zj' && typeof v === 'boolean') out[k] = v
+    if (typeof v === 'boolean') out[k] = v
   }
   return Object.keys(out).length > 0 ? out : undefined
 }

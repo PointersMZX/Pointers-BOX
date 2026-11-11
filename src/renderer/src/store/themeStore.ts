@@ -28,7 +28,7 @@ const LS_KEY = 'pbox-appearance'
 function normalizeGlassMap(v: unknown): LiquidGlassMap {
   if (typeof v !== 'object' || v === null || Array.isArray(v)) return {}
   const out: LiquidGlassMap = {}
-  for (const k of ['custom', 'black', 'white'] as const) {
+  for (const k of ['light', 'dark'] as const) {
     const val = (v as Record<string, unknown>)[k]
     if (typeof val === 'boolean') out[k] = val
   }
@@ -84,10 +84,8 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
 
   setAppearance: (theme, accent, liquidGlass) => {
     const nextTheme = normalizeTheme(theme)
-    // 仅自定义主题可自定义颜色；其余主题回退默认强调色
-    const nextAccent = canCustomizeAccent(nextTheme)
-      ? normalizeAccent(accent ?? get().accent)
-      : normalizeAccent(undefined)
+    // v2.6.0：两主题均可自定义强调色（主按钮/进度条/焦点环；导航选中零色不消费）
+    const nextAccent = normalizeAccent(accent ?? get().accent)
     // 玻璃开关：显式传值则写该主题键；不传则保留既有按主题值（生效值随主题默认变化）
     const nextGlass: LiquidGlassMap = { ...get().liquidGlass }
     if (liquidGlass !== undefined) nextGlass[nextTheme] = liquidGlass

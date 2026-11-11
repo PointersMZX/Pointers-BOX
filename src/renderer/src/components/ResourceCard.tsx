@@ -66,7 +66,7 @@ export default function ResourceCard({ resource, onOpen, minH = '170px' }: Props
                 borderRadius="full"
                 fontSize="2xs"
                 px={2}
-                colorScheme="purple"
+                colorScheme="gray"
                 variant="subtle"
               >
                 {getResourceShares(resource).length} 项

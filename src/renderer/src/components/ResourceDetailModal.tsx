@@ -102,8 +102,10 @@ export default function ResourceDetailModal({ resource, isOpen, onClose }: Props
                     px={2.5}
                     py={0.5}
                     fontSize="xs"
-                    bg="var(--pbox-accent-soft, rgba(124,92,255,0.35))"
+                    bg="var(--pbox-nav-active, rgba(255,255,255,0.10))"
                     color="ptext"
+                    borderWidth="1px"
+                    borderColor="var(--pbox-nav-active-ring, rgba(255,255,255,0.22))"
                   >
                     #{String(resource.id)}
                   </Badge>
@@ -112,7 +114,7 @@ export default function ResourceDetailModal({ resource, isOpen, onClose }: Props
                     px={2.5}
                     py={0.5}
                     fontSize="xs"
-                    colorScheme="purple"
+                    colorScheme="gray"
                     variant="subtle"
                   >
                     {resource.category}
@@ -176,7 +178,7 @@ export default function ResourceDetailModal({ resource, isOpen, onClose }: Props
                     <Box minW={0} flex="1">
                       {/* v2.4.0：分享项不再明文展示链接，仅保留「领取」跳转入口 */}
                       <HStack spacing={2} mb={1}>
-                        <Badge borderRadius="full" fontSize="2xs" px={2} colorScheme="purple" variant="subtle">
+                        <Badge borderRadius="full" fontSize="2xs" px={2} colorScheme="gray" variant="subtle">
                           {i + 1}
                         </Badge>
                         <Text fontSize="sm" fontWeight="semibold" color="ptext" noOfLines={1}>

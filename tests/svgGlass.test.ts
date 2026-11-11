@@ -86,14 +86,14 @@ describe('svgGlass 纯函数（v2.6.0 内容卡折射层）', () => {
 })
 
 describe('getSurfaceMaterial 材质出口（svgGlass 与 buildTheme 同源）', () => {
-  it('玻璃开：折射档位来自主题材质', () => {
-    expect(getSurfaceMaterial('zj', true).refraction).toBeGreaterThan(0)
-    expect(getSurfaceMaterial('black', true).refraction).toBeGreaterThan(0)
-    expect(getSurfaceMaterial('white', true).refractionEdge).toBeGreaterThan(0)
+  it('玻璃开：折射档位来自主题材质（两主题）', () => {
+    expect(getSurfaceMaterial('dark', true).refraction).toBeGreaterThan(0)
+    expect(getSurfaceMaterial('light', true).refraction).toBeGreaterThan(0)
+    expect(getSurfaceMaterial('light', true).refractionEdge).toBeGreaterThan(0)
   })
 
   it('玻璃关：折射归零（svgGlass 据此不启用）', () => {
-    for (const key of ['zj', 'custom', 'black', 'white'] as const) {
+    for (const key of ['dark', 'light'] as const) {
       expect(getSurfaceMaterial(key, false).refraction).toBe(0)
     }
   })

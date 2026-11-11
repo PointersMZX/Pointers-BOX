@@ -11,38 +11,36 @@ import {
   mixColor,
   normalizeAccent,
   normalizeTheme,
-  rgbToHex,
-  ZJ_ACCENT,
-  ZJ_GOLD
+  rgbToHex
 } from '../src/shared/theme'
 
-describe('主题键归一化（v2.3.0 四主题，默认紫金黑）', () => {
-  it('合法主题键保留，非法回退默认紫金黑', () => {
-    expect(normalizeTheme('zj')).toBe('zj')
-    expect(normalizeTheme('custom')).toBe('custom')
-    expect(normalizeTheme('black')).toBe('black')
-    expect(normalizeTheme('white')).toBe('white')
+describe('主题键归一化（v2.6.0 深浅双色，默认深色）', () => {
+  it('合法主题键保留，非法回退默认深色', () => {
+    expect(normalizeTheme('light')).toBe('light')
+    expect(normalizeTheme('dark')).toBe('dark')
     expect(normalizeTheme('aqua')).toBe(DEFAULT_THEME)
     expect(normalizeTheme(undefined)).toBe(DEFAULT_THEME)
     expect(normalizeTheme(42)).toBe(DEFAULT_THEME)
-    expect(DEFAULT_THEME).toBe('zj')
+    expect(DEFAULT_THEME).toBe('dark')
   })
 
-  it('v2.2.0 旧键 glass 迁移为 custom（旧「液态玻璃」主题）', () => {
-    expect(normalizeTheme('glass')).toBe('custom')
+  it('旧四主题键自动迁移：zj/custom/black/glass → dark，white → light', () => {
+    expect(normalizeTheme('zj')).toBe('dark')
+    expect(normalizeTheme('custom')).toBe('dark')
+    expect(normalizeTheme('black')).toBe('dark')
+    expect(normalizeTheme('glass')).toBe('dark')
+    expect(normalizeTheme('white')).toBe('light')
   })
 
-  it('仅自定义主题可自定义颜色', () => {
-    expect(canCustomizeAccent('custom')).toBe(true)
-    expect(canCustomizeAccent('zj')).toBe(false)
-    expect(canCustomizeAccent('black')).toBe(false)
-    expect(canCustomizeAccent('white')).toBe(false)
+  it('两主题均可自定义强调色', () => {
+    expect(canCustomizeAccent('light')).toBe(true)
+    expect(canCustomizeAccent('dark')).toBe(true)
   })
 })
 
 describe('液态玻璃开关（v2.6.0 全局恒开，开关已删除）', () => {
   it('全主题锁死开启：任何配置都开', () => {
-    for (const t of ['zj', 'custom', 'black', 'white'] as const) {
+    for (const t of ['light', 'dark'] as const) {
       expect(isGlassLocked(t)).toBe(true)
       expect(effectiveLiquidGlass(t, undefined)).toBe(true)
       expect(effectiveLiquidGlass(t, {})).toBe(true)
@@ -106,10 +104,8 @@ describe('颜色工具', () => {
   })
 })
 
-describe('v2.3.0 常量', () => {
-  it('紫金黑固定紫金配色、默认色稳定', () => {
-    expect(ZJ_ACCENT).toBe('#7c5cff')
-    expect(ZJ_GOLD).toBe('#e8b33e')
+describe('v2.6.0 常量', () => {
+  it('默认强调色稳定（两主题通用）', () => {
     expect(DEFAULT_ACCENT).toBe('#7c5cff')
     expect(ACCENT_PRESETS[0]).toBe('#7c5cff')
   })
