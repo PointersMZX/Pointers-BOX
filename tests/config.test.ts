@@ -14,7 +14,9 @@ describe('配置归一化（PRD 4.4 下载路径/Android 浏览器选项 + 主�
     tabSleepMinutes: 5,
     homeLayout: 'compact' as const,
     // v2.2.0：更新渠道默认兜底 gitee（首启不再强制弹窗）
-    updateChannel: 'gitee' as const
+    updateChannel: 'gitee' as const,
+    // v2.6.0：旧档缺省视为已引导（仅新装为 false）
+    onboarded: true
   }
 
   it('空/损坏配置回退默认值（默认深色主题）', () => {
@@ -48,7 +50,8 @@ describe('配置归一化（PRD 4.4 下载路径/Android 浏览器选项 + 主�
       tabSleepMinutes: 5,
       homeLayout: 'wide',
       // v2.2.0：updateChannel 默认兜底 gitee
-      updateChannel: 'gitee'
+      updateChannel: 'gitee',
+      onboarded: true
     })
   })
 
@@ -67,6 +70,11 @@ describe('配置归一化（PRD 4.4 下载路径/Android 浏览器选项 + 主�
     expect(normalizeConfig({}, defDir).androidBrowser).toBe('builtin')
     expect(normalizeConfig({ androidBrowser: 'system' }, defDir).androidBrowser).toBe('system')
     expect(normalizeConfig({ androidBrowser: 'builtin' }, defDir).androidBrowser).toBe('builtin')
+  })
+
+  it('v2.6.0：首启引导字段——显式 false 保留（新装），缺省视为已完成', () => {
+    expect(normalizeConfig({ onboarded: false }, defDir).onboarded).toBe(false)
+    expect(normalizeConfig({}, defDir).onboarded).toBe(true)
   })
 
   it('v2.6.0：液态玻璃按主题开关字段归一化——合法双主题布尔保留，旧键剔除，非对象回退缺省', () => {

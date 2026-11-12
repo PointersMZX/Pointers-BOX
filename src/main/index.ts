@@ -1,5 +1,5 @@
 import { app, BrowserWindow } from 'electron'
-import { createMainWindow, getMainWindow } from './window'
+import { createMainWindow, createSplashWindow, getMainWindow } from './window'
 import { createTray } from './tray'
 import { registerIpcHandlers } from './ipc'
 import { markQuitting } from './quit'
@@ -37,6 +37,8 @@ if (!gotLock) {
     attachDownloadHandling()
     initUpdater()
     registerIpcHandlers()
+    // v2.6.0：启动动画先行（纯 Logo 弹出窗），主窗就绪后自动收起
+    createSplashWindow()
     createMainWindow()
     createTray()
     app.on('activate', () => {

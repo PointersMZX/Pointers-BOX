@@ -90,6 +90,8 @@ export interface AppConfig {
   tabSleepMinutes: number
   /** 主页卡片布局（v2.2.0）：堆叠/紧凑/宽展，默认紧凑 */
   homeLayout: HomeLayout
+  /** 首启引导是否完成（v2.6.0）：旧配置迁移视为 true，仅全新安装为 false */
+  onboarded: boolean
 }
 
 // ── 下载历史（v2.0.0：默认关闭的开关，开启后记录已完成任务） ───

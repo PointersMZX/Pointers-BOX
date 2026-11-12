@@ -13,15 +13,19 @@ function configPath(): string {
 
 function readFromDisk(): AppConfig {
   let raw: unknown = null
+  const exists = existsSync(configPath())
   try {
-    if (existsSync(configPath())) {
+    if (exists) {
       // 剥离 UTF-8 BOM（PowerShell Set-Content 默认写入 BOM，JSON.parse 直接报错）
       raw = JSON.parse(readFileSync(configPath(), 'utf-8').replace(/^\uFEFF/, ''))
     }
   } catch {
     // 配置损坏时回退默认值
   }
-  return normalizeConfig(raw, app.getPath('downloads'))
+  // v2.6.0：全新安装（config.json 不存在）→ 首启引导待完成；已有配置一律视为已引导
+  const config = normalizeConfig(raw, app.getPath('downloads'))
+  if (!exists) config.onboarded = false
+  return config
 }
 
 export function getConfig(): AppConfig {

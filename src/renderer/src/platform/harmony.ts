@@ -154,7 +154,10 @@ export async function harmonyGetConfig(): Promise<AppConfig> {
       parsed = null
     }
   }
-  return normalizeConfig(parsed, DEFAULT_HARMONY_DOWNLOAD_DIR)
+  // v2.6.0：无存档 = 全新安装 → 首启引导待完成
+  const config = normalizeConfig(parsed, DEFAULT_HARMONY_DOWNLOAD_DIR)
+  if (!parsed) config.onboarded = false
+  return config
 }
 
 export async function harmonySetConfig(patch: Partial<AppConfig>): Promise<AppConfig> {

@@ -22,6 +22,7 @@ import {
   Switch
 } from '@chakra-ui/react'
 import {
+  FiArrowLeft,
   FiCheck,
   FiChevronDown,
   FiChevronUp,
@@ -42,6 +43,7 @@ import {
   THEME_KEYS
 } from '../../../shared/theme'
 import type { ThemeKey } from '../../../shared/theme'
+import GlassButton from '../components/GlassButton'
 import { useDataStore } from '../store/dataStore'
 import { useDownloadStore } from '../store/downloadStore'
 import { useThemeStore } from '../store/themeStore'
@@ -172,7 +174,7 @@ const THEME_BADGE: Record<ThemeKey, string> = {
   light: '浅色玻璃'
 }
 
-function ThemePreview({ themeKey }: { themeKey: ThemeKey }) {
+export function ThemePreview({ themeKey }: { themeKey: ThemeKey }) {
   const dark = themeKey === 'dark'
   return (
     <Box
@@ -362,15 +364,14 @@ export default function SettingsPage() {
     void loadConfig()
   }, [loadConfig])
 
-  // v2.3.2：首页「版本日志·全部」深链——到达设置页时滚动到版本日志节
-  // （节在首帧已按 defaultOpen 展开），并消费标记（之后手动进设置页不再自动展开）
-  const versionLogRef = useRef<HTMLDivElement>(null)
+  // v2.6.0：版本日志内页（左版本号列表右日志，替代长列表）；首页「版本日志·全部」深链直达内页
+  const [logPage, setLogPage] = useState(false)
+  const [logIndex, setLogIndex] = useState(0)
   useEffect(() => {
     if (useUiStore.getState().versionLogsDeepLink) {
-      versionLogRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      setLogPage(true)
       useUiStore.getState().consumeVersionLogsDeepLink()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // 更新事件：进度同时汇入下载管理（PRD 7.4：更新包下载也显示在下载管理）
@@ -490,6 +491,72 @@ export default function SettingsPage() {
 
   // 问题反馈入口已移除（v2.4.0：官方反馈页关闭），社区联系走「关于应用」的社区 QQ 群邀请页
 
+  // v2.6.0 版本日志内页：左侧版本号列表 + 右侧完整日志
+  if (logPage && versionLogs.length > 0) {
+    const active = versionLogs[Math.min(logIndex, versionLogs.length - 1)]
+    return (
+      <Box p={6} maxW="980px">
+        <Flex align="center" gap={3} mb={5}>
+          <Button
+            size="sm"
+            leftIcon={<FiArrowLeft />}
+            variant="outline"
+            borderColor="pborder"
+            color="ptext"
+            _hover={{ bg: 'hoverbg' }}
+            onClick={() => setLogPage(false)}
+          >
+            返回设置
+          </Button>
+          <Heading size="md" color="ptext">
+            版本日志
+          </Heading>
+        </Flex>
+        <Flex gap={5} align="flex-start">
+          <Box w="220px" flexShrink={0} className="pbox-glass" p={3} maxH="70vh" overflowY="auto">
+            <VStack align="stretch" spacing={1}>
+              {versionLogs.map((v, i) => {
+                const active = i === Math.min(logIndex, versionLogs.length - 1)
+                return (
+                  <Flex
+                    key={v.version}
+                    as="button"
+                    align="center"
+                    justify="space-between"
+                    px={3}
+                    py={2}
+                    rounded="md"
+                    fontSize="sm"
+                    bg={active ? 'var(--pbox-nav-active)' : 'transparent'}
+                    color={active ? 'ptext' : 'ptextmuted'}
+                    fontWeight={active ? 'semibold' : 'normal'}
+                    _hover={{ bg: 'var(--pbox-nav-active)' }}
+                    onClick={() => setLogIndex(i)}
+                  >
+                    <Text noOfLines={1}>{v.version}</Text>
+                    {i === 0 && (
+                      <Badge colorScheme="gray" variant="subtle" borderRadius="full" fontSize="2xs">
+                        最新
+                      </Badge>
+                    )}
+                  </Flex>
+                )
+              })}
+            </VStack>
+          </Box>
+          <Box flex="1" minW={0} className="pbox-glass" p={5} maxH="70vh" overflowY="auto">
+            <Badge colorScheme="gray" variant="subtle" borderRadius="full" mb={3}>
+              {active?.version}
+            </Badge>
+            <Text fontSize="sm" color="ptextmuted" whiteSpace="pre-wrap" lineHeight="1.9">
+              {active?.log}
+            </Text>
+          </Box>
+        </Flex>
+      </Box>
+    )
+  }
+
   return (
     <Box p={6} maxW="820px">
       <Heading size="md" mb={4} color="ptext">
@@ -516,10 +583,9 @@ export default function SettingsPage() {
         <Row label="版权声明" value={box?.copyright} />
       </CollapsibleSection>
 
-      {/* 版本日志（v2.3.2 新增）：完整展示远端 boxbbgxrz.json 全部条目
-          （首页版本卡只显示最近 2 条摘要，长日志在这里看全）；深链到达时自动展开 */}
-      <Box ref={versionLogRef}>
-        <CollapsibleSection title="版本日志" defaultOpen={versionLogsDeepLink}>
+      {/* 版本日志（v2.6.0）：卡片内只显示最新一条摘要，全部日志进内页分栏查看 */}
+      <Box>
+        <Section title="版本日志">
           {versionLogs.length === 0 ? (
             <Flex align="center" justify="space-between" gap={3} wrap="wrap">
               <Text fontSize="sm" color="ptextmuted">
@@ -539,33 +605,35 @@ export default function SettingsPage() {
             </Flex>
           ) : (
             <>
-              <VStack align="stretch" spacing={3}>
-                {versionLogs.map((v) => (
-                  <Box
-                    key={v.version}
-                    borderWidth="1px"
-                    borderColor="pborder"
-                    borderRadius="md"
-                    bg="pinput"
-                    p={3}
-                  >
-                    <Box mb={2}>
-                      <Badge colorScheme="gray" variant="subtle" borderRadius="full">
-                        {v.version}
-                      </Badge>
-                    </Box>
-                    <Text fontSize="sm" color="ptextmuted" whiteSpace="pre-wrap">
-                      {v.log}
-                    </Text>
-                  </Box>
-                ))}
-              </VStack>
-              <Text fontSize="xs" color="ptextmuted">
-                共 {versionLogs.length} 条版本日志，完整展示
-              </Text>
+              <Box
+                borderWidth="1px"
+                borderColor="pborder"
+                borderRadius="md"
+                bg="pinput"
+                p={3}
+                mb={3}
+              >
+                <Badge colorScheme="gray" variant="subtle" borderRadius="full" mb={2}>
+                  最新 · {versionLogs[0]?.version}
+                </Badge>
+                <Text fontSize="sm" color="ptextmuted" whiteSpace="pre-wrap" noOfLines={5}>
+                  {versionLogs[0]?.log}
+                </Text>
+              </Box>
+              <GlassButton
+                size="sm"
+                variant="ghost"
+                ariaLabel="查看全部版本日志"
+                onClick={() => {
+                  setLogIndex(0)
+                  setLogPage(true)
+                }}
+              >
+                查看全部 {versionLogs.length} 条
+              </GlassButton>
             </>
           )}
-        </CollapsibleSection>
+        </Section>
       </Box>
 
       {/* 主题（v2.2.0 次之；默认收起，点进去才展开主题设置） */}

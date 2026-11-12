@@ -53,7 +53,10 @@ export function normalizeConfig(raw: unknown, defaultDownloadDir: string): AppCo
     favorites,
     keepDownloadHistory,
     tabSleepMinutes,
-    homeLayout: normalizeHomeLayout(r['homeLayout'])
+    homeLayout: normalizeHomeLayout(r['homeLayout']),
+    // 首启引导（v2.6.0）：字段缺省 = 旧档已用过（视为已完成，不弹引导）；
+    // 仅主进程判定为全新安装（config.json 不存在）时写入 false
+    onboarded: r['onboarded'] !== false
   }
   if (liquidGlass) cfg.liquidGlass = liquidGlass
   if (updateChannel) cfg.updateChannel = updateChannel

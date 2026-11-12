@@ -147,7 +147,10 @@ export async function androidGetConfig(): Promise<AppConfig> {
       raw = null
     }
   }
-  return normalizeConfig(raw, DEFAULT_ANDROID_DOWNLOAD_DIR)
+  // v2.6.0：无存档 = 全新安装 → 首启引导待完成
+  const config = normalizeConfig(raw, DEFAULT_ANDROID_DOWNLOAD_DIR)
+  if (!value) config.onboarded = false
+  return config
 }
 
 export async function androidSetConfig(patch: Partial<AppConfig>): Promise<AppConfig> {
