@@ -74,6 +74,22 @@ function tarGz(srcDir, outName) {
   console.log(`[build-lm] ${outName}: ${statSync(join(outDir, outName)).size} bytes`)
 }
 
+/**
+ * 最高压缩 tar.xz（XZ -19 档）——比 gzip 的 tar.gz 再小约 25%，同样 --mode=755 保留
+ * Unix 可执行位（GNU tar -J 调 xz；系统 tar -xf 自动识别 xz，各主流发行版内置 xz-utils）。
+ * Windows 上 xz 不在默认 PATH，需把 D:\Git\mingw64\bin 加进子进程 PATH。
+ */
+function tarXz(srcDir, outName) {
+  const outFile = `release/v${version}/${outName}`
+  const xzDir = 'D:\\Git\\mingw64\\bin'
+  run(
+    findGnuTar(),
+    ['-Jcf', outFile, '--mode=755', '--owner=0', '--group=0', '-C', srcDir.replace(/\\/g, '/'), '.'],
+    { cwd: root, env: { ...process.env, PATH: `${xzDir};${process.env.PATH ?? ''}` } }
+  )
+  console.log(`[build-lm] ${outName}: ${statSync(join(outDir, outName)).size} bytes`)
+}
+
 /** 运行时探测 GNU tar（git 自带；本机 git 装在 D:\Git） */
 function findGnuTar() {
   const candidates = [
@@ -96,10 +112,11 @@ function buildTarget(platform, arch) {
 
   if (platform === 'linux') {
     // linux-unpacked：dist 根即应用目录（electron 主程序 + resources/）
-    // 用 GNU tar（--mode=755 强制可执行位）而非 7z：Windows 上 7z 打包只存 Windows
-    // 属性、不保留 Unix 可执行位，解到 Linux 会导致 electron 主程序无法执行——必须 tar.gz
+    // 必须 GNU tar（--mode=755 强制可执行位）：Windows 上 7z 打包只存 Windows 属性、
+    // 不保留 Unix 可执行位，解到 Linux 会导致 electron 主程序无法执行。
+    // 用 -J（xz）最高压缩，比 gzip 的 tar.gz 更小且系统 tar 自动识别。
     assembleResources(join(extractDir, 'resources'))
-    tarGz(extractDir, `Pointers-BOX_v${version}_linux-x64.tar.gz`)
+    tarXz(extractDir, `Pointers-BOX_v${version}_linux-x64.tar.xz`)
   } else {
     // mac：dist 解出 Electron.app —— 放 app.asar/extraResources 进 Contents/Resources/
     const appDir = join(extractDir, 'Electron.app', 'Contents', 'Resources')
