@@ -1,6 +1,6 @@
 import { BrowserWindow } from 'electron'
 import { join } from 'path'
-import { existsSync, readFileSync } from 'fs'
+import { existsSync } from 'fs'
 import { iconFile } from './paths'
 import { isQuitting } from './quit'
 
@@ -44,29 +44,25 @@ function tryReveal(): void {
  */
 export function createSplashWindow(): void {
   if (splashWindow) return
-  let logoDataUrl = ''
-  try {
-    // v2.6.0：启动只用纯 Logo（P+星，透明底），不显示方形 App 图标；
-    // 优先 logo-splash.png（抠好的透明 Logo），缺失时回退完整 app-icon.png
-    let icon = iconFile('logo-splash.png')
-    if (!existsSync(icon)) icon = iconFile('app-icon.png')
-    if (existsSync(icon)) {
-      logoDataUrl = `data:image/png;base64,${readFileSync(icon).toString('base64')}`
-    }
-  } catch {
-    // 图标缺失时跳过启动动画
-  }
-  if (!logoDataUrl) return
+  // v2.6.0：启动标 = 全称 "Pointers-BOX" 字标，紫金黑混合色调（金字→紫字 横向渐变，
+  // 深色桌面透出即"黑"），纯文字渲染——无方形图标、无底板、无圆框，清晰可缩放，
+  // 且不依赖大体积图标的 base64 解码（顺带消除 1MB data URL 拖尾）。
   const html = `<!doctype html><html><head><meta charset="utf-8"><style>
 html,body{margin:0;height:100%;background:transparent;overflow:hidden}
-body{display:flex;align-items:center;justify-content:center}
-img{width:216px;height:216px;opacity:0;transform:scale(.66);
-animation:splashPop .7s cubic-bezier(.34,1.56,.64,1) .06s forwards}
+body{display:flex;align-items:center;justify-content:center;height:100%}
+.t{font-family:'Segoe UI',-apple-system,system-ui,'Helvetica Neue',Arial,sans-serif;
+  font-weight:800;font-size:52px;letter-spacing:1.5px;white-space:nowrap;
+  background:linear-gradient(90deg,#f6d88a 0%,#e9c46a 30%,#8b5cf6 72%,#6d3fd6 100%);
+  -webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;color:transparent;
+  filter:drop-shadow(0 0 16px rgba(124,92,255,0.35));
+  opacity:0;transform:scale(.9);
+  animation:splashPop .7s cubic-bezier(.34,1.56,.64,1) .05s forwards}
 @keyframes splashPop{to{opacity:1;transform:scale(1)}}
-</style></head><body><img src="${logoDataUrl}" alt=""></body></html>`
+</style></head><body><div class="t">Pointers-BOX</div></body></html>`
   splashWindow = new BrowserWindow({
-    width: 420,
-    height: 420,
+    width: 640,
+    height: 200,
     show: false,
     frame: false,
     transparent: true,
