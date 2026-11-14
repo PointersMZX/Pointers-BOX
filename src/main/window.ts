@@ -46,7 +46,10 @@ export function createSplashWindow(): void {
   if (splashWindow) return
   let logoDataUrl = ''
   try {
-    const icon = iconFile('app-icon.png')
+    // v2.6.0：启动只用纯 Logo（P+星，透明底），不显示方形 App 图标；
+    // 优先 logo-splash.png（抠好的透明 Logo），缺失时回退完整 app-icon.png
+    let icon = iconFile('logo-splash.png')
+    if (!existsSync(icon)) icon = iconFile('app-icon.png')
     if (existsSync(icon)) {
       logoDataUrl = `data:image/png;base64,${readFileSync(icon).toString('base64')}`
     }
@@ -57,7 +60,7 @@ export function createSplashWindow(): void {
   const html = `<!doctype html><html><head><meta charset="utf-8"><style>
 html,body{margin:0;height:100%;background:transparent;overflow:hidden}
 body{display:flex;align-items:center;justify-content:center}
-img{width:208px;height:208px;opacity:0;transform:scale(.66);
+img{width:216px;height:216px;opacity:0;transform:scale(.66);
 animation:splashPop .7s cubic-bezier(.34,1.56,.64,1) .06s forwards}
 @keyframes splashPop{to{opacity:1;transform:scale(1)}}
 </style></head><body><img src="${logoDataUrl}" alt=""></body></html>`
