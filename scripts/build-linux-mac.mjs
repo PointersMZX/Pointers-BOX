@@ -96,6 +96,8 @@ function buildTarget(platform, arch) {
 
   if (platform === 'linux') {
     // linux-unpacked：dist 根即应用目录（electron 主程序 + resources/）
+    // 用 GNU tar（--mode=755 强制可执行位）而非 7z：Windows 上 7z 打包只存 Windows
+    // 属性、不保留 Unix 可执行位，解到 Linux 会导致 electron 主程序无法执行——必须 tar.gz
     assembleResources(join(extractDir, 'resources'))
     tarGz(extractDir, `Pointers-BOX_v${version}_linux-x64.tar.gz`)
   } else {
