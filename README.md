@@ -1,6 +1,6 @@
 # Pointers-BOX
 
-Pointers-BOX 是「Pointers资源分享平台」的官方资源领取客户端，支持 Windows、Linux、macOS 电脑与 Android 手机。打开应用即可浏览平台统一发布的资源，一键领取资源链接，全程免费。
+Pointers-BOX 是「Pointers资源分享平台」的官方资源领取客户端，支持 Windows、Linux、macOS 电脑，Android 手机，以及鸿蒙手机/PC。打开应用即可浏览平台统一发布的资源，一键领取资源链接，全程免费。
 
 ## 关于平台
 
@@ -15,10 +15,12 @@ Pointers资源分享平台（[pointers-box.cc.cd](https://pointers-box.cc.cd/)�
 | 功能 | 说明 |
 | --- | --- |
 | 资源库 | 浏览平台发布的资源，支持分类筛选、关键词搜索、多种排序，点击资源领取分享链接 |
-| 首页 | 今日随机推荐、平台公告（重要更新启动弹窗提醒）、版本日志、快捷入口 |
+| 首页 | 今日随机推荐、平台公告（重要更新启动弹窗提醒）、版本日志（点击进内页查看完整日志）、快捷入口 |
 | 链接管理 | 保存你自己常用的资源链接，跨重启保留，可一键打开 |
-| 主题外观 | 紫金黑（默认，带液态玻璃效果）、自定义配色、纯黑、纯白，外观随心切换 |
-| 更新检查 | 应用内检查新版本，提供国内镜像（Gitee）与全球官方（GitHub）双渠道 |
+| 首启引导 | 新安装分步配置（外观→强调色→下载路径→浏览器偏好→下载历史→更新渠道） |
+| 用户设置 | 顶部卡片展示，点击进入内页修改（用户名/状态/签名/头像），本地保存不上传 |
+| 主题外观 | 浅色/深色双主题，强调色两主题通用，玻璃零染色纯光学效果，侧栏与底栏统一折射 |
+| 更新检查 | 启动自动检测，强制更新弹窗，更新模式（稳定版/测试版），网盘手动下载 |
 | 下载管理 | Windows 端可在应用内管理下载任务（Android 端在系统浏览器内下载） |
 
 ## 下载与安装
@@ -32,6 +34,7 @@ Pointers资源分享平台（[pointers-box.cc.cd](https://pointers-box.cc.cd/)�
 | Android | `Pointers-BOX_vX.X.X.apk` | 安卓安装包（X.X.X 为版本号） |
 | Linux | `Pointers-BOX_vX.X.X.AppImage` / `Pointers-BOX_vX.X.X_amd64.deb` | AppImage 免安装通用版 / deb 安装包（Ubuntu 20.04 / Debian 11 等现代发行版） |
 | macOS | `Pointers-BOX_vX.X.X_{arm64,x64}.dmg` | 苹果芯片 / Intel 芯片安装包 |
+| 鸿蒙 | `Pointers-BOX_vX.X.X_phone.hap` / `Pointers-BOX_vX.X.X_pc.hap` | 鸿蒙手机 / 鸿蒙 PC 安装包 |
 
 - Windows：运行安装程序按向导完成安装即可。
 - Android：允许"未知来源"后安装 APK 即可使用。
@@ -43,12 +46,14 @@ Pointers资源分享平台（[pointers-box.cc.cd](https://pointers-box.cc.cd/)�
   ```
 
   之后即可正常打开使用。
+- 鸿蒙：手机/PC 分别安装对应 HAP 文件（通过 hdc 命令行或华为应用市场安装）。
 
 ## 更新
 
-- **Windows**：设置页「更新检查」（或首页检查更新卡片），选择渠道后一键下载并安装。国内网络建议选择 Gitee 渠道。
+- **Windows**：应用启动后自动检测新版本，有重大更新时弹窗提示强制更新；也可在设置页手动检查，或通过「网盘更新」按钮手动下载。更新模式可选稳定版或测试版（测试版接受正式版与 Pre releases）。
 - **Android**：应用内检查到新版本后，按提示打开 Release 页面，下载新 APK 覆盖安装即可。
 - **Linux / macOS**：应用内可检查新版本，请到 Release 页面下载新安装包替换（macOS 替换后若再遇"已损坏"提示，重新执行一次上述 `xattr` 命令即可）。
+- **鸿蒙**：应用内检查到新版本后，到 Release 页面下载新 HAP 文件，通过 hdc 命令行或华为应用市场覆盖安装即可。
 
 ## 社区与反馈
 
