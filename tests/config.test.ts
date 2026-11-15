@@ -13,8 +13,10 @@ describe('配置归一化（PRD 4.4 下载路径/Android 浏览器选项 + 主�
     keepDownloadHistory: false,
     tabSleepMinutes: 5,
     homeLayout: 'compact' as const,
-    // v2.2.0：更新渠道默认兜底 gitee（首启不再强制弹窗）
-    updateChannel: 'gitee' as const,
+    // v2.6.0：更新渠道固定 GitHub（Gitee/蓝奏云已关闭）；更新类型默认稳定版
+    updateChannel: 'github' as const,
+    updateType: 'stable' as const,
+    autoCheckUpdate: false,
     // v2.6.0：旧档缺省视为已引导（仅新装为 false）
     onboarded: true
   }
@@ -49,8 +51,10 @@ describe('配置归一化（PRD 4.4 下载路径/Android 浏览器选项 + 主�
       keepDownloadHistory: true,
       tabSleepMinutes: 5,
       homeLayout: 'wide',
-      // v2.2.0：updateChannel 默认兜底 gitee
-      updateChannel: 'gitee',
+      // v2.6.0：更新渠道固定 GitHub；更新类型默认稳定版
+      updateChannel: 'github',
+      updateType: 'stable',
+      autoCheckUpdate: false,
       onboarded: true
     })
   })
@@ -108,14 +112,17 @@ describe('配置归一化（PRD 4.4 下载路径/Android 浏览器选项 + 主�
     expect(normalizeConfig({ keepDownloadHistory: true }, defDir).keepDownloadHistory).toBe(true)
   })
 
-  it('v2.2.0：updateChannel 默认 gitee；显式 null 清空为 undefined（触发首启弹窗）；合法值保留、非法回默认', () => {
-    expect(normalizeConfig({}, defDir).updateChannel).toBe('gitee')
-    expect(normalizeConfig({ updateChannel: 'gitee' }, defDir).updateChannel).toBe('gitee')
+  it('v2.6.0：更新渠道固定 GitHub（Gitee/蓝奏云已关闭，忽略非法渠道值）；更新类型默认稳定版、非法回稳定版；自动检测默认关闭', () => {
+    expect(normalizeConfig({}, defDir).updateChannel).toBe('github')
+    expect(normalizeConfig({ updateChannel: 'gitee' }, defDir).updateChannel).toBe('github') // 已关闭，固定 GitHub
     expect(normalizeConfig({ updateChannel: 'github' }, defDir).updateChannel).toBe('github')
-    // v2.2.0：默认值兜底 gitee，非法值不再回 undefined
-    expect(normalizeConfig({ updateChannel: 'gitlab' }, defDir).updateChannel).toBe('gitee')
-    // 显式清空（设置页写入 null）仍走首启弹窗
-    expect(normalizeConfig({ updateChannel: null }, defDir).updateChannel).toBeUndefined()
+    expect(normalizeConfig({ updateChannel: 'gitlab' }, defDir).updateChannel).toBe('github')
+    expect(normalizeConfig({}, defDir).updateType).toBe('stable')
+    expect(normalizeConfig({ updateType: 'test' }, defDir).updateType).toBe('test')
+    expect(normalizeConfig({ updateType: 'invalid' }, defDir).updateType).toBe('stable')
+    expect(normalizeConfig({ autoCheckUpdate: true }, defDir).autoCheckUpdate).toBe(true)
+    expect(normalizeConfig({ autoCheckUpdate: false }, defDir).autoCheckUpdate).toBe(false)
+    expect(normalizeConfig({ autoCheckUpdate: 'yes' }, defDir).autoCheckUpdate).toBe(false)
   })
 
   it('v2.1.0：tabSleepMinutes 默认 5、0 表示永不休眠、非法值回退 5', () => {

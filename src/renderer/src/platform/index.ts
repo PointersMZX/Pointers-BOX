@@ -117,13 +117,10 @@ function createAndroidBackend(): AppBackend {
     // v2.5.0：内嵌浏览器恢复，会话重置接原生
     resetBrowserSession: () => androidResetSession(),
     checkUpdate: () => androidCheckUpdate(),
-    // v2.1.0：Android 更新 = 打开所选渠道的 Release 页（APK 走 CI 构建）
+    // v2.1.0：Android 更新 = 打开所选渠道的 Release 页（APK 走 CI 构建；渠道固定 GitHub，v2.6.0）
     downloadUpdate: async () => {
       const cfg = await androidGetConfig()
-      const page =
-        cfg.updateChannel === 'github'
-          ? UPDATE_CHANNEL_INFO.github.releasePage
-          : UPDATE_CHANNEL_INFO.gitee.releasePage
+      const page = UPDATE_CHANNEL_INFO.github.releasePage
       await androidOpenExternal(page)
     },
     installUpdate: () => Promise.resolve(),
@@ -177,10 +174,7 @@ function createHarmonyBackend(): AppBackend {
     // 鸿蒙端更新 = 打开 Release 页（壳 onWindowOpen 引导系统浏览器）
     downloadUpdate: async () => {
       const cfg = await harmonyGetConfig()
-      const page =
-        cfg.updateChannel === 'github'
-          ? UPDATE_CHANNEL_INFO.github.releasePage
-          : UPDATE_CHANNEL_INFO.gitee.releasePage
+      const page = UPDATE_CHANNEL_INFO.github.releasePage
       window.open(page, '_blank')
     },
     installUpdate: () => Promise.resolve(),

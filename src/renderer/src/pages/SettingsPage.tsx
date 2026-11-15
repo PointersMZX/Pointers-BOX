@@ -13,6 +13,7 @@ import {
   Progress,
   Radio,
   RadioGroup,
+  Select,
   SimpleGrid,
   Stack,
   Text,
@@ -350,7 +351,6 @@ export default function SettingsPage() {
   const toast = useToast()
 
   const config = useDownloadStore((s) => s.config)
-  const loadConfig = useDownloadStore((s) => s.loadConfig)
   const chooseDir = useDownloadStore((s) => s.chooseDir)
   const applyEvent = useDownloadStore((s) => s.applyEvent)
 
@@ -359,10 +359,16 @@ export default function SettingsPage() {
   const [downloading, setDownloading] = useState(false)
   const [downloaded, setDownloaded] = useState(false)
   const [updatePercent, setUpdatePercent] = useState(0)
+  // v2.6.0：更新类型（稳定版/测试版）与自动检测更新开关
+  const [updateType, setUpdateType] = useState<'stable' | 'test'>('stable')
+  const [autoCheck, setAutoCheck] = useState(false)
 
   useEffect(() => {
-    void loadConfig()
-  }, [loadConfig])
+    void backend.getConfig().then((cfg) => {
+      setUpdateType(cfg.updateType ?? 'stable')
+      setAutoCheck(cfg.autoCheckUpdate ?? false)
+    }).catch(() => {})
+  }, [])
 
   // v2.6.0：版本日志内页（左版本号列表右日志，替代长列表）；首页「版本日志·全部」深链直达内页
   const [logPage, setLogPage] = useState(false)
@@ -461,18 +467,7 @@ export default function SettingsPage() {
     }
   }
 
-  // v2.1.0：切换更新渠道（主进程会在渠道变化时清空检查缓存）
-  const onChannelChange = async (channel: 'gitee' | 'github'): Promise<void> => {
-    await useDownloadStore.getState().saveConfig({ updateChannel: channel })
-    setDownloaded(false)
-    setDownloading(false)
-    toast({
-      title: `更新渠道已切换：${channel === 'gitee' ? '国内镜像（Gitee）' : '全球官方（GitHub）'}`,
-      status: 'info',
-      duration: 2500,
-      position: 'top'
-    })
-  }
+  // v2.6.0：渠道固定 GitHub（Gitee/蓝奏云已关闭），不再有渠道切换（无渠道选择弹窗/设置项）
 
   const onDownload = async (): Promise<void> => {
     setDownloading(true)
@@ -643,40 +638,29 @@ export default function SettingsPage() {
 
       {/* 检查更新（PRD 4.4：Release 对比；v2.1.0 双渠道 Gitee/GitHub） */}
       <Section title="更新检查">
-        {/* v2.1.0：更新渠道（首启未选时此处也可选）；
-            全平台恢复双渠道选择：Gitee 渠道检查版本可用（资产缺安装包时下载引导去发布页） */}
-        <Flex align="center" justify="space-between" gap={3} wrap="wrap">
-          <Text fontSize="sm" color="ptext">
-            更新渠道
-          </Text>
-          <RadioGroup
-            value={config?.updateChannel ?? 'gitee'}
-            onChange={(v) => {
-              setResult(null)
-              void onChannelChange(v as 'gitee' | 'github')
-            }}
-          >
-            <Stack direction="row" spacing={5}>
-              <Radio value="gitee">国内镜像（Gitee）</Radio>
-              <Radio value="github">全球官方（GitHub）</Radio>
-            </Stack>
-          </RadioGroup>
+        {/* v2.6.0：更新渠道固定为 GitHub（Gitee/蓝奏云已关闭——单文件附件 100MB 上限不适用于本多平台更新包） */}
+        <Flex align="center" gap={2} wrap="wrap">
+          <Text fontSize="sm" color="pprimary">更新渠道：全球官方（GitHub）</Text>
+          <Text fontSize="xs" color="pprimarymuted">（v2.6.0 起仅保留 GitHub 全球官方渠道，Gitee 与蓝奏云已关闭）</Text>
         </Flex>
-        <Text fontSize="xs" color="ptextmuted">
-          {osPlatform === 'win32'
-            ? '国内网络建议选 Gitee（不受 GitHub 限流影响）；切换后下次检查立即生效'
-            : '国内网络建议选 Gitee；移动端检测到新版本后请到发布页下载对应安装包'}
-        </Text>
+        <Flex align="center" justify="space-between" wrap="wrap" gap={3} mt={3}>
+          {/* 更新类型（v2.6.0：下拉选择——稳定版 / 测试版=GitHub Pre） */}
+          <Flex align="center" gap={2}>
+            <Text fontSize="sm" color="pprimary">更新类型</Text>
+            <Select value={updateType} onChange={(e) => { setUpdateType(e.target.value as 'stable' | 'test'); setResult(null) }} style={{ minWidth: 200 }}>
+              <Text fontSize="sm" color="pprimarymuted">稳定版（官方最新正式版）</Text>
+              <Text fontSize="sm" color="pprimarymuted">测试版（GitHub Pre 版本）</Text>
+            </Select>
+          </Flex>
+          {/* 自动检测更新（v2.6.0：开关，符合设置 UI 交互规则——单选项用开关）——启用后每次启动约 5 秒后自动检测版本 */}
+          <Flex align="center" gap={2}>
+            <Switch isChecked={autoCheck} aria-label="自动检测更新" onChange={(e) => { setAutoCheck(e.target.checked); void backend.setConfig({ autoCheckUpdate: e.target.checked }) }} />
+            <Text fontSize="sm" color="pprimary">自动检测更新</Text>
+          </Flex>
+        </Flex>
         <Flex align="center" justify="space-between" wrap="wrap" gap={3}>
-          <Text fontSize="sm" color="ptextmuted">
-            当前版本：{result?.current ?? (localVersion ? `v${localVersion}` : 'v2.6.0')}
-          </Text>
-          <Button
-            size="sm"
-            leftIcon={<FiRefreshCw />}
-            isLoading={checking}
-            onClick={() => void onCheck()}
-          >
+          <Text fontSize="sm" color="pprimarymuted">当前版本：{result?.current ?? (localVersion ? 'v${localVersion}' : 'v2.6.0')}</Text>
+          <Button size="sm" leftIcon={<FiRefreshCw />} isLoading={checking} onClick={() => void onCheck()}>
             检查更新
           </Button>
         </Flex>

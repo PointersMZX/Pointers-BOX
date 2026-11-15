@@ -60,15 +60,19 @@ export interface UserLink {
 
 // ── 配置 ─────────────────────────────────────────────────────
 
-/** 更新渠道（v2.1.0）：国内镜像 Gitee / 全球官方 GitHub */
-export type UpdateChannel = 'gitee' | 'github'
+/** 更新渠道（v2.6.0）：关闭 Gitee / 蓝奏云——二者单文件附件 100MB 上限，不适用于本多平台更新包；
+ * 仅保留 GitHub 全球官方渠道。渠道固定，不再有选择弹窗 */
+export type UpdateChannel = 'github'
 
-/** 主页卡片布局（v2.2.0）：堆叠（全部叠起不分层）/ 紧凑（每行2个）/ 宽展（每行1个全展开） */
-export type HomeLayout = 'stacked' | 'compact' | 'wide'
+/** 更新类型（v2.6.0）：stable 稳定版（官方最新正式版）/ test 测试版（GitHub 的 Pre 版本） */
+export type UpdateType = 'stable' | 'test'
 
 // v2.5.0：恢复内嵌浏览器——'builtin'（原生 InAppBrowserActivity）/ 'system'（系统浏览器），
 // 设置页可选；默认 builtin（v2.3.0~v2.4.x 存档中的 'system' 保留）
 export type AndroidBrowserChoice = 'builtin' | 'system'
+
+/** 主页卡片布局（v2.2.0）：堆叠（全部叠起不分层）/ 紧凑（每行2个）/ 宽展（每行1个全展开） */
+export type HomeLayout = 'stacked' | 'compact' | 'wide'
 
 export interface AppConfig {
   downloadDir: string
@@ -84,8 +88,12 @@ export interface AppConfig {
   favorites: string[]
   /** 保留下载历史（默认关闭，与 PRD 4.3 默认约定共存；v2.0.0） */
   keepDownloadHistory: boolean
-  /** 更新渠道（v2.1.0）：undefined = 尚未选择（首次启动弹窗询问） */
-  updateChannel?: UpdateChannel
+  /** 更新渠道（v2.6.0：固定 GitHub 全球官方，Gitee/蓝奏云已关闭） */
+  updateChannel: UpdateChannel
+  /** 更新类型（v2.6.0）：stable 稳定版 / test 测试版（GitHub Pre），默认 stable */
+  updateType?: UpdateType
+  /** 自动检测更新（v2.6.0）：启用后每次启动约 5 秒后自动检测版本（TTL 缓存，不打扰用户）；默认关闭 */
+  autoCheckUpdate?: boolean
   /** 后台标签闲置休眠分钟数（v2.1.0）：0 = 永不休眠 */
   tabSleepMinutes: number
   /** 主页卡片布局（v2.2.0）：堆叠/紧凑/宽展，默认紧凑 */

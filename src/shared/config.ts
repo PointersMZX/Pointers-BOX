@@ -1,6 +1,6 @@
-import type { AndroidBrowserChoice, AppConfig } from './types'
+import type { AndroidBrowserChoice, AppConfig, UpdateChannel, UpdateType } from './types'
 import { DEFAULT_ACCENT, normalizeAccent, normalizeTheme, THEME_KEYS, type ThemeKey } from './theme'
-import { normalizeHomeLayout, normalizeTabSleepMinutes, normalizeUpdateChannel } from './updateChannels'
+import { normalizeHomeLayout, normalizeTabSleepMinutes } from './updateChannels'
 
 // v2.2.0 迁移：存档里等于旧默认的强调色视为“未自定义”，自动跟随新默认
 const LEGACY_DEFAULT_ACCENT = '#9f7aea'
@@ -39,8 +39,11 @@ export function normalizeConfig(raw: unknown, defaultDownloadDir: string): AppCo
     accentRaw === undefined || accentRaw === '' || accentRaw.toLowerCase() === LEGACY_DEFAULT_ACCENT
       ? DEFAULT_ACCENT
       : normalizeAccent(accentRaw)
-  // 更新渠道：默认 gitee（国内主渠道，v2.2.0 起首启不再强制弹窗）；显式清空时才 undefined（首启弹窗）
-  const updateChannel = r['updateChannel'] === null ? undefined : normalizeUpdateChannel(r['updateChannel']) ?? 'gitee'
+  // 更新渠道（v2.6.0：固定 GitHub 全球官方，Gitee/蓝奏云已关闭）
+  const updateChannel = 'github' as UpdateChannel
+  const updateType =
+    r['updateType'] === 'stable' || r['updateType'] === 'test' ? (r['updateType'] as UpdateType) : 'stable'
+  const autoCheckUpdate = r['autoCheckUpdate'] === true
   const tabSleepMinutes = normalizeTabSleepMinutes(r['tabSleepMinutes'])
   // 主页布局（v2.2.0）：堆叠/紧凑/宽展，默认紧凑；非法回退 compact
   // 液态玻璃按主题开关（v2.3.0）：缺省 = 各主题用自己的默认值
@@ -54,11 +57,14 @@ export function normalizeConfig(raw: unknown, defaultDownloadDir: string): AppCo
     keepDownloadHistory,
     tabSleepMinutes,
     homeLayout: normalizeHomeLayout(r['homeLayout']),
+    // v2.6.0：更新渠道固定 GitHub（Gitee/蓝奏云已关闭）；更新类型默认稳定版
+    updateChannel,
+    updateType,
+    autoCheckUpdate,
     // 首启引导（v2.6.0）：字段缺省 = 旧档已用过（视为已完成，不弹引导）；
     // 仅主进程判定为全新安装（config.json 不存在）时写入 false
     onboarded: r['onboarded'] !== false
   }
   if (liquidGlass) cfg.liquidGlass = liquidGlass
-  if (updateChannel) cfg.updateChannel = updateChannel
   return cfg
 }

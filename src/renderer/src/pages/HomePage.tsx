@@ -871,9 +871,7 @@ export default function HomePage() {
       <Text fontSize="sm" color="ptextmuted">
         更新渠道：
         <Text as="span" color="ptext">
-          {osPlatform !== 'win32'
-            ? 'GitHub'
-            : config?.updateChannel === 'github' ? '全球官方（GitHub）' : '国内镜像（Gitee）'}
+          {osPlatform !== 'win32' ? 'GitHub' : '全球官方（GitHub）'}
         </Text>
         {offline && '（远程暂不可达，展示本地缓存）'}
       </Text>

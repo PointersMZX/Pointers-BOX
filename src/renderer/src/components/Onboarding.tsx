@@ -16,8 +16,10 @@ import { ThemePreview } from '../pages/SettingsPage'
  */
 export default function Onboarding({ onDone }: { onDone: () => void }) {
   const isAndroid = backend.platform === 'android'
-  // 步骤表按平台组装：欢迎 → 外观 → 强调色 → 下载路径(桌面) → 浏览器偏好(Android) → 下载历史 → 更新渠道 → 完成
-  const steps = ['welcome', 'appearance', 'accent', ...(isAndroid ? [] : ['downloadDir']), ...(isAndroid ? ['browser'] : []), 'history', 'channel', 'done'] as string[]
+  // 步骤表按平台组装：欢迎 → 外观 → 强调色 → 下载路径(桌面) → 浏览器偏好(Android) → 下载历史 → 完成
+  // v2.6.0：更新渠道固定 GitHub（Gitee/蓝奏云已关闭），引导不再询问渠道
+  // v2.6.0 步骤：welcome, appearance, accent, downloadDir(桌面), browser(Android), history, done
+  const steps = ['welcome', 'appearance', 'accent', ...(isAndroid ? [] : ['downloadDir']), ...(isAndroid ? ['browser'] : []), 'history', 'done'] as string[]
   const [index, setIndex] = useState(0)
   const step = steps[index]!
   const total = steps.length
@@ -94,7 +96,6 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
           {step === 'downloadDir' && <StepDownloadDir />}
           {step === 'browser' && <StepBrowser />}
           {step === 'history' && <StepHistory />}
-          {step === 'channel' && <StepChannel />}
           {step === 'done' && (
             <VStack align="start" spacing={2} pt={4}>
               <Text fontSize="2xl" fontWeight="bold" color="ptext">
@@ -276,29 +277,3 @@ function StepHistory(): React.JSX.Element {
   )
 }
 
-function StepChannel(): React.JSX.Element {
-  const config = useDownloadStore((s) => s.config)
-  const saveConfig = useDownloadStore((s) => s.saveConfig)
-  const value = config?.updateChannel ?? 'gitee'
-  return (
-    <Box>
-      <StepTitle title="更新渠道" hint="检查新版本时使用的下载源" />
-      <RadioGroup
-        value={value}
-        onChange={(v) => {
-          void saveConfig({ updateChannel: v as 'gitee' | 'github' })
-        }}
-      >
-        <Stack spacing={3}>
-          <Radio value="gitee" colorScheme="brand">
-            <Text fontSize="sm" color="ptext">国内镜像（Gitee）</Text>
-            <Text fontSize="xs" color="ptextmuted" ml={2}>国内网络推荐</Text>
-          </Radio>
-          <Radio value="github" colorScheme="brand">
-            <Text fontSize="sm" color="ptext">全球官方（GitHub）</Text>
-          </Radio>
-        </Stack>
-      </RadioGroup>
-    </Box>
-  )
-}
