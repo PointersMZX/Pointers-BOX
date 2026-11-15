@@ -1,9 +1,16 @@
-import type { AndroidBrowserChoice, AppConfig, UpdateChannel, UpdateType } from './types'
+import type { AndroidBrowserChoice, AppConfig, LocalUser, UpdateChannel, UpdateType } from './types'
 import { DEFAULT_ACCENT, normalizeAccent, normalizeTheme, THEME_KEYS, type ThemeKey } from './theme'
-import { normalizeHomeLayout, normalizeTabSleepMinutes } from './updateChannels'
+import { normalizeHomeLayout, normalizeTabSleepMinutes, normalizeUpdateChannel } from './updateChannels'
 
 // v2.2.0 迁移：存档里等于旧默认的强调色视为“未自定义”，自动跟随新默认
 const LEGACY_DEFAULT_ACCENT = '#9f7aea'
+
+// 本地用户 id 自增生成（不依赖平台全局 crypto，渲染/主进程通用）
+let localUserIdSeq = 0
+export function generateLocalUserId(): string {
+  localUserIdSeq = (localUserIdSeq + 1) % 100000
+  return `local_${Date.now().toString(36)}_${localUserIdSeq}`
+}
 
 // 液态玻璃按主题开关归一化（v2.3.0）：仅保留合法主题键的布尔值；zj 锁死开启故剔除
 export function normalizeLiquidGlass(raw: unknown): Partial<Record<ThemeKey, boolean>> | undefined {
@@ -39,8 +46,8 @@ export function normalizeConfig(raw: unknown, defaultDownloadDir: string): AppCo
     accentRaw === undefined || accentRaw === '' || accentRaw.toLowerCase() === LEGACY_DEFAULT_ACCENT
       ? DEFAULT_ACCENT
       : normalizeAccent(accentRaw)
-  // 更新渠道（v2.6.0：固定 GitHub 全球官方，Gitee/蓝奏云已关闭）
-  const updateChannel = 'github' as UpdateChannel
+  // 更新渠道（v2.6.0：关闭 Gitee/蓝奏云；保留 GitHub 全球官方 + 网盘手动下载；默认 GitHub）
+  const updateChannel = normalizeUpdateChannel(r['updateChannel']) ?? 'github' as UpdateChannel
   const updateType =
     r['updateType'] === 'stable' || r['updateType'] === 'test' ? (r['updateType'] as UpdateType) : 'stable'
   const autoCheckUpdate = r['autoCheckUpdate'] === true
@@ -48,6 +55,22 @@ export function normalizeConfig(raw: unknown, defaultDownloadDir: string): AppCo
   // 主页布局（v2.2.0）：堆叠/紧凑/宽展，默认紧凑；非法回退 compact
   // 液态玻璃按主题开关（v2.3.0）：缺省 = 各主题用自己的默认值
   const liquidGlass = normalizeLiquidGlass(r['liquidGlass'])
+  // 用户模式（v2.6.0 第 8 条：默认空；本地用户数据全部本地存储，userId 在创建用户时生成）
+  const localUser: LocalUser = (() => {
+    const lu = (r['localUser'] as LocalUser | undefined) ?? {}
+    // 仅有字段才做补全；空对象视为默认（localUser:{}）
+    const hasAny = lu && typeof lu === 'object' && !Array.isArray(lu) && Object.keys(lu).length > 0
+    if (hasAny) {
+      return {
+        userId: lu.userId,
+        username: lu.username ?? '',
+        avatar: lu.avatar ?? '',
+        signature: lu.signature ?? '',
+        status: lu.status ?? ''
+      }
+    }
+    return {}
+  })()
   const cfg: AppConfig = {
     downloadDir,
     androidBrowser,
@@ -57,10 +80,13 @@ export function normalizeConfig(raw: unknown, defaultDownloadDir: string): AppCo
     keepDownloadHistory,
     tabSleepMinutes,
     homeLayout: normalizeHomeLayout(r['homeLayout']),
-    // v2.6.0：更新渠道固定 GitHub（Gitee/蓝奏云已关闭）；更新类型默认稳定版
+    // v2.6.0：更新渠道（GitHub/网盘）；更新类型默认稳定版
     updateChannel,
     updateType,
     autoCheckUpdate,
+    localUser,
+    // 开发者模式（v2.6.0 第 9 条：默认关闭）
+    devMode: r['devMode'] === true,
     // 首启引导（v2.6.0）：字段缺省 = 旧档已用过（视为已完成，不弹引导）；
     // 仅主进程判定为全新安装（config.json 不存在）时写入 false
     onboarded: r['onboarded'] !== false

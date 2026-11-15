@@ -13,10 +13,12 @@ describe('配置归一化（PRD 4.4 下载路径/Android 浏览器选项 + 主�
     keepDownloadHistory: false,
     tabSleepMinutes: 5,
     homeLayout: 'compact' as const,
-    // v2.6.0：更新渠道固定 GitHub（Gitee/蓝奏云已关闭）；更新类型默认稳定版
+    // v2.6.0：更新渠道默认 GitHub（Gitee/蓝奏云已关闭）；更新类型默认稳定版
     updateChannel: 'github' as const,
     updateType: 'stable' as const,
     autoCheckUpdate: false,
+    localUser: {} as const,
+    devMode: false,
     // v2.6.0：旧档缺省视为已引导（仅新装为 false）
     onboarded: true
   }
@@ -55,6 +57,8 @@ describe('配置归一化（PRD 4.4 下载路径/Android 浏览器选项 + 主�
       updateChannel: 'github',
       updateType: 'stable',
       autoCheckUpdate: false,
+      localUser: {},
+      devMode: false,
       onboarded: true
     })
   })

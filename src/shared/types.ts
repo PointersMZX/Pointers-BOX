@@ -58,11 +58,25 @@ export interface UserLink {
   createdAt: number
 }
 
+// ── 用户模式（本地用户，v2.6.0 草稿第 8 条：数据本地存储，设置-用户设置调整） ─────
+/** 本地用户信息（全部本地存储，不参与服务器数据） */
+export interface LocalUser {
+  /** 本地唯一 id（初始化时生成，用于本地识别） */
+  userId?: string
+  /** 用户名（设置-用户设置可调整，用户名旁边展示状态） */
+  username?: string
+  /** 头像（自行上传本地文件，存本地路径） */
+  avatar?: string
+  /** 个性签名（设置-用户设置可调整） */
+  signature?: string
+  /** 状态（用户名旁边展示） */
+  status?: string
+}
+
 // ── 配置 ─────────────────────────────────────────────────────
 
-/** 更新渠道（v2.6.0）：关闭 Gitee / 蓝奏云——二者单文件附件 100MB 上限，不适用于本多平台更新包；
- * 仅保留 GitHub 全球官方渠道。渠道固定，不再有选择弹窗 */
-export type UpdateChannel = 'github'
+/** 更新渠道（v2.6.0）：关闭 Gitee / 蓝奏云（单文件 100MB 上限）；保留 GitHub 全球官方 + 网盘手动下载渠道 */
+export type UpdateChannel = 'github' | 'netdisk'
 
 /** 更新类型（v2.6.0）：stable 稳定版（官方最新正式版）/ test 测试版（GitHub 的 Pre 版本） */
 export type UpdateType = 'stable' | 'test'
@@ -100,6 +114,10 @@ export interface AppConfig {
   homeLayout: HomeLayout
   /** 首启引导是否完成（v2.6.0）：旧配置迁移视为 true，仅全新安装为 false */
   onboarded: boolean
+  /** 用户模式（v2.6.0 草稿第 8 条）：本地用户，数据全部本地存储；默认空（新建本地用户） */
+  localUser: LocalUser
+  /** 开发者模式（v2.6.0 草稿第 9 条）：启用后状态显示「开发者模式」；激活窗口与第 7 条开发者测试共用激活能力 */
+  devMode?: boolean
 }
 
 // ── 下载历史（v2.0.0：默认关闭的开关，开启后记录已完成任务） ───
@@ -222,6 +240,8 @@ export interface PBoxApi {
   setConfig(patch: Partial<AppConfig>): Promise<AppConfig>
   chooseDownloadDir(): Promise<string | null>
   hasActiveDownloads(): Promise<boolean>
+  /** 用户模式头像自传（桌面弹本地图片选择；Android/鸿蒙返回 null 不支持） */
+  pickAvatar(): Promise<string | null>
   openPath(path: string): Promise<boolean>
   /** 取消下载任务（取消后清理半成品文件）；仅浏览器下载可取消，更新包不支持 */
   cancelDownload(id: string): Promise<boolean>

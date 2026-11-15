@@ -89,6 +89,12 @@ export function initUpdater(): void {
 
 export async function checkUpdate(force = true): Promise<UpdateCheckResult> {
   const current = app.getVersion()
+  const channel = getConfig().updateChannel
+  // v2.6.0：网盘渠道无版本 API 检测（网盘为手动下载），直接返回手动下载提示
+  if (channel === 'netdisk') {
+    return { current, latest: null, hasUpdate: false, error: '网盘渠道为手动下载，请点「网盘更新」跳转网盘链接' }
+  }
+  // GitHub 渠道（v2.6.0：渠道固定 github，releaseApi 必有）
   const info = UPDATE_CHANNEL_INFO['github']
   // v2.6.0：更新类型（stable 稳定版 / test 测试版=GitHub Pre），缓存键含类型
   const type = getConfig().updateType ?? 'stable'
@@ -106,7 +112,8 @@ export async function checkUpdate(force = true): Promise<UpdateCheckResult> {
       // 测试版：GitHub Pre 版本——拉全部 releases，取最新的 Pre 标签
       release = await fetchGitHubTestRelease()
     } else {
-      const { status, text } = await requestText(info.releaseApi, FETCH_TIMEOUT_MS, info.headers)
+      // 稳定版：查 GitHub latest（渠道固定 github，releaseApi 必有）
+      const { status, text } = await requestText(info.releaseApi!, FETCH_TIMEOUT_MS, info.headers)
       if (status < 200 || status >= 300) throw new Error(`HTTP ${status}`)
       const parsed = parseReleaseJson(text)
       if (!parsed) throw new Error('Release 数据缺少 tag_name')

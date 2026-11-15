@@ -203,15 +203,19 @@ export async function harmonyCheckUpdate(): Promise<UpdateCheckResult> {
       return { current, latest: null, hasUpdate: false, error: '尚未选择更新渠道，请先在设置中选择' }
     }
     const info = UPDATE_CHANNEL_INFO[channel]
+    // v2.6.0：网盘渠道无版本 API 检测（手动下载）
+    if (channel === 'netdisk') {
+      return { current, latest: null, hasUpdate: false, error: '网盘渠道为手动下载，请点「网盘更新」跳转网盘链接' }
+    }
     const bridge = getNativeBridge()
     let status: number
     let text: string
     if (bridge) {
       // 原生数据桥：无 CORS 限制；桥内非 2xx 直接抛错
-      text = await bridge(info.releaseApi, JSON.stringify(info.headers)) as string
+      text = await bridge(info.releaseApi!, JSON.stringify(info.headers)) as string
       status = 200
     } else {
-      const res = await fetch(info.releaseApi, { headers: info.headers, signal: AbortSignal.timeout(10_000) })
+      const res = await fetch(info.releaseApi!, { headers: info.headers, signal: AbortSignal.timeout(10_000) })
       status = res.status
       if (status === 403 || status === 401) {
         return { current, latest: null, hasUpdate: false, error: '接口访问受限（限流），请稍后再试' }

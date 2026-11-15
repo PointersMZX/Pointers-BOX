@@ -359,8 +359,12 @@ export async function androidCheckUpdate(): Promise<UpdateCheckResult> {
       return { current, latest: null, hasUpdate: false, error: '尚未选择更新渠道，请先在设置中选择' }
     }
     const info = UPDATE_CHANNEL_INFO[channel]
+    // v2.6.0：网盘渠道无版本 API 检测（手动下载）
+    if (channel === 'netdisk') {
+      return { current, latest: null, hasUpdate: false, error: '网盘渠道为手动下载，请点「网盘更新」跳转网盘链接' }
+    }
     const res = await CapacitorHttp.get({
-      url: info.releaseApi,
+      url: info.releaseApi!,
       headers: info.headers,
       connectTimeout: 10_000,
       readTimeout: 10_000

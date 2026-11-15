@@ -28,6 +28,7 @@ const api: PBoxApi = {
   setConfig: (patch) => ipcRenderer.invoke('config:set', patch),
   chooseDownloadDir: () => ipcRenderer.invoke('downloads:chooseDir'),
   hasActiveDownloads: () => ipcRenderer.invoke('downloads:hasActive'),
+  pickAvatar: () => ipcRenderer.invoke('avatar:pick'),
   openPath: (path) => ipcRenderer.invoke('shell:openPath', path),
   cancelDownload: (id) => ipcRenderer.invoke('downloads:cancel', id),
   pauseDownload: (id) => ipcRenderer.invoke('downloads:pause', id),

@@ -106,6 +106,8 @@ function createAndroidBackend(): AppBackend {
     // Android 下载走系统 DownloadManager 固定 Downloads 目录，不可自选；"打开文件夹"=系统下载记录
     chooseDownloadDir: () => Promise.resolve(null),
     hasActiveDownloads: () => Promise.resolve(false),
+    // v2.6.0 第 8 条：头像自传仅桌面端支持；Android/鸿蒙无原生弹窗，返回 null
+    pickAvatar: () => Promise.resolve(null),
     openPath: async () => {
       await androidOpenSystemDownloads().catch(() => {})
       return false
@@ -165,6 +167,8 @@ function createHarmonyBackend(): AppBackend {
     setConfig: (patch) => harmonySetConfig(patch),
     chooseDownloadDir: () => Promise.resolve(null),
     hasActiveDownloads: () => Promise.resolve(false),
+    // v2.6.0 第 8 条：头像自传仅桌面端支持；鸿蒙无原生弹窗，返回 null
+    pickAvatar: () => Promise.resolve(null),
     openPath: () => Promise.resolve(false),
     cancelDownload: () => Promise.resolve(false),
     pauseDownload: () => Promise.resolve(false),

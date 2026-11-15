@@ -34,7 +34,8 @@ import {
   FiUploadCloud
 } from 'react-icons/fi'
 import { useEffect, useRef, useState } from 'react'
-import type { HomeLayout, UpdateCheckResult } from '../../../shared/types'
+import type { HomeLayout, LocalUser, UpdateCheckResult, UpdateType } from '../../../shared/types'
+import { compareVersions } from '../../../shared/semver'
 import {
   ACCENT_PRESETS,
   canCustomizeAccent,
@@ -45,11 +46,14 @@ import {
 } from '../../../shared/theme'
 import type { ThemeKey } from '../../../shared/theme'
 import GlassButton from '../components/GlassButton'
+import UpdateModal from '../components/UpdateModal'
+import DevActivationModal from '../components/DevActivationModal'
 import { useDataStore } from '../store/dataStore'
 import { useDownloadStore } from '../store/downloadStore'
 import { useThemeStore } from '../store/themeStore'
 import { useUiStore } from '../store/uiStore'
 import { backend, openClaim } from '../platform'
+import { UPDATE_CHANNEL_INFO } from '../../../shared/updateChannels'
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -362,6 +366,14 @@ export default function SettingsPage() {
   // v2.6.0：更新类型（稳定版/测试版）与自动检测更新开关
   const [updateType, setUpdateType] = useState<'stable' | 'test'>('stable')
   const [autoCheck, setAutoCheck] = useState(false)
+  // v2.6.0：新版本弹窗（更新结果 + 是否因版本差≥2 触发强制更新）
+  const [updateResult, setUpdateResult] = useState<(UpdateCheckResult & { forced: boolean }) | null>(null)
+  // v2.6.0：开发者激活/测试弹窗（第 9 条激活 / 第 7 条开发者测试共用）
+  const [devModalOpen, setDevModalOpen] = useState(false)
+  // v2.6.0：用户模式（设置-用户设置）
+  const localUser = useDownloadStore((s) => (s.config?.localUser as LocalUser | undefined) ?? {})
+  // v2.6.0：开发者模式（设置开关，激活后状态显示「开发者模式」）
+  const devMode = useDownloadStore((s) => s.config?.devMode === true)
 
   useEffect(() => {
     void backend.getConfig().then((cfg) => {
@@ -461,14 +473,17 @@ export default function SettingsPage() {
   const onCheck = async (): Promise<void> => {
     setChecking(true)
     try {
-      setResult(await backend.checkUpdate())
+      const res = await backend.checkUpdate()
+      // v2.6.0 第 7 条：最新版本与当前版本相差 ≥2 个版本级 → 触发强制更新
+      const forced = res.hasUpdate && compareVersions(res.latest as string, res.current) >= 2
+      setResult(res)
+      setUpdateResult({ ...res, forced })
     } finally {
       setChecking(false)
     }
   }
 
-  // v2.6.0：渠道固定 GitHub（Gitee/蓝奏云已关闭），不再有渠道切换（无渠道选择弹窗/设置项）
-
+  // v2.6.0：立即下载更新（第 7 条弹窗「立即更新」触发）
   const onDownload = async (): Promise<void> => {
     setDownloading(true)
     try {
@@ -482,6 +497,50 @@ export default function SettingsPage() {
         position: 'top'
       })
     }
+  }
+
+  // v2.6.0：更新结果处理（第 7 条弹窗）
+  const onUpdate = (action: 'apply' | 'skip'): void => {
+    if (action === 'apply') {
+      // 立即更新：按当前渠道下载更新（github→electron-updater，网盘→跳网盘链接下载）
+      void onDownload()
+    } else {
+      setUpdateResult(null)
+    }
+  }
+
+  // v2.6.0 第 9 条：开发者模式开关（激活 = 8 字密码+随机题；激活后状态显示「开发者模式」）
+  const onDevToggle = (checked: boolean): void => {
+    // 即时落配置（主进程下次启动/读取生效）；状态用 devMode 选择器直接读取
+    useDownloadStore.getState().saveConfig({ devMode: checked })
+    void backend.getConfig().then((cfg) => { if (cfg.devMode === checked) setDevModalOpen(checked) }).catch(() => {})
+    if (checked) setDevModalOpen(true) // 开启时弹出激活窗口
+  }
+
+  // v2.6.0 第 8 条：用户模式字段（设置-用户设置）
+  const onUserField = (field: keyof LocalUser, value: string): void => {
+    void backend.setConfig({ localUser: { ...localUser, [field]: value } })
+  }
+  const onAvatar = async (): Promise<void> => {
+    const path = await backend.pickAvatar()
+    if (path) {
+      await backend.setConfig({ localUser: { ...localUser, avatar: path } })
+      toast({ title: '头像已保存（本地）', status: 'success', duration: 2500, position: 'top' })
+    } else {
+      toast({ title: '已取消选择头像', status: 'info', duration: 2000, position: 'top' })
+    }
+  }
+
+  // v2.6.0：渠道固定 GitHub + 网盘手动下载渠道（第 6 条：检测区下方加网盘按钮跳内嵌浏览器）
+  const onChannelChange = (channel: 'github' | 'netdisk'): void => {
+    void backend.setConfig({ updateChannel: channel })
+    toast({
+      title: channel === 'netdisk' ? '更新渠道已切换：网盘（手动下载）' : '更新渠道已切换：全球官方（GitHub）',
+      status: 'info', duration: 2500, position: 'top'
+    })
+  }
+  const openNetdiskUpdate = (): void => {
+    openClaim(UPDATE_CHANNEL_INFO.netdisk.fileUrl ?? '')
   }
 
   // 问题反馈入口已移除（v2.4.0：官方反馈页关闭），社区联系走「关于应用」的社区 QQ 群邀请页
@@ -638,12 +697,19 @@ export default function SettingsPage() {
 
       {/* 检查更新（PRD 4.4：Release 对比；v2.1.0 双渠道 Gitee/GitHub） */}
       <Section title="更新检查">
-        {/* v2.6.0：更新渠道固定为 GitHub（Gitee/蓝奏云已关闭——单文件附件 100MB 上限不适用于本多平台更新包） */}
-        <Flex align="center" gap={2} wrap="wrap">
-          <Text fontSize="sm" color="pprimary">更新渠道：全球官方（GitHub）</Text>
-          <Text fontSize="xs" color="pprimarymuted">（v2.6.0 起仅保留 GitHub 全球官方渠道，Gitee 与蓝奏云已关闭）</Text>
+        {/* v2.6.0 第 6 条：更新渠道 = 全球官方 GitHub + 网盘手动下载（Gitee/蓝奏云已关闭） */}
+        <Flex align="center" gap={2} wrap="wrap" mb={3}>
+          <Text fontSize="sm" color="pprimary">更新渠道</Text>
+          <Select
+            value={config?.updateChannel === 'netdisk' ? 'netdisk' : 'github'}
+            onChange={(e) => onChannelChange(e.target.value as 'github' | 'netdisk')}
+            style={{ minWidth: 200 }}
+          >
+            <Text fontSize="sm" color="pprimarymuted">全球官方（GitHub）</Text>
+            <Text fontSize="sm" color="pprimarymuted">网盘（手动下载）</Text>
+          </Select>
         </Flex>
-        <Flex align="center" justify="space-between" wrap="wrap" gap={3} mt={3}>
+        <Flex align="center" justify="space-between" wrap="wrap" gap={3}>
           {/* 更新类型（v2.6.0：下拉选择——稳定版 / 测试版=GitHub Pre） */}
           <Flex align="center" gap={2}>
             <Text fontSize="sm" color="pprimary">更新类型</Text>
@@ -664,6 +730,15 @@ export default function SettingsPage() {
             检查更新
           </Button>
         </Flex>
+        {/* v2.6.0 第 6 条：检测区下方加网盘更新按钮——跳转内嵌浏览器打开网盘更新链接 */}
+        <Button size="sm" variant="outline" borderColor="pborder" color="pprimary" onClick={openNetdiskUpdate}>
+          网盘更新
+        </Button>
+        {result && result.error && (
+          <Text fontSize="xs" color="ptextmuted" mt={2}>
+            检查更新失败：{result.error}
+          </Text>
+        )}
         {result && !result.error && (
           <Stack spacing={2} mt={1}>
             <Text fontSize="sm" color="ptext">
@@ -817,6 +892,35 @@ export default function SettingsPage() {
         </Text>
       </Section>
 
+      {/* v2.6.0 第 8+9 条：用户模式（本地用户数据本地存储）+ 开发者模式 */}
+      <Section title="用户设置">
+        {/* 用户名（旁边展示状态） */}
+        <Flex align="center" justify="space-between" gap={3} wrap="wrap" mb={2}>
+          <Text fontSize="sm" color="pprimary">用户名</Text>
+          <Input size="sm" value={localUser.username ?? ''} onChange={(e) => onUserField('username', e.target.value)} placeholder="未设置用户名" />
+        </Flex>
+        <Flex align="center" justify="space-between" gap={3} wrap="wrap" mb={2}>
+          <Text fontSize="sm" color="pprimary">状态</Text>
+          <Input size="sm" value={localUser.status ?? ''} onChange={(e) => onUserField('status', e.target.value)} placeholder="未设置状态" />
+          {devMode && (
+            <Badge colorScheme="brand" variant="subtle" borderRadius="full">开发者模式</Badge>
+          )}
+        </Flex>
+        {/* 个性签名 */}
+        <Text fontSize="sm" color="pprimary" mb={1} mt={2}>个性签名</Text>
+        <Input size="sm" value={localUser.signature ?? ''} onChange={(e) => onUserField('signature', e.target.value)} placeholder="未设置签名" />
+        {/* 头像自传（桌面端：原生弹本地图片选择；Android/鸿蒙走 pickAvatar 返回 null 跳过） */}
+        {platform === 'desktop' ? (
+          <Button size="sm" variant="outline" borderColor="pborder" color="pprimary" onClick={onAvatar} mt={2}>
+            上传头像
+          </Button>
+        ) : (
+          <Text fontSize="xs" color="ptextmuted" mt={2}>
+            当前平台不支持头像自传（仅桌面端可上传本地头像）
+          </Text>
+        )}
+      </Section>
+
       {/* 浏览器设置（v2.5.0：Android 恢复内嵌浏览器，内置/系统可选；桌面端后台标签休眠保留） */}
       <Section title="浏览器设置">
         {platform === 'android' ? (
@@ -871,6 +975,21 @@ export default function SettingsPage() {
           </Flex>
         )}
       </Section>
+      {/* v2.6.0 第 7 条：新版本弹窗（版本号+日志+立即更新/暂不更新，≥2 版本差强制更新） */}
+      <UpdateModal result={updateResult} forced={updateResult?.forced ?? false} onUpdate={onUpdate} />
+      {/* v2.6.0 第 9 条开发者激活（设置-用户设置「开发者模式」开关触发）/ 第 7 条开发者测试 */}
+      <DevActivationModal open={devModalOpen} onClose={() => setDevModalOpen(false)} onVerified={(ok) => {
+        if (ok) {
+          setDevModalOpen(false)
+          // 第 9 条：激活开发者模式（已通过激活校验）
+          if (updateResult) {
+            setUpdateResult({ ...updateResult, forced: false })
+            onUpdate('skip')
+          } else {
+            setDevModalOpen(false)
+          }
+        }
+      }} />
     </Box>
   )
 }

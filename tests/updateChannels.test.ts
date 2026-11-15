@@ -7,9 +7,10 @@ import {
   UPDATE_CHANNELS
 } from '../src/shared/updateChannels'
 
-describe('更新渠道归一化（v2.6.0：仅 GitHub，Gitee/蓝奏云已关闭）', () => {
-  it('仅保留 GitHub，Gitee 非法值回 undefined（渠道固定，无首启弹窗）', () => {
+describe('更新渠道归一化（v2.6.0：Gitee/蓝奏云已关闭，GitHub + 网盘渠道）', () => {
+  it('GitHub/网盘合法保留，Gitee/蓝奏云等非法值回 undefined', () => {
     expect(normalizeUpdateChannel('github')).toBe('github')
+    expect(normalizeUpdateChannel('netdisk')).toBe('netdisk')
     expect(normalizeUpdateChannel('gitee')).toBeUndefined()
     expect(normalizeUpdateChannel('mirror')).toBeUndefined()
     expect(normalizeUpdateChannel(undefined)).toBeUndefined()
@@ -17,19 +18,21 @@ describe('更新渠道归一化（v2.6.0：仅 GitHub，Gitee/蓝奏云已关闭
     expect(normalizeUpdateChannel(42)).toBeUndefined()
   })
 
-  it('isUpdateChannel 类型守卫（仅 GitHub 合法）', () => {
+  it('isUpdateChannel 类型守卫（GitHub/网盘合法）', () => {
     expect(isUpdateChannel('github')).toBe(true)
+    expect(isUpdateChannel('netdisk')).toBe(true)
     expect(isUpdateChannel('gitee')).toBe(false)
     expect(isUpdateChannel('gitlab')).toBe(false)
   })
 
-  it('渠道清单与 API/发布页 URL 均已定义（仅 GitHub）', () => {
-    expect(UPDATE_CHANNELS).toEqual(['github'])
-    const info = UPDATE_CHANNEL_INFO.github
-    expect(info.releaseApi).toMatch(/^https:\/\//)
-    expect(info.releasePage).toMatch(/^https:\/\//)
-    expect(UPDATE_CHANNEL_INFO.github.releaseApi).toContain('api.github.com')
-    expect(UPDATE_CHANNEL_INFO.github.releasePage).toContain('github.com/PointersMZX/Pointers-BOX/releases')
+  it('渠道清单与 URL 均已定义（GitHub 有 API/发布页，网盘有文件链接）', () => {
+    expect(UPDATE_CHANNELS).toEqual(['github', 'netdisk'])
+    const github = UPDATE_CHANNEL_INFO.github
+    expect(github.releaseApi).toMatch(/^https:\/\//)
+    expect(github.releasePage).toMatch(/^https:\/\//)
+    const netdisk = UPDATE_CHANNEL_INFO.netdisk
+    expect(netdisk.releasePage).toMatch(/^https:\/\//)
+    expect(netdisk.fileUrl).toBe(netdisk.releasePage)
   })
 })
 

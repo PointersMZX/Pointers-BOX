@@ -59,6 +59,16 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('history:list', () => listHistory())
   ipcMain.handle('history:clear', () => clearHistory())
 
+  // 用户模式头像自传（v2.6.0 第 8 条：桌面端弹本地图片选择，存本地路径）
+  ipcMain.handle('avatar:pick', async () => {
+    const picked = await dialog.showOpenDialog({
+      title: '选择头像',
+      properties: ['openFile'],
+      filters: [{ name: '图片', extensions: ['png', 'jpg', 'jpeg', 'bmp'] }]
+    })
+    if (picked.canceled || picked.filePaths.length === 0) return null
+    return picked.filePaths[0] ?? null
+  })
   // 用户自建资源链接（v2.2.0：仅存本地 user-links.json）
   ipcMain.handle('links:get', () => getUserLinks())
   ipcMain.handle('links:set', (_e, links: unknown) => setUserLinks(links))
