@@ -34,7 +34,7 @@ Pointers资源分享平台（[pointers-box.cc.cd](https://pointers-box.cc.cd/)�
 | Android | `Pointers-BOX_vX.X.X.apk` | 安卓安装包（X.X.X 为版本号） |
 | Linux | `Pointers-BOX_vX.X.X.AppImage` / `Pointers-BOX_vX.X.X_amd64.deb` | AppImage 免安装通用版 / deb 安装包（Ubuntu 20.04 / Debian 11 等现代发行版） |
 | macOS | `Pointers-BOX_vX.X.X_{arm64,x64}.dmg` | 苹果芯片 / Intel 芯片安装包 |
-| 鸿蒙 | `Pointers-BOX_vX.X.X_phone.hap` / `Pointers-BOX_vX.X.X_pc.hap` | 鸿蒙手机 / 鸿蒙 PC 安装包 |
+| 鸿蒙 | `Pointers-BOX_vX.X.X_harmony-phone-signed.hap` / `Pointers-BOX_vX.X.X_harmony-pc-signed.hap` | 鸿蒙手机 / 鸿蒙 PC 安装包 |
 
 - Windows：运行安装程序按向导完成安装即可。
 - Android：允许"未知来源"后安装 APK 即可使用。
