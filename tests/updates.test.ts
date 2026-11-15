@@ -1,4 +1,4 @@
-import { parseReleaseJson } from '../src/shared/updates'
+import { parseReleaseJson, pickNewestRelease } from '../src/shared/updates'
 
 describe('GitHub Release 解析（PRD 4.4 检查更新）', () => {
   it('解析 tag_name / html_url / body', () => {
@@ -75,5 +75,32 @@ describe('Gitee Release 解析（v2.1.0 双渠道，assets 附件直链）', () 
   it('assets 为空数组/非数组时结果不含 assets 键', () => {
     expect('assets' in (parseReleaseJson('{"tag_name":"v1","assets":[]}') ?? {})).toBe(false)
     expect('assets' in (parseReleaseJson('{"tag_name":"v1","assets":"x"}') ?? {})).toBe(false)
+  })
+})
+
+describe('测试版检测口径（v2.6.0：正式版 + Pre 取版本号最高）', () => {
+  const list = [
+    { tag_name: 'v2.6.0', html_url: 'stable' },
+    { tag_name: 'v2.7.0-pre.1', html_url: 'pre' },
+    { tag_name: 'v2.5.0', html_url: 'old' }
+  ]
+
+  it('Pre 版本号更高时选 Pre', () => {
+    expect(pickNewestRelease(list)?.tagName).toBe('v2.7.0-pre.1')
+  })
+
+  it('正式版更高时选正式版', () => {
+    const items = [
+      { tag_name: 'v2.8.0', html_url: 'stable' },
+      { tag_name: 'v2.7.0-pre.1', html_url: 'pre' }
+    ]
+    expect(pickNewestRelease(items)?.tagName).toBe('v2.8.0')
+  })
+
+  it('跳过草稿、坏条目；空列表返回 null', () => {
+    const items = [{ tag_name: 'v9.0.0', draft: true }, { tag_name: 'v2.6.0' }, null, { nope: 1 }]
+    expect(pickNewestRelease(items)?.tagName).toBe('v2.6.0')
+    expect(pickNewestRelease([])).toBeNull()
+    expect(pickNewestRelease('not-array')).toBeNull()
   })
 })

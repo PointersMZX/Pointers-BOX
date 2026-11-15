@@ -1,6 +1,6 @@
 import type { AndroidBrowserChoice, AppConfig, LocalUser, UpdateChannel, UpdateType } from './types'
 import { DEFAULT_ACCENT, normalizeAccent, normalizeTheme, THEME_KEYS, type ThemeKey } from './theme'
-import { normalizeHomeLayout, normalizeTabSleepMinutes, normalizeUpdateChannel } from './updateChannels'
+import { normalizeHomeLayout, normalizeTabSleepMinutes } from './updateChannels'
 
 // v2.2.0 迁移：存档里等于旧默认的强调色视为“未自定义”，自动跟随新默认
 const LEGACY_DEFAULT_ACCENT = '#9f7aea'
@@ -46,8 +46,8 @@ export function normalizeConfig(raw: unknown, defaultDownloadDir: string): AppCo
     accentRaw === undefined || accentRaw === '' || accentRaw.toLowerCase() === LEGACY_DEFAULT_ACCENT
       ? DEFAULT_ACCENT
       : normalizeAccent(accentRaw)
-  // 更新渠道（v2.6.0：关闭 Gitee/蓝奏云；保留 GitHub 全球官方 + 网盘手动下载；默认 GitHub）
-  const updateChannel = normalizeUpdateChannel(r['updateChannel']) ?? 'github' as UpdateChannel
+  // 检测渠道（v2.6.0：固定 GitHub——网盘只做手动下载入口，旧档 netdisk 自动迁回 GitHub）
+  const updateChannel: UpdateChannel = 'github'
   const updateType =
     r['updateType'] === 'stable' || r['updateType'] === 'test' ? (r['updateType'] as UpdateType) : 'stable'
   const autoCheckUpdate = r['autoCheckUpdate'] === true

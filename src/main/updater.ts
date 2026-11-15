@@ -8,7 +8,7 @@ import { join } from 'path'
 import os from 'os'
 import { isNewerVersion } from '../shared/semver'
 import type { UpdateCheckResult, UpdateEvent } from '../shared/types'
-import { ReleaseInfo, parseReleaseJson } from '../shared/updates'
+import { ReleaseInfo, parseReleaseJson, pickNewestRelease } from '../shared/updates'
 import { winCompatFromOsVersion, UPDATE_CHANNEL_INFO } from '../shared/updateChannels'
 import { getConfig } from './configStore'
 import { requestText } from './netRequest'
@@ -16,9 +16,6 @@ import { getMainWindow } from './window'
 
 const FETCH_TIMEOUT_MS = 10_000
 const CHECK_TTL_MS = 10 * 60 * 1000
-const AUTO_CHECK_DELAY_MS = 5_000
-// GitHub 测试版（Pre）判定：tagName 含 pre 关键字（如 v1.0.0-PRE、v2.5.0-pre）
-const PRE_TAG_RE = /pre/i
 
 /** 当前是否 Win7/8 兼容构建（Electron 22）：决定分流 electron-updater channel 与资产匹配 */
 function isWin7CompatBuild(): boolean {
@@ -77,14 +74,8 @@ export function initUpdater(): void {
   autoUpdater.on('update-downloaded', () => broadcast({ type: 'downloaded' }))
   autoUpdater.on('error', (e) => broadcast({ type: 'error', message: e?.message ?? String(e) }))
 
-  // v2.6.0：自动检测更新开关——启用后每次启动约 5 秒后静默检测版本（TTL 缓存，不打扰用户）
-  if (app.isPackaged) {
-    if (getConfig().autoCheckUpdate) {
-      setTimeout(() => {
-        void checkUpdate(false)
-      }, AUTO_CHECK_DELAY_MS).unref?.()
-    }
-  }
+  // v2.6.0：启动自动检测由渲染层全局组件驱动（桌面/Android/鸿蒙同一套逻辑，
+  // 检测到新版本后弹全局更新弹窗）；主进程不再重复起 5 秒定时器。
 }
 
 export async function checkUpdate(force = true): Promise<UpdateCheckResult> {
@@ -109,7 +100,7 @@ export async function checkUpdate(force = true): Promise<UpdateCheckResult> {
   try {
     let release: ReleaseInfo | null | undefined
     if (type === 'test') {
-      // 测试版：GitHub Pre 版本——拉全部 releases，取最新的 Pre 标签
+      // 测试版：正式版 + Pre 测试版都接受，取版本号最高的一个
       release = await fetchGitHubTestRelease()
     } else {
       // 稳定版：查 GitHub latest（渠道固定 github，releaseApi 必有）
@@ -139,7 +130,8 @@ export async function checkUpdate(force = true): Promise<UpdateCheckResult> {
   }
 }
 
-/** GitHub 测试版（Pre）：拉 releases 列表，取最新的 Pre 标签（按发布时间倒序） */
+/** GitHub 测试版（Pre）：拉 releases 列表，正式版与测试版都算，取版本号最高的一个
+ *  （用户口径 v2.6.0：选「测试版」= 接受 Pre 更新，同时仍收正式版；无 Pre 时就是最新正式版） */
 async function fetchGitHubTestRelease(): Promise<ReleaseInfo | null | undefined> {
   const url = 'https://api.github.com/repos/PointersMZX/Pointers-BOX/releases?per_page=100'
   const { status, text } = await requestText(url, FETCH_TIMEOUT_MS, UPDATE_CHANNEL_INFO['github'].headers)
@@ -150,22 +142,7 @@ async function fetchGitHubTestRelease(): Promise<ReleaseInfo | null | undefined>
   } catch {
     throw new Error('Release 列表数据解析失败')
   }
-  const items = Array.isArray(data) ? data : []
-  // 筛选 Pre 标签（tagName 含 pre 关键字）
-  const preItems = items.filter((it) => {
-    const tag = (it as Record<string, unknown>)['tag_name']
-    return typeof tag === 'string' && PRE_TAG_RE.test(tag)
-  })
-  if (preItems.length === 0) return null // 尚无测试版（Pre）
-  // 按发布时间倒序，取最新一个
-  preItems.sort((a, b) => {
-    const ca = (a as Record<string, unknown>)['created_at'] as string | undefined
-    const cb = (b as Record<string, unknown>)['created_at'] as string | undefined
-    if (ca && cb) return cb > ca ? -1 : 1
-    return 0
-  })
-  // 用单个 release 对象解析（与 parseReleaseJson 一致）
-  return parseReleaseJson(JSON.stringify(preItems[0])) as ReleaseInfo | null
+  return pickNewestRelease(data)
 }
 
 export async function downloadUpdate(): Promise<void> {

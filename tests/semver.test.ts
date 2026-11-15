@@ -1,4 +1,4 @@
-import { compareVersions, isNewerVersion, parseVersion } from '../src/shared/semver'
+import { compareVersions, isNewerVersion, parseVersion, versionDistance } from '../src/shared/semver'
 
 describe('semver 比较（更新检查用）', () => {
   it('解析版本号（含 v 前缀与预发布）', () => {
@@ -35,5 +35,21 @@ describe('semver 比较（更新检查用）', () => {
   it('无法解析的版本不触发更新', () => {
     expect(isNewerVersion('garbage', '1.0.0')).toBe(false)
     expect(isNewerVersion('v2.0.0', 'what')).toBe(false)
+  })
+
+  it('versionDistance：强制更新跨度判定（≥2 级）', () => {
+    // 次版本 + 修订号逐级累加
+    expect(versionDistance('2.6.0', '2.4.0')).toBe(2)
+    expect(versionDistance('2.6.1', '2.5.0')).toBe(2)
+    expect(versionDistance('2.6.0', '2.5.0')).toBe(1)
+    expect(versionDistance('2.5.2', '2.5.0')).toBe(2)
+    expect(versionDistance('2.5.1', '2.5.0')).toBe(1)
+    // 主版本升级一律 3 级
+    expect(versionDistance('3.0.0', '2.9.9')).toBe(3)
+    // 不高于当前版 / 无法解析 = 0（不强制）
+    expect(versionDistance('2.5.0', '2.5.0')).toBe(0)
+    expect(versionDistance('2.4.0', '2.5.0')).toBe(0)
+    expect(versionDistance('garbage', '2.5.0')).toBe(0)
+    expect(versionDistance('v2.6.0', '2.5.0')).toBe(1) // v 前缀不影响
   })
 })

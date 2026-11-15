@@ -1,4 +1,4 @@
-import { app, clipboard, dialog, ipcMain, shell } from 'electron'
+import { app, clipboard, dialog, ipcMain, nativeImage, shell } from 'electron'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import type { AppConfig, RestoreTarget } from '../shared/types'
@@ -59,15 +59,29 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('history:list', () => listHistory())
   ipcMain.handle('history:clear', () => clearHistory())
 
-  // 用户模式头像自传（v2.6.0 第 8 条：桌面端弹本地图片选择，存本地路径）
+  // 用户模式头像自传（v2.6.0 第 8 条：桌面端弹本地图片选择）
   ipcMain.handle('avatar:pick', async () => {
     const picked = await dialog.showOpenDialog({
       title: '选择头像',
       properties: ['openFile'],
-      filters: [{ name: '图片', extensions: ['png', 'jpg', 'jpeg', 'bmp'] }]
+      filters: [{ name: '图片', extensions: ['png', 'jpg', 'jpeg', 'bmp', 'webp'] }]
     })
     if (picked.canceled || picked.filePaths.length === 0) return null
-    return picked.filePaths[0] ?? null
+    const path = picked.filePaths[0]
+    if (!path) return null
+    // 压到 256px 后转 dataURL 存本地配置：原图可删、换机升级不失效，且不写任何服务器
+    const image = nativeImage.createFromPath(path)
+    if (image.isEmpty()) return null
+    const size = image.getSize()
+    const scale = 256 / Math.max(size.width, size.height)
+    const resized = scale < 1
+      ? image.resize({
+          width: Math.max(1, Math.round(size.width * scale)),
+          height: Math.max(1, Math.round(size.height * scale)),
+          quality: 'good'
+        })
+      : image
+    return resized.toDataURL()
   })
   // 用户自建资源链接（v2.2.0：仅存本地 user-links.json）
   ipcMain.handle('links:get', () => getUserLinks())

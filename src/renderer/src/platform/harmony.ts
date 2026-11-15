@@ -24,8 +24,8 @@ import { EMBEDDED_BOX } from '../../../shared/embeddedBox'
 import { withCacheBust } from '../../../shared/refresh'
 import { normalizeConfig } from '../../../shared/config'
 import { isNewerVersion } from '../../../shared/semver'
-import { parseReleaseJson } from '../../../shared/updates'
-import { isUpdateChannel, UPDATE_CHANNEL_INFO } from '../../../shared/updateChannels'
+import { parseReleaseJson, pickNewestRelease, type ReleaseInfo } from '../../../shared/updates'
+import { UPDATE_CHANNEL_INFO } from '../../../shared/updateChannels'
 import { sanitizeUserLinks } from '../../../shared/userLinks'
 import { buildSnapshot, emptyResourceData } from './capacitor'
 
@@ -193,29 +193,27 @@ export async function harmonyCopyText(text: string): Promise<void> {
 
 /**
  * 检查更新（原生 fetch 版，逻辑与 androidCheckUpdate 同构）：
- * 鸿蒙端更新 = 打开所选渠道 Release 页手动下载 HAP/APK（壳内自动更新为后续增量）
+ * 鸿蒙端更新 = 打开 GitHub Release 页手动下载 HAP/APK（壳内自动更新为后续增量）
+ * v2.6.0：检测渠道固定 GitHub；更新类型 stable/test（test = 正式版 + Pre 取最高）
  */
 export async function harmonyCheckUpdate(): Promise<UpdateCheckResult> {
   const current = HARMONY_APP_VERSION
   try {
-    const channel = (await harmonyGetConfig()).updateChannel
-    if (!isUpdateChannel(channel)) {
-      return { current, latest: null, hasUpdate: false, error: '尚未选择更新渠道，请先在设置中选择' }
-    }
-    const info = UPDATE_CHANNEL_INFO[channel]
-    // v2.6.0：网盘渠道无版本 API 检测（手动下载）
-    if (channel === 'netdisk') {
-      return { current, latest: null, hasUpdate: false, error: '网盘渠道为手动下载，请点「网盘更新」跳转网盘链接' }
-    }
+    const cfg = await harmonyGetConfig()
+    const info = UPDATE_CHANNEL_INFO['github']
+    const type = cfg.updateType === 'test' ? 'test' : 'stable'
+    const url = type === 'test'
+      ? 'https://api.github.com/repos/PointersMZX/Pointers-BOX/releases?per_page=100'
+      : info.releaseApi!
     const bridge = getNativeBridge()
     let status: number
     let text: string
     if (bridge) {
       // 原生数据桥：无 CORS 限制；桥内非 2xx 直接抛错
-      text = await bridge(info.releaseApi!, JSON.stringify(info.headers)) as string
+      text = await bridge(url, JSON.stringify(info.headers)) as string
       status = 200
     } else {
-      const res = await fetch(info.releaseApi!, { headers: info.headers, signal: AbortSignal.timeout(10_000) })
+      const res = await fetch(url, { headers: info.headers, signal: AbortSignal.timeout(10_000) })
       status = res.status
       if (status === 403 || status === 401) {
         return { current, latest: null, hasUpdate: false, error: '接口访问受限（限流），请稍后再试' }
@@ -225,9 +223,23 @@ export async function harmonyCheckUpdate(): Promise<UpdateCheckResult> {
       }
       text = await res.text()
     }
-    const release = parseReleaseJson(text)
-    if (!release) {
-      return { current, latest: null, hasUpdate: false, error: 'Release 数据缺少 tag_name' }
+    let release: ReleaseInfo | null = null
+    if (type === 'test') {
+      let data: unknown
+      try {
+        data = JSON.parse(text)
+      } catch {
+        data = null
+      }
+      release = pickNewestRelease(data)
+      if (!release) {
+        return { current, latest: null, hasUpdate: false, error: 'Release 列表为空' }
+      }
+    } else {
+      release = parseReleaseJson(text)
+      if (!release) {
+        return { current, latest: null, hasUpdate: false, error: 'Release 数据缺少 tag_name' }
+      }
     }
     return {
       current,

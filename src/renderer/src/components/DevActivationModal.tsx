@@ -1,23 +1,30 @@
-// 开发者激活/测试弹窗（v2.6.0 草稿第 9 条激活 + 第 7 条开发者测试，共用同一能力）：
-// 输入 8 字密码（罗曹甘李王胡周戴）+ 随机题（八个字中选一个代表谁，附正确答案），
+// 开发者激活/测试弹窗（v2.6.0 第 9 条激活 + 第 7 条开发者测试，共用同一能力）：
+// 两步验证（对齐首启引导的分步形态）：
+//   第 1 步：输入 8 字激活密码；第 2 步：随机姓氏填空题（不做选择题，避免直接送答案）。
 // 验证通过后回调 onVerified——激活模式则激活开发者模式，开发者测试则跳过更新。
-import { Box, Button, Flex, Input, RadioGroup, Text, useColorModeValue } from '@chakra-ui/react'
+import { Box, Button, Flex, Input, Text, useColorModeValue } from '@chakra-ui/react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { useState } from 'react'
-import { FiLock, FiX } from 'react-icons/fi'
-import { devQuestion, verifyDevActivation } from '../../../shared/devActivation'
+import { useEffect, useState } from 'react'
+import { FiArrowLeft, FiLock, FiX } from 'react-icons/fi'
+import { DEV_ACTIVATION_CODE, devQuestion, verifyDevActivation } from '../../../shared/devActivation'
 import { SPRING } from '../theme/motion'
+
+interface DevQuestion {
+  question: string
+  expectedLabel: string
+}
 
 interface Props {
   open: boolean
   onClose: () => void
-  /** 验证通过（true=已激活/已通过测试）；失败不回调 */
-  onVerified: (ok: boolean) => void
+  /** 验证通过（已激活/已通过测试） */
+  onVerified: () => void
 }
 
 export default function DevActivationModal({ open, onClose, onVerified }: Props) {
+  const [step, setStep] = useState<1 | 2>(1)
   const [password, setPassword] = useState('')
-  const [question, setQuestion] = useState<{ question: string; options: { value: string; label: string }[]; expectedLabel: string } | null>(null)
+  const [question, setQuestion] = useState<DevQuestion | null>(null)
   const [answer, setAnswer] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -25,51 +32,51 @@ export default function DevActivationModal({ open, onClose, onVerified }: Props)
   const cardBg = useColorModeValue('rgba(255,255,255,0.72)', 'rgba(16,24,40,0.72)')
   const cardBorder = useColorModeValue('rgba(15,23,42,0.10)', 'rgba(255,255,255,0.14)')
 
-  const initQuestion = (): void => {
-    const q = devQuestion()
-    setQuestion(q)
+  // 每次打开都回到第 1 步并重新出题（随机题）
+  useEffect(() => {
+    if (!open) return
+    setStep(1)
+    setPassword('')
     setAnswer('')
     setError('')
+    setSubmitting(false)
+    setQuestion(devQuestion())
+  }, [open])
+
+  const toStep2 = (): void => {
+    setError('')
+    if (!password) {
+      setError('请输入激活密码')
+      return
+    }
+    if (password !== DEV_ACTIVATION_CODE) {
+      setError('激活密码不正确')
+      return
+    }
+    // 进入第 2 步时重新抽题，避免停留在页面上被反复盯
+    setQuestion(devQuestion())
+    setAnswer('')
+    setStep(2)
   }
 
   const onSubmit = (): void => {
     if (!question || submitting) return
     setError('')
-    if (password !== '罗曹甘李王胡周戴' && !password) {
-      setError('请输入激活密码')
+    const trimmed = answer.trim()
+    if (!trimmed) {
+      setError('请填写答案')
       return
     }
-    if (!answer) {
-      setError('请选择正确答案')
-      return
-    }
-    if (!verifyDevActivation(password, answer, question.expectedLabel)) {
-      setError('密码或答案不正确，请重试')
+    if (!verifyDevActivation(password, trimmed, question.expectedLabel)) {
+      setError('答案不正确，请重试')
       return
     }
     setSubmitting(true)
-    setTimeout(() => {
+    window.setTimeout(() => {
       setSubmitting(false)
-      onVerified(true)
+      onVerified()
     }, 300)
   }
-
-  const Field = ({ icon, label }: { icon?: React.ReactNode; label: string }): React.JSX.Element => (
-    <Box mb={3}>
-      <Text fontSize="sm" color="pprimarymuted" mb={1.5} fontWeight={500}>
-        {label}
-      </Text>
-      {icon && <FiLock color="pprimarymuted" />}
-      <Input
-        size="sm"
-        value={password}
-        type="password"
-        autoFocus
-        placeholder="激活密码"
-        onChange={(e) => setPassword(e.target.value)}
-      />
-    </Box>
-  )
 
   return (
     <AnimatePresence>
@@ -100,55 +107,124 @@ export default function DevActivationModal({ open, onClose, onVerified }: Props)
             exit={{ scale: 0.96, opacity: 0, transition: { duration: 0.18, ease: 'easeIn' } }}
             onClick={(e) => e.stopPropagation()}
           >
-            <Flex align="center" justify="space-between" p={5} px={6} mb={4}>
+            <Flex align="center" justify="space-between" p={5} px={6} mb={2}>
               <Text fontSize="lg" fontWeight="bold" color="ptext">
                 开发者激活
               </Text>
-              <Button size="xs" variant="ghost" color="ptextmuted" onClick={onClose}>
-                <FiX size={16} />
+              <Button size="xs" variant="ghost" color="ptextmuted" onClick={onClose} leftIcon={<FiX size={16} />}>
                 取消
               </Button>
             </Flex>
 
-            <Box p={4} borderRadius="14px" borderWidth="1px" borderColor={cardBorder} bg={cardBg}>
-              <Field label="激活密码" icon={<FiLock size={14} />} />
-              <Text fontSize="sm" color="ptext" mb={2} fontWeight={500}>
-                {question ? question.question : '验证开发者身份'}
+            {/* 步骤指示：两步分开，密码通过后才出题 */}
+            <Flex align="center" gap={2} px={6} mb={4}>
+              {[1, 2].map((n) => (
+                <Box
+                  key={n}
+                  flex="1"
+                  h="4px"
+                  borderRadius="full"
+                  bg={step >= n ? 'var(--pbox-accent)' : 'pborder'}
+                  transition="background .25s ease"
+                />
+              ))}
+              <Text fontSize="xs" color="ptextmuted" ml={1}>
+                第 {step} / 2 步
               </Text>
-              <RadioGroup
-                value={answer}
-                onChange={(v) => setAnswer(v)}
-              >
-                <Box mt={1}>
-                  {question && question.options.map((o) => (
-                    <Box key={o.value} as="button" type="button" w="100%" textAlign="left"
-                      p={2.5} borderRadius="8px" borderWidth="1px" borderColor={answer === o.value ? 'var(--pbox-accent)' : cardBorder}
-                      bg={answer === o.value ? 'var(--pbox-accent-soft)' : cardBg}
-                      cursor="pointer" onClick={() => setAnswer(o.value)}
-                      _active={{ transform: 'scale(0.985)' }}>
-                      <Text fontSize="sm" color="ptext">
-                        {o.label}
+            </Flex>
+
+            <AnimatePresence mode="wait" initial={false}>
+              {step === 1 ? (
+                <motion.div
+                  key="step1"
+                  initial={{ opacity: 0, x: 16 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -16 }}
+                  transition={{ duration: 0.22, ease: 'easeOut' }}
+                >
+                  <Box mx={6} p={4} borderRadius="14px" borderWidth="1px" borderColor={cardBorder} bg={cardBg}>
+                    <Flex align="center" gap={2} mb={1.5}>
+                      <FiLock size={14} color="var(--pbox-accent)" />
+                      <Text fontSize="sm" color="pprimarymuted" fontWeight={500}>
+                        激活密码
                       </Text>
-                    </Box>
-                  ))}
-                </Box>
-              </RadioGroup>
-            </Box>
+                    </Flex>
+                    <Input
+                      size="sm"
+                      value={password}
+                      type="text"
+                      autoFocus
+                      autoComplete="off"
+                      spellCheck={false}
+                      placeholder="请输入激活密码"
+                      onChange={(e) => setPassword(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') toStep2()
+                      }}
+                    />
+                  </Box>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="step2"
+                  initial={{ opacity: 0, x: 16 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -16 }}
+                  transition={{ duration: 0.22, ease: 'easeOut' }}
+                >
+                  <Box mx={6} p={4} borderRadius="14px" borderWidth="1px" borderColor={cardBorder} bg={cardBg}>
+                    <Text fontSize="sm" color="pprimarymuted" mb={1.5} fontWeight={500}>
+                      验证问题
+                    </Text>
+                    <Text fontSize="md" color="ptext" fontWeight="bold" mb={2}>
+                      {question ? question.question : '正在生成验证题…'}
+                    </Text>
+                    <Input
+                      size="sm"
+                      value={answer}
+                      type="text"
+                      autoFocus
+                      autoComplete="off"
+                      spellCheck={false}
+                      placeholder="请填写对应的姓名"
+                      onChange={(e) => setAnswer(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') onSubmit()
+                      }}
+                    />
+                    <Text fontSize="xs" color="ptextmuted" mt={2}>
+                      填空作答（不作选择题），填写完整姓名。
+                    </Text>
+                  </Box>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {error && (
-              <Text fontSize="xs" color="red.400" mt={3} p={2} borderRadius="6px" borderWidth="1px" borderColor="red.300">
+              <Text mx={6} fontSize="xs" color="red.400" mt={3} p={2} borderRadius="6px" borderWidth="1px" borderColor="red.300">
                 {error}
               </Text>
             )}
 
-            <Flex gap={3} mt={4} justify="flex-end">
-              <Button variant="ghost" color="ptextmuted" onClick={onClose}>
-                取消
-              </Button>
-              <Button size="sm" colorScheme="brand" onClick={onSubmit} isLoading={submitting}>
-                验证并继续
-              </Button>
+            <Flex gap={3} mt={4} px={6} justify="flex-end">
+              {step === 2 && (
+                <Button variant="ghost" color="ptextmuted" leftIcon={<FiArrowLeft size={14} />} onClick={() => { setStep(1); setError('') }}>
+                  上一步
+                </Button>
+              )}
+              {step === 1 ? (
+                <Button size="sm" colorScheme="brand" onClick={toStep2}>
+                  下一步
+                </Button>
+              ) : (
+                <Button size="sm" colorScheme="brand" onClick={onSubmit} isLoading={submitting}>
+                  验证并继续
+                </Button>
+              )}
             </Flex>
+            <Text fontSize="xs" color="ptextmuted" mt={3} mb={4} textAlign="center">
+              开发者功能仅供内部测试，请勿泄露激活密码。
+            </Text>
           </motion.div>
         </motion.div>
       )}

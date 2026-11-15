@@ -27,7 +27,11 @@ const SPLASH_DURATION = 1800
 function tryReveal(): void {
   if (!mainReady) return
   if (splashCreatedAt !== 0 && Date.now() - splashCreatedAt < SPLASH_DURATION) return
-  getMainWindow()?.show()
+  const win = getMainWindow()
+  win?.show()
+  // v2.6.0：show 后再 focus，确保输入法（IMM）上下文挂到已激活窗口——
+  // 否则部分中文输入法在窗口未激活时创建上下文，后续候选窗不出现、中文打不进去
+  win?.focus()
   dismissSplash()
 }
 

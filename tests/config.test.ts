@@ -121,6 +121,8 @@ describe('配置归一化（PRD 4.4 下载路径/Android 浏览器选项 + 主�
     expect(normalizeConfig({ updateChannel: 'gitee' }, defDir).updateChannel).toBe('github') // 已关闭，固定 GitHub
     expect(normalizeConfig({ updateChannel: 'github' }, defDir).updateChannel).toBe('github')
     expect(normalizeConfig({ updateChannel: 'gitlab' }, defDir).updateChannel).toBe('github')
+    // v2.6.0 修订：网盘只做手动下载入口，旧档 netdisk 自动迁回 GitHub（否则检测会走网盘分支）
+    expect(normalizeConfig({ updateChannel: 'netdisk' }, defDir).updateChannel).toBe('github')
     expect(normalizeConfig({}, defDir).updateType).toBe('stable')
     expect(normalizeConfig({ updateType: 'test' }, defDir).updateType).toBe('test')
     expect(normalizeConfig({ updateType: 'invalid' }, defDir).updateType).toBe('stable')

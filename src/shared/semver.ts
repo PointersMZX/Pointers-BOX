@@ -59,3 +59,21 @@ export function compareVersions(a: string, b: string): number {
 export function isNewerVersion(candidate: string, current: string): boolean {
   return compareVersions(candidate, current) > 0
 }
+
+/**
+ * 版本跨度（v2.6.0 强制更新判定：跨度 ≥2 时不允许跳过更新）。
+ * - 主版本不同：一律按 3 级跨度计（大版本升级必须更新）
+ * - 次版本 + 修订号逐级累加：2.4.0→2.6.0 = 2；2.5.0→2.6.1 = 2（含补丁级）；
+ *   2.5.0→2.6.0 = 1；2.5.0→2.5.2 = 2
+ * - 无法解析、或最新版不高于当前版：0
+ */
+export function versionDistance(latest: string, current: string): number {
+  const a = parseVersion(latest)
+  const b = parseVersion(current)
+  if (!a || !b) return 0
+  if (compareVersions(latest, current) <= 0) return 0
+  if (a.major !== b.major) return 3
+  const minorGap = Math.max(0, a.minor - b.minor)
+  const patchGap = Math.max(0, a.patch - b.patch)
+  return minorGap + patchGap
+}

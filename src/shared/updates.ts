@@ -1,4 +1,6 @@
 // GitHub / Gitee Release 数据解析（PRD 4.4 检查更新；v2.1.0 双渠道）
+import { compareVersions } from './semver'
+
 export interface ReleaseAssetInfo {
   name: string
   url: string
@@ -48,4 +50,22 @@ export function parseReleaseJson(text: string): ReleaseInfo | null {
     notes: typeof rec['body'] === 'string' ? rec['body'] : undefined,
     ...(assets ? { assets } : {})
   }
+}
+
+/**
+ * 从 Release 列表（GitHub /releases 数组）中取版本号最高的一个（v2.6.0）：
+ * 测试版类型 = 正式版 + Pre 版都接受，谁新用谁；跳过草稿。
+ */
+export function pickNewestRelease(items: unknown): ReleaseInfo | null {
+  if (!Array.isArray(items)) return null
+  const releases: ReleaseInfo[] = []
+  for (const item of items) {
+    if (typeof item !== 'object' || item === null) continue
+    if ((item as Record<string, unknown>)['draft'] === true) continue
+    const parsed = parseReleaseJson(JSON.stringify(item))
+    if (parsed) releases.push(parsed)
+  }
+  if (releases.length === 0) return null
+  releases.sort((a, b) => compareVersions(b.tagName, a.tagName))
+  return releases[0] ?? null
 }

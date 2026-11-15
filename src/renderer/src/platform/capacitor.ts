@@ -25,8 +25,8 @@ import { EMBEDDED_BOX } from '../../../shared/embeddedBox'
 import { withCacheBust } from '../../../shared/refresh'
 import { normalizeConfig } from '../../../shared/config'
 import { isNewerVersion } from '../../../shared/semver'
-import { parseReleaseJson } from '../../../shared/updates'
-import { isUpdateChannel, UPDATE_CHANNEL_INFO } from '../../../shared/updateChannels'
+import { parseReleaseJson, pickNewestRelease, type ReleaseInfo } from '../../../shared/updates'
+import { UPDATE_CHANNEL_INFO } from '../../../shared/updateChannels'
 import { sanitizeUserLinks } from '../../../shared/userLinks'
 
 const CONFIG_KEY = 'app-config'
@@ -350,36 +350,60 @@ export function androidRestoreData(_target: RestoreTarget): Promise<boolean> {
   return Promise.resolve(false)
 }
 
-// v2.1.0：真实检查更新（按所选渠道拉 Release API + 版本比较）
+// v2.1.0：真实检查更新（v2.6.0：检测渠道固定 GitHub；更新类型 stable/test）
 export async function androidCheckUpdate(): Promise<UpdateCheckResult> {
   const current = ANDROID_APP_VERSION
   try {
-    const channel = (await androidGetConfig()).updateChannel
-    if (!isUpdateChannel(channel)) {
-      return { current, latest: null, hasUpdate: false, error: '尚未选择更新渠道，请先在设置中选择' }
-    }
-    const info = UPDATE_CHANNEL_INFO[channel]
-    // v2.6.0：网盘渠道无版本 API 检测（手动下载）
-    if (channel === 'netdisk') {
-      return { current, latest: null, hasUpdate: false, error: '网盘渠道为手动下载，请点「网盘更新」跳转网盘链接' }
-    }
-    const res = await CapacitorHttp.get({
-      url: info.releaseApi!,
-      headers: info.headers,
-      connectTimeout: 10_000,
-      readTimeout: 10_000
-    })
-    const status = res.status ?? 0
-    if (status === 403 || status === 401) {
-      return { current, latest: null, hasUpdate: false, error: '接口访问受限（限流），请稍后再试' }
-    }
-    if (status < 200 || status >= 300) {
-      return { current, latest: null, hasUpdate: false, error: `HTTP ${status}` }
-    }
-    const text = typeof res.data === 'string' ? res.data : JSON.stringify(res.data)
-    const release = parseReleaseJson(text)
-    if (!release) {
-      return { current, latest: null, hasUpdate: false, error: 'Release 数据缺少 tag_name' }
+    const cfg = await androidGetConfig()
+    const info = UPDATE_CHANNEL_INFO['github']
+    const type = cfg.updateType === 'test' ? 'test' : 'stable'
+    let release: ReleaseInfo | null = null
+    if (type === 'test') {
+      // 测试版 = 正式版 + Pre 都接受，取版本号最高的一个
+      const listRes = await CapacitorHttp.get({
+        url: 'https://api.github.com/repos/PointersMZX/Pointers-BOX/releases?per_page=100',
+        headers: info.headers,
+        connectTimeout: 10_000,
+        readTimeout: 10_000
+      })
+      const status = listRes.status ?? 0
+      if (status === 403 || status === 401) {
+        return { current, latest: null, hasUpdate: false, error: '接口访问受限（限流），请稍后再试' }
+      }
+      if (status < 200 || status >= 300) {
+        return { current, latest: null, hasUpdate: false, error: `HTTP ${status}` }
+      }
+      let data: unknown = listRes.data
+      if (typeof data === 'string') {
+        try {
+          data = JSON.parse(data)
+        } catch {
+          data = null
+        }
+      }
+      release = pickNewestRelease(data)
+      if (!release) {
+        return { current, latest: null, hasUpdate: false, error: 'Release 列表为空' }
+      }
+    } else {
+      const res = await CapacitorHttp.get({
+        url: info.releaseApi!,
+        headers: info.headers,
+        connectTimeout: 10_000,
+        readTimeout: 10_000
+      })
+      const status = res.status ?? 0
+      if (status === 403 || status === 401) {
+        return { current, latest: null, hasUpdate: false, error: '接口访问受限（限流），请稍后再试' }
+      }
+      if (status < 200 || status >= 300) {
+        return { current, latest: null, hasUpdate: false, error: `HTTP ${status}` }
+      }
+      const text = typeof res.data === 'string' ? res.data : JSON.stringify(res.data)
+      release = parseReleaseJson(text)
+      if (!release) {
+        return { current, latest: null, hasUpdate: false, error: 'Release 数据缺少 tag_name' }
+      }
     }
     return {
       current,

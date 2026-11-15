@@ -1,8 +1,8 @@
 import {
+  Avatar,
   Badge,
   Box,
   Button,
-  Collapse,
   Flex,
   Heading,
   HStack,
@@ -11,13 +11,10 @@ import {
   NumberInput,
   NumberInputField,
   Progress,
-  Radio,
-  RadioGroup,
   Select,
   SimpleGrid,
   Stack,
   Text,
-  useDisclosure,
   useToast,
   VStack,
   Switch
@@ -25,8 +22,6 @@ import {
 import {
   FiArrowLeft,
   FiCheck,
-  FiChevronDown,
-  FiChevronUp,
   FiDownload,
   FiFolder,
   FiSave,
@@ -35,7 +30,8 @@ import {
 } from 'react-icons/fi'
 import { useEffect, useRef, useState } from 'react'
 import type { HomeLayout, LocalUser, UpdateCheckResult, UpdateType } from '../../../shared/types'
-import { compareVersions } from '../../../shared/semver'
+import { versionDistance } from '../../../shared/semver'
+import { generateLocalUserId } from '../../../shared/config'
 import {
   ACCENT_PRESETS,
   canCustomizeAccent,
@@ -46,10 +42,10 @@ import {
 } from '../../../shared/theme'
 import type { ThemeKey } from '../../../shared/theme'
 import GlassButton from '../components/GlassButton'
-import UpdateModal from '../components/UpdateModal'
 import DevActivationModal from '../components/DevActivationModal'
 import { useDataStore } from '../store/dataStore'
 import { useDownloadStore } from '../store/downloadStore'
+import { useUpdatePromptStore } from '../store/updatePromptStore'
 import { useThemeStore } from '../store/themeStore'
 import { useUiStore } from '../store/uiStore'
 import { backend, openClaim } from '../platform'
@@ -68,52 +64,8 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   )
 }
 
-/** 可折叠卡片（v2.2.0）：默认收起，点标题展开；内容用 Collapse 收放 */
-function CollapsibleSection({
-  title,
-  defaultOpen = false,
-  children
-}: {
-  title: string
-  defaultOpen?: boolean
-  children: React.ReactNode
-}) {
-  const [open, setOpen] = useState(defaultOpen)
-  return (
-    <Box
-      
-      mb={4}
-      px={5}
-      py={0}
-      className="pbox-glass"
-      overflow="hidden"
-    >
-      <Flex
-        as="button"
-        w="100%"
-        align="center"
-        justify="space-between"
-        py={4}
-        bg="transparent"
-        _hover={{ bg: 'hoverbg' }}
-        onClick={() => setOpen((o) => !o)}
-      >
-        <Heading size="sm" color="ptext">
-          {title}
-        </Heading>
-        <Icon as={open ? FiChevronUp : FiChevronDown} color="ptextmuted" />
-      </Flex>
-      <Collapse in={open} animateOpacity>
-        <Box pb={5}>
-          <VStack align="stretch" spacing={2}>
-            {children}
-          </VStack>
-        </Box>
-      </Collapse>
-    </Box>
-  )
-}
 
+/** 关于应用信息行（可点击跳转的展示行） */
 function Row({
   label,
   value,
@@ -143,27 +95,6 @@ function Row({
         {value}
       </Text>
     </Flex>
-  )
-}
-
-function ExpandableText({ text, empty }: { text: string; empty: string }) {
-  const { isOpen, onToggle } = useDisclosure()
-  return (
-    <Box>
-      <Collapse startingHeight={44} in={isOpen}>
-        <Text fontSize="sm" color="ptextmuted" whiteSpace="pre-wrap" wordBreak="break-all">
-          {text || empty}
-        </Text>
-      </Collapse>
-      <Button
-        size="xs"
-        variant="ghost"
-        leftIcon={isOpen ? <FiChevronUp /> : <FiChevronDown />}
-        onClick={onToggle}
-      >
-        {isOpen ? '收起' : '展开阅读'}
-      </Button>
-    </Box>
   )
 }
 
@@ -366,9 +297,8 @@ export default function SettingsPage() {
   // v2.6.0：更新类型（稳定版/测试版）与自动检测更新开关
   const [updateType, setUpdateType] = useState<'stable' | 'test'>('stable')
   const [autoCheck, setAutoCheck] = useState(false)
-  // v2.6.0：新版本弹窗（更新结果 + 是否因版本差≥2 触发强制更新）
-  const [updateResult, setUpdateResult] = useState<(UpdateCheckResult & { forced: boolean }) | null>(null)
-  // v2.6.0：开发者激活/测试弹窗（第 9 条激活 / 第 7 条开发者测试共用）
+  // v2.6.0：新版本弹窗由全局 UpdatePrompt 统一渲染（自动检测与手动检查共用），此处只负责打开
+  // v2.6.0：开发者激活弹窗（第 9 条开发者模式开关触发）
   const [devModalOpen, setDevModalOpen] = useState(false)
   // v2.6.0：用户模式（设置-用户设置）
   const localUser = useDownloadStore((s) => (s.config?.localUser as LocalUser | undefined) ?? {})
@@ -385,6 +315,8 @@ export default function SettingsPage() {
   // v2.6.0：版本日志内页（左版本号列表右日志，替代长列表）；首页「版本日志·全部」深链直达内页
   const [logPage, setLogPage] = useState(false)
   const [logIndex, setLogIndex] = useState(0)
+  // v2.6.0：用户资料内页（用户卡片置顶展示，编辑要「点进去」，不平铺）
+  const [userPage, setUserPage] = useState(false)
   useEffect(() => {
     if (useUiStore.getState().versionLogsDeepLink) {
       setLogPage(true)
@@ -474,16 +406,18 @@ export default function SettingsPage() {
     setChecking(true)
     try {
       const res = await backend.checkUpdate()
-      // v2.6.0 第 7 条：最新版本与当前版本相差 ≥2 个版本级 → 触发强制更新
-      const forced = res.hasUpdate && compareVersions(res.latest as string, res.current) >= 2
+      // v2.6.0 第 7 条：打开全局新版本弹窗；版本跨度 ≥2 个级别 → 强制更新（只能立即更新/开发者测试）
+      const forced = res.hasUpdate && !!res.latest && versionDistance(res.latest, res.current) >= 2
       setResult(res)
-      setUpdateResult({ ...res, forced })
+      if (res.hasUpdate) {
+        useUpdatePromptStore.getState().open({ ...res, forced })
+      }
     } finally {
       setChecking(false)
     }
   }
 
-  // v2.6.0：立即下载更新（第 7 条弹窗「立即更新」触发）
+  // v2.6.0：立即下载更新（设置页「下载更新」按钮，检测渠道固定 GitHub）
   const onDownload = async (): Promise<void> => {
     setDownloading(true)
     try {
@@ -499,46 +433,40 @@ export default function SettingsPage() {
     }
   }
 
-  // v2.6.0：更新结果处理（第 7 条弹窗）
-  const onUpdate = (action: 'apply' | 'skip'): void => {
-    if (action === 'apply') {
-      // 立即更新：按当前渠道下载更新（github→electron-updater，网盘→跳网盘链接下载）
-      void onDownload()
-    } else {
-      setUpdateResult(null)
-    }
-  }
-
-  // v2.6.0 第 9 条：开发者模式开关（激活 = 8 字密码+随机题；激活后状态显示「开发者模式」）
+  // v2.6.0 第 9 条：开发者模式开关——开启需先通过激活验证（验证通过才写入配置），关闭直接生效
   const onDevToggle = (checked: boolean): void => {
-    // 即时落配置（主进程下次启动/读取生效）；状态用 devMode 选择器直接读取
-    useDownloadStore.getState().saveConfig({ devMode: checked })
-    void backend.getConfig().then((cfg) => { if (cfg.devMode === checked) setDevModalOpen(checked) }).catch(() => {})
-    if (checked) setDevModalOpen(true) // 开启时弹出激活窗口
+    if (!checked) {
+      void useDownloadStore.getState().saveConfig({ devMode: false })
+      toast({ title: '已关闭开发者模式', status: 'info', duration: 2000, position: 'top' })
+      return
+    }
+    setDevModalOpen(true)
   }
 
-  // v2.6.0 第 8 条：用户模式字段（设置-用户设置）
+  // v2.6.0 第 8 条：用户模式字段（设置-用户设置）；首次写入时生成稳定的本地用户 id
   const onUserField = (field: keyof LocalUser, value: string): void => {
-    void backend.setConfig({ localUser: { ...localUser, [field]: value } })
+    void useDownloadStore.getState().saveConfig({
+      localUser: {
+        ...localUser,
+        userId: localUser.userId ?? generateLocalUserId(),
+        [field]: value
+      }
+    })
   }
   const onAvatar = async (): Promise<void> => {
-    const path = await backend.pickAvatar()
-    if (path) {
-      await backend.setConfig({ localUser: { ...localUser, avatar: path } })
+    const dataUrl = await backend.pickAvatar()
+    if (dataUrl) {
+      // 头像以本地压缩后的 dataURL 存在配置里：换机/升级/原图被删都不会失效，也不上传任何服务器
+      await useDownloadStore.getState().saveConfig({
+        localUser: { ...localUser, userId: localUser.userId ?? generateLocalUserId(), avatar: dataUrl }
+      })
       toast({ title: '头像已保存（本地）', status: 'success', duration: 2500, position: 'top' })
     } else {
       toast({ title: '已取消选择头像', status: 'info', duration: 2000, position: 'top' })
     }
   }
 
-  // v2.6.0：渠道固定 GitHub + 网盘手动下载渠道（第 6 条：检测区下方加网盘按钮跳内嵌浏览器）
-  const onChannelChange = (channel: 'github' | 'netdisk'): void => {
-    void backend.setConfig({ updateChannel: channel })
-    toast({
-      title: channel === 'netdisk' ? '更新渠道已切换：网盘（手动下载）' : '更新渠道已切换：全球官方（GitHub）',
-      status: 'info', duration: 2500, position: 'top'
-    })
-  }
+  // v2.6.0：检测渠道固定 GitHub；网盘只作为手动下载入口（按钮在检测区下方）
   const openNetdiskUpdate = (): void => {
     openClaim(UPDATE_CHANNEL_INFO.netdisk.fileUrl ?? '')
   }
@@ -611,14 +539,174 @@ export default function SettingsPage() {
     )
   }
 
+  // v2.6.0：用户资料内页（设置页置顶用户卡片 / 「用户设置」入口点进来，避免把表单平铺在设置页）
+  if (userPage) {
+    return (
+      <Box p={6} maxW="820px">
+        <Flex align="center" gap={3} mb={5}>
+          <Button
+            size="sm"
+            leftIcon={<FiArrowLeft />}
+            variant="outline"
+            borderColor="pborder"
+            color="ptext"
+            _hover={{ bg: 'hoverbg' }}
+            onClick={() => setUserPage(false)}
+          >
+            返回设置
+          </Button>
+          <Heading size="md" color="ptext">
+            用户设置
+          </Heading>
+        </Flex>
+
+        <Section title="本地用户资料">
+          <HStack spacing={4} mb={4} align="center">
+            <Avatar
+              size="xl"
+              src={localUser.avatar || undefined}
+              name={localUser.username || '本地用户'}
+              bg="hoverbg"
+              color="pprimary"
+            />
+            <Box minW={0} flex="1">
+              <HStack spacing={2} mb={1} wrap="wrap">
+                <Text fontWeight="bold" color="ptext" noOfLines={1}>
+                  {localUser.username || '本地用户'}
+                </Text>
+                {devMode && (
+                  <Badge colorScheme="brand" variant="subtle" borderRadius="full">
+                    开发者模式
+                  </Badge>
+                )}
+              </HStack>
+              <Text fontSize="sm" color="ptextmuted" noOfLines={1}>
+                {localUser.status || '未设置状态'}
+              </Text>
+              <Text fontSize="xs" color="ptextmuted" noOfLines={2}>
+                {localUser.signature || '未设置个性签名'}
+              </Text>
+            </Box>
+          </HStack>
+
+          <Flex align="center" justify="space-between" gap={3} wrap="wrap" mb={3}>
+            <Text fontSize="sm" color="pprimary">用户名</Text>
+            <Input
+              size="sm"
+              maxW="320px"
+              value={localUser.username ?? ''}
+              onChange={(e) => onUserField('username', e.target.value)}
+              placeholder="未设置用户名"
+            />
+          </Flex>
+          <Flex align="center" justify="space-between" gap={3} wrap="wrap" mb={3}>
+            <Text fontSize="sm" color="pprimary">状态</Text>
+            <Input
+              size="sm"
+              maxW="320px"
+              value={localUser.status ?? ''}
+              onChange={(e) => onUserField('status', e.target.value)}
+              placeholder="未设置状态"
+            />
+          </Flex>
+          <Flex align="center" justify="space-between" gap={3} wrap="wrap" mb={3}>
+            <Text fontSize="sm" color="pprimary">个性签名</Text>
+            <Input
+              size="sm"
+              maxW="320px"
+              value={localUser.signature ?? ''}
+              onChange={(e) => onUserField('signature', e.target.value)}
+              placeholder="未设置签名"
+            />
+          </Flex>
+
+          {platform === 'desktop' ? (
+            <HStack spacing={2} mt={2}>
+              <Button size="sm" variant="outline" borderColor="pborder" color="pprimary" onClick={() => void onAvatar()}>
+                上传头像
+              </Button>
+              {localUser.avatar && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  color="ptextmuted"
+                  onClick={() =>
+                    void useDownloadStore.getState().saveConfig({ localUser: { ...localUser, avatar: '' } })
+                  }
+                >
+                  移除头像
+                </Button>
+              )}
+            </HStack>
+          ) : (
+            <Text fontSize="xs" color="ptextmuted" mt={2}>
+              当前平台不支持头像自传（仅桌面端可上传本地头像）
+            </Text>
+          )}
+          <Text fontSize="xs" color="ptextmuted" mt={3}>
+            用户模式为本地用户：资料只保存在本机配置，不需要账号、也不会上传到任何服务器。
+          </Text>
+        </Section>
+      </Box>
+    )
+  }
+
   return (
     <Box p={6} maxW="820px">
       <Heading size="md" mb={4} color="ptext">
         设置
       </Heading>
 
-      {/* 关于应用（v2.2.0 置顶；简介默认收起） */}
-      <CollapsibleSection title="关于应用" defaultOpen>
+      {/* v2.6.0 用户模式：用户卡片在设置页置顶展示（本地用户；点击进入资料编辑） */}
+      <Box
+        as="button"
+        type="button"
+        w="100%"
+        textAlign="left"
+        mb={4}
+        px={5}
+        py={4}
+        className="pbox-glass"
+        onClick={() => setUserPage(true)}
+        _hover={{ transform: 'translateY(-1px)' }}
+        transition="transform .18s ease"
+      >
+        <HStack spacing={4} align="center">
+          <Avatar
+            size="lg"
+            src={localUser.avatar || undefined}
+            name={localUser.username || '本地用户'}
+            bg="hoverbg"
+            color="pprimary"
+          />
+          <Box flex="1" minW={0}>
+            <HStack spacing={2} mb={0.5} wrap="wrap">
+              <Text fontWeight="bold" color="ptext" noOfLines={1}>
+                {localUser.username || '本地用户'}
+              </Text>
+              {devMode && (
+                <Badge colorScheme="brand" variant="subtle" borderRadius="full">
+                  开发者模式
+                </Badge>
+              )}
+            </HStack>
+            {localUser.status && (
+              <Text fontSize="xs" color="pprimarymuted" noOfLines={1}>
+                状态：{localUser.status}
+              </Text>
+            )}
+            <Text fontSize="xs" color="ptextmuted" noOfLines={1}>
+              {localUser.signature || '点击编辑本地用户资料'}
+            </Text>
+          </Box>
+          <Text fontSize="xs" color="ptextmuted" flexShrink={0}>
+            编辑资料 ›
+          </Text>
+        </HStack>
+      </Box>
+
+      {/* 关于应用（v2.6.0：去掉折叠与「展开阅读」，信息直接平铺） */}
+      <Section title="关于应用">
         <Row label="应用名称" value={box?.app_name ?? 'Pointers-BOX'} />
         <Row label="应用版本" value={localVersion ? `v${localVersion}` : 'v2.6.0'} />
         <Row label="开发者" value={box?.developer} />
@@ -632,10 +720,12 @@ export default function SettingsPage() {
           <Text fontSize="sm" color="ptextmuted" mb={1}>
             应用简介
           </Text>
-          <ExpandableText text={box?.app_introduction ?? ''} empty="暂未获取到应用简介" />
+          <Text fontSize="sm" color="ptextmuted" whiteSpace="pre-wrap" wordBreak="break-all">
+            {box?.app_introduction || '暂未获取到应用简介'}
+          </Text>
         </Box>
         <Row label="版权声明" value={box?.copyright} />
-      </CollapsibleSection>
+      </Section>
 
       {/* 版本日志（v2.6.0）：卡片内只显示最新一条摘要，全部日志进内页分栏查看 */}
       <Box>
@@ -690,42 +780,37 @@ export default function SettingsPage() {
         </Section>
       </Box>
 
-      {/* 主题（v2.2.0 次之；默认收起，点进去才展开主题设置） */}
-      <CollapsibleSection title="主题">
+      {/* 主题（v2.6.0：去掉折叠，直接展开显示） */}
+      <Section title="主题">
         <ThemeSectionInner />
-      </CollapsibleSection>
+      </Section>
 
-      {/* 检查更新（PRD 4.4：Release 对比；v2.1.0 双渠道 Gitee/GitHub） */}
+      {/* 检查更新（v2.6.0：检测渠道固定 GitHub，不再做渠道下拉；网盘更新按钮常在） */}
       <Section title="更新检查">
-        {/* v2.6.0 第 6 条：更新渠道 = 全球官方 GitHub + 网盘手动下载（Gitee/蓝奏云已关闭） */}
-        <Flex align="center" gap={2} wrap="wrap" mb={3}>
-          <Text fontSize="sm" color="pprimary">更新渠道</Text>
-          <Select
-            value={config?.updateChannel === 'netdisk' ? 'netdisk' : 'github'}
-            onChange={(e) => onChannelChange(e.target.value as 'github' | 'netdisk')}
-            style={{ minWidth: 200 }}
-          >
-            <Text fontSize="sm" color="pprimarymuted">全球官方（GitHub）</Text>
-            <Text fontSize="sm" color="pprimarymuted">网盘（手动下载）</Text>
-          </Select>
-        </Flex>
         <Flex align="center" justify="space-between" wrap="wrap" gap={3}>
-          {/* 更新类型（v2.6.0：下拉选择——稳定版 / 测试版=GitHub Pre） */}
+          {/* 更新模式（v2.6.0：下拉选择——稳定版 / 测试版） */}
           <Flex align="center" gap={2}>
-            <Text fontSize="sm" color="pprimary">更新类型</Text>
-            <Select value={updateType} onChange={(e) => { setUpdateType(e.target.value as 'stable' | 'test'); setResult(null) }} style={{ minWidth: 200 }}>
-              <Text fontSize="sm" color="pprimarymuted">稳定版（官方最新正式版）</Text>
-              <Text fontSize="sm" color="pprimarymuted">测试版（GitHub Pre 版本）</Text>
+            <Text fontSize="sm" color="pprimary" whiteSpace="nowrap" flexShrink={0}>
+              更新模式
+            </Text>
+            <Select value={updateType} onChange={(e) => {
+              const next = e.target.value as UpdateType
+              setUpdateType(next)
+              setResult(null)
+              void useDownloadStore.getState().saveConfig({ updateType: next })
+            }} style={{ minWidth: 200 }}>
+              <option value="stable">稳定版</option>
+              <option value="test">测试版</option>
             </Select>
           </Flex>
           {/* 自动检测更新（v2.6.0：开关，符合设置 UI 交互规则——单选项用开关）——启用后每次启动约 5 秒后自动检测版本 */}
           <Flex align="center" gap={2}>
-            <Switch isChecked={autoCheck} aria-label="自动检测更新" onChange={(e) => { setAutoCheck(e.target.checked); void backend.setConfig({ autoCheckUpdate: e.target.checked }) }} />
+            <Switch isChecked={autoCheck} aria-label="自动检测更新" onChange={(e) => { setAutoCheck(e.target.checked); void useDownloadStore.getState().saveConfig({ autoCheckUpdate: e.target.checked }) }} />
             <Text fontSize="sm" color="pprimary">自动检测更新</Text>
           </Flex>
         </Flex>
         <Flex align="center" justify="space-between" wrap="wrap" gap={3}>
-          <Text fontSize="sm" color="pprimarymuted">当前版本：{result?.current ?? (localVersion ? 'v${localVersion}' : 'v2.6.0')}</Text>
+          <Text fontSize="sm" color="pprimarymuted">当前版本：{result?.current ? `v${result.current}` : localVersion ? `v${localVersion}` : 'v2.6.0'}</Text>
           <Button size="sm" leftIcon={<FiRefreshCw />} isLoading={checking} onClick={() => void onCheck()}>
             检查更新
           </Button>
@@ -734,11 +819,6 @@ export default function SettingsPage() {
         <Button size="sm" variant="outline" borderColor="pborder" color="pprimary" onClick={openNetdiskUpdate}>
           网盘更新
         </Button>
-        {result && result.error && (
-          <Text fontSize="xs" color="ptextmuted" mt={2}>
-            检查更新失败：{result.error}
-          </Text>
-        )}
         {result && !result.error && (
           <Stack spacing={2} mt={1}>
             <Text fontSize="sm" color="ptext">
@@ -789,10 +869,36 @@ export default function SettingsPage() {
           </Stack>
         )}
         {result?.error && (
-          <Text fontSize="sm" color="orange.300">
+          <Text fontSize="sm" color="orange.300" mt={2}>
             检查更新失败：{result.error}
           </Text>
         )}
+      </Section>
+
+      {/* v2.6.0 用户设置：位置在更新检查下面，点进入内页修改（不把表单平铺在设置页） */}
+      <Section title="用户设置">
+        <Flex
+          as="button"
+          type="button"
+          w="100%"
+          align="center"
+          justify="space-between"
+          gap={3}
+          textAlign="left"
+          onClick={() => setUserPage(true)}
+        >
+          <Box minW={0}>
+            <Text fontSize="sm" color="pprimary">
+              本地用户资料
+            </Text>
+            <Text fontSize="xs" color="ptextmuted">
+              用户名 / 状态 / 个性签名 / 头像（本地保存，不需要账号）
+            </Text>
+          </Box>
+          <Text fontSize="sm" color="ptextmuted" flexShrink={0}>
+            进入修改 ›
+          </Text>
+        </Flex>
       </Section>
 
       {/* 下载设置（PRD 4.4：默认下载路径 + 持久化；v2.3.0 Android 无下载功能，整节隐藏） */}
@@ -848,16 +954,15 @@ export default function SettingsPage() {
               （堆叠=全部叠起不分层；紧凑=每行 2 个；宽展=每行 1 个）
             </Text>
           </Text>
-          <RadioGroup
+          <Select
             value={config?.homeLayout ?? 'compact'}
-            onChange={(v) => void useDownloadStore.getState().saveConfig({ homeLayout: v as HomeLayout })}
+            onChange={(e) => void useDownloadStore.getState().saveConfig({ homeLayout: e.target.value as HomeLayout })}
+            maxW="220px"
           >
-            <Stack direction="row" spacing={4}>
-              <Radio value="stacked">堆叠</Radio>
-              <Radio value="compact">紧凑</Radio>
-              <Radio value="wide">宽展</Radio>
-            </Stack>
-          </RadioGroup>
+            <option value="stacked">堆叠</option>
+            <option value="compact">紧凑</option>
+            <option value="wide">宽展</option>
+          </Select>
         </Flex>
       </Section>
 
@@ -892,34 +997,6 @@ export default function SettingsPage() {
         </Text>
       </Section>
 
-      {/* v2.6.0 第 8+9 条：用户模式（本地用户数据本地存储）+ 开发者模式 */}
-      <Section title="用户设置">
-        {/* 用户名（旁边展示状态） */}
-        <Flex align="center" justify="space-between" gap={3} wrap="wrap" mb={2}>
-          <Text fontSize="sm" color="pprimary">用户名</Text>
-          <Input size="sm" value={localUser.username ?? ''} onChange={(e) => onUserField('username', e.target.value)} placeholder="未设置用户名" />
-        </Flex>
-        <Flex align="center" justify="space-between" gap={3} wrap="wrap" mb={2}>
-          <Text fontSize="sm" color="pprimary">状态</Text>
-          <Input size="sm" value={localUser.status ?? ''} onChange={(e) => onUserField('status', e.target.value)} placeholder="未设置状态" />
-          {devMode && (
-            <Badge colorScheme="brand" variant="subtle" borderRadius="full">开发者模式</Badge>
-          )}
-        </Flex>
-        {/* 个性签名 */}
-        <Text fontSize="sm" color="pprimary" mb={1} mt={2}>个性签名</Text>
-        <Input size="sm" value={localUser.signature ?? ''} onChange={(e) => onUserField('signature', e.target.value)} placeholder="未设置签名" />
-        {/* 头像自传（桌面端：原生弹本地图片选择；Android/鸿蒙走 pickAvatar 返回 null 跳过） */}
-        {platform === 'desktop' ? (
-          <Button size="sm" variant="outline" borderColor="pborder" color="pprimary" onClick={onAvatar} mt={2}>
-            上传头像
-          </Button>
-        ) : (
-          <Text fontSize="xs" color="ptextmuted" mt={2}>
-            当前平台不支持头像自传（仅桌面端可上传本地头像）
-          </Text>
-        )}
-      </Section>
 
       {/* 浏览器设置（v2.5.0：Android 恢复内嵌浏览器，内置/系统可选；桌面端后台标签休眠保留） */}
       <Section title="浏览器设置">
@@ -928,19 +1005,19 @@ export default function SettingsPage() {
             <Text fontSize="sm" color="ptext">
               Android 端打开链接的方式
             </Text>
-            <RadioGroup
+            <Select
               value={config?.androidBrowser === 'system' ? 'system' : 'builtin'}
-              onChange={(v) =>
+              onChange={(e) =>
                 void useDownloadStore
                   .getState()
-                  .saveConfig({ androidBrowser: v === 'system' ? 'system' : 'builtin' })
+                  .saveConfig({ androidBrowser: e.target.value === 'system' ? 'system' : 'builtin' })
               }
+              mt={1.5}
+              maxW="240px"
             >
-              <Stack direction="row" spacing={4}>
-                <Radio value="builtin">内置浏览器（可直接下载）</Radio>
-                <Radio value="system">系统浏览器</Radio>
-              </Stack>
-            </RadioGroup>
+              <option value="builtin">内置浏览器（可直接下载）</option>
+              <option value="system">系统浏览器</option>
+            </Select>
             <Text fontSize="xs" color="ptextmuted">
               内置浏览器支持资源领取与文件下载（下载进度在「下载」页显示）；系统浏览器适合交给更成熟的浏览器处理
             </Text>
@@ -959,37 +1036,45 @@ export default function SettingsPage() {
                 （释放闲置标签内存；切换回来时自动重新加载）
               </Text>
             </Text>
-            <RadioGroup
+            <Select
               value={String(config?.tabSleepMinutes ?? 5)}
-              onChange={(v) =>
-                void useDownloadStore.getState().saveConfig({ tabSleepMinutes: Number(v) })
+              onChange={(e) =>
+                void useDownloadStore.getState().saveConfig({ tabSleepMinutes: Number(e.target.value) })
               }
+              maxW="220px"
             >
-              <Stack direction="row" spacing={4}>
-                <Radio value="0">永不</Radio>
-                <Radio value="2">2 分钟</Radio>
-                <Radio value="5">5 分钟</Radio>
-                <Radio value="15">15 分钟</Radio>
-              </Stack>
-            </RadioGroup>
+              <option value="0">永不</option>
+              <option value="2">2 分钟</option>
+              <option value="5">5 分钟</option>
+              <option value="15">15 分钟</option>
+            </Select>
           </Flex>
         )}
       </Section>
-      {/* v2.6.0 第 7 条：新版本弹窗（版本号+日志+立即更新/暂不更新，≥2 版本差强制更新） */}
-      <UpdateModal result={updateResult} forced={updateResult?.forced ?? false} onUpdate={onUpdate} />
-      {/* v2.6.0 第 9 条开发者激活（设置-用户设置「开发者模式」开关触发）/ 第 7 条开发者测试 */}
-      <DevActivationModal open={devModalOpen} onClose={() => setDevModalOpen(false)} onVerified={(ok) => {
-        if (ok) {
+
+      {/* v2.6.0 第 9 条：开发者模式（不属于用户设置，单独放在设置页底部） */}
+      <Section title="开发者模式">
+        <Flex align="center" justify="space-between" gap={3} wrap="wrap">
+          <Box>
+            <Text fontSize="sm" color="pprimary">开发者模式</Text>
+            <Text fontSize="xs" color="ptextmuted">
+              开启后状态显示「开发者模式」；开启需通过开发者激活验证（密码 + 随机填空）
+            </Text>
+          </Box>
+          <Switch isChecked={devMode} aria-label="开发者模式" onChange={(e) => onDevToggle(e.target.checked)} />
+        </Flex>
+      </Section>
+
+      {/* v2.6.0 第 9 条开发者激活（开发者模式开关触发）；第 7 条开发者测试由全局 UpdatePrompt 处理 */}
+      <DevActivationModal
+        open={devModalOpen}
+        onClose={() => setDevModalOpen(false)}
+        onVerified={() => {
           setDevModalOpen(false)
-          // 第 9 条：激活开发者模式（已通过激活校验）
-          if (updateResult) {
-            setUpdateResult({ ...updateResult, forced: false })
-            onUpdate('skip')
-          } else {
-            setDevModalOpen(false)
-          }
-        }
-      }} />
+          void useDownloadStore.getState().saveConfig({ devMode: true })
+          toast({ title: '开发者模式已开启', status: 'success', duration: 2500, position: 'top' })
+        }}
+      />
     </Box>
   )
 }

@@ -14,6 +14,7 @@ import Sidebar from './components/Sidebar'
 import BottomNav from './components/BottomNav'
 import StatusBar from './components/StatusBar'
 import AnnouncementModal from './components/AnnouncementModal'
+import UpdatePrompt from './components/UpdatePrompt'
 import { setSvgGlass } from './components/LiquidGlass/svgGlass'
 import Onboarding from './components/Onboarding'
 import HomePage from './pages/HomePage'
@@ -246,6 +247,8 @@ function ThemedShell() {
       </Flex>
       {isAndroid && <BottomNav />}
       {onboarding && <Onboarding onDone={() => setOnboarding(false)} />}
+      {/* v2.6.0：启动自动检测 + 新版本弹窗（全局，任何页面都生效） */}
+      <UpdatePrompt />
       <AnnouncementModal
         announcement={announcement}
         open={announceOpen}
